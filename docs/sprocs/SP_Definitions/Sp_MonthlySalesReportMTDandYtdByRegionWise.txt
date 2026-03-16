@@ -1,0 +1,160 @@
+-- ============================================================
+-- Stored Procedure: Sp_MonthlySalesReportMTDandYtdByRegionWise
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:44
+-- Definition Length: 10309 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   tblCustomerDetail
+--   tblItem
+--   tblRegion
+--   tblRoute
+--   tblRouteSalesSummaryByItemCustomer
+
+-- ============================================================
+
+CREATE PROCEDURE Sp_MonthlySalesReportMTDandYtdByRegionWise                  
+--declare                
+@sortExpression varchar(100)='RouteCode ASC',                                                              
+@maximumRows int=10000,                                                              
+@startRowIndex int=0,                                                                                                        
+@StartDate varchar(100)='2025-01-13',                                                              
+@EndDate varchar(100)='2025-01-29',                                                                     
+@ItemCode varchar(max)='A1105',                         
+@UserCode varchar(100)='admin'                                                                         
+AS                                                
+BEGIN            
+               
+       
+select  A.[Description] RegionCode,LTRIM(RTRIM(CD.ChannelCode)) SalesType,0 TrxType    
+,SUM(case WHEN MONTH([date])=MONTH(@StartDate) and YEAR([Date])=YEAR(@StartDate) THEN SR.TotalQty ELSE 0 END)  MTDQty    
+,SUM(case WHEN MONTH([date])=MONTH(@StartDate) and YEAR([Date])=YEAR(@StartDate) THEN SR.TotalSales ELSE 0 END)  MTDAmt    
+,SUM(case WHEN YEAR([Date])=YEAR(@StartDate) THEN SR.TotalQty ELSE 0 END)  YTDQty    
+,SUM(case WHEN YEAR([Date])=YEAR(@StartDate) THEN SR.TotalSales ELSE 0 END)  YTDAmt,'' PrincipalCode     
+from tblRouteSalesSummaryByItemCustomer SR    
+inner join tblRoute R on R.Code=SR.RouteCode    
+inner join tblRegion A on A.Code=R.AreaCode    
+--inner join tblSalesOrganization S on S.Code=R.SalesOrgCode    
+Inner join (select distinct Code,Description from tblItem) I on I.Code=SR.ItemCode --and I.SalesOrgCode=S.ParentSalesOrg    
+Inner join tblCustomerDetail CD on CD.CustomerCode=SR.CustomerCode and CD.SalesOrgCode=R.SalesOrgCode    
+where YEAR(SR.[Date])=YEAR(@StartDate) and SR.ItemCode=@ItemCode    
+Group by A.[Description],CD.ChannelCode    
+/*    
+    
+    
+SELECT  distinct  I.code Itemcode,I.Description ItemDescription,Th.TrxType TrxType,format(TH.TrxDate ,'yyyy-MM-01') [Month] ,                                             
+ ((CASE WHEN TH.TrxType =4 Then -1 Else 1 END) * ((TD.QuantityLevel1*TD.PriceUsedLevel1)-CAST(TD.TotalDiscountAmount As Numeric(18,2)))) AS SalesAmount,                
+CASE                                                    
+WHEN TH.TrxType<>1 and Charindex('R',TH.TrxCode)=1 THEN -1 * ABS(TD.QuantityLevel1)                                                       
+WHEN TH.TrxType in (4,13,15,17) THEN -(TD.QuantityLevel1)                                                       
+ELSE ABS(TD.QuantityLevel1) END  SalesQTY,C.RegionCode  into #ItemData                                
+FROM  tblTrxheader th (NOLOCK)                          
+INNER JOIN tblTrxDetail tD (NOLOCK) ON Td.TrxCode = th.TrxCode                         
+INNER JOIN tblItem I (NOLOCK) ON I.Code = tD.ItemCode                
+inner join tblcustomer C  on C.code = TH.ClientCode                
+where Datediff(dd,@StartDate,th.TrxDate)>=0 AND Datediff(dd,th.TrxDate,@EndDate)<=0 and Th.TRXStatus=200              
+and ((ISnull(@ItemCode,'')='') or I.Code in (Select items from dbo.split(@ItemCode,',')))          
+          
+order by [Month] ASC                
+                
+select Itemcode ,ItemDescription,TrxType,Month,Sum(SalesAmount) MonthlySalesAmount,sum(SalesQTY) MonthlySalesQty,RegionCode into #MonthlyItemData from #ItemData                  
+group by Itemcode ,ItemDescription,TrxType, Month,RegionCode                
+                
+                
+                
+DECLARE @Year INT = YEAR(@EndDate)               
+DECLARE @StartDateOfYear DATE = DATEFROMPARTS(@Year, 1, 1)              
+declare @EndDateOYear Date = GETDATE();              
+SELECT DISTINCT      I.code AS Itemcode,I.Description AS ItemDescription,     Th.TrxType AS TrxType,((CASE WHEN TH.TrxType =4 Then -1 Else 1 END) * ((TD.QuantityLevel1*TD.PriceUsedLevel1)-CAST(TD.TotalDiscountAmount As Numeric(18,2)))) AS SalesAmount,    
+  
+    
+      
+        
+        
+           
+CASE                                                    
+WHEN TH.TrxType<>1 and Charindex('R',TH.TrxCode)=1 THEN -1 * ABS(TD.QuantityLevel1)                                                       
+WHEN TH.TrxType in (4,13,15,17) THEN -(TD.QuantityLevel1)                                                       
+ELSE ABS(TD.QuantityLevel1) END AS SalesQTY ,C.RegionCode  INTO #ItemYearlyData              
+FROM tblTrxHeader Th (NOLOCK)           INNER JOIN tblTrxDetail TD (NOLOCK) ON TD.TrxCode = Th.TrxCode              
+INNER JOIN tblItem I (NOLOCK) ON I.Code = TD.ItemCode    inner join tblcustomer C on C.code = Th.ClientCode          
+WHERE Th.TrxDate BETWEEN @StartDateOfYear AND @EndDateOYear and Th.TRXStatus=200 and          
+ ((ISnull(@ItemCode,'')='') or I.Code in (Select items from dbo.split(@ItemCode,',')))          
+          
+                
+select M.Itemcode,M.ItemDescription,sum(M.SalesAmount) TotalSalesAmount,Sum(M.SalesQTY) TotalSalesQty,RegionCode into #YearlyItemData from #ItemYearlyData  M                
+group by Itemcode,ItemDescription,RegionCode                
+                
+                
+--select M.Itemcode,M.ItemDescription,sum(M.MonthlySalesAmount) TotalSalesAmount,Sum(M.MonthlySalesQty) TotalSalesQty into #YearlyItemData from #MonthlyItemData  M                
+--WHERE YEAR(CONVERT(DATE, M.Month, 120)) = YEAR(CONVERT(DATE, @EndDate, 120))                
+--group by Itemcode,ItemDescription                 
+--select  * from #YearlyItemData  order by Itemcode desc                
+                
+ CREATE TABLE #Data1 ( RowNum Int,RegionCode Varchar(100),Itemcode VARCHAR(50), ItemDescription VARCHAR(50),                                              
+        TrxType VARCHAR(100), MTDQty VARCHAR(250), MTDAmt VARCHAR(50), YTDQty VARCHAR(50), YTDAmt VARCHAR(50));               
+                
+insert into #Data1 (RowNum,RegionCode, Itemcode,ItemDescription , TrxType ,MTDQty  ,MTDAmt  ,YTDQty  ,YTDAmt)                                     
+select ROW_NUMBER() OVER (ORDER BY M.Itemcode) AS RowNum,M.RegionCode,M.Itemcode,M.ItemDescription,M.TrxType,M.MonthlySalesQty,M.MonthlySalesAmount,'','' from #MonthlyItemData M                
+                
+update D set D.YTDQty = Y.TotalSalesQty ,D.YTDAmt= Y.TotalSalesAmount                 
+from #Data1 D inner join #YearlyItemData Y on Y.Itemcode=D.Itemcode                
+                
+--select * from #Data1;                
+                
+--SELECT RegionCode,'PVT' SalesType,TrxType,COALESCE(Cast(MTDQty as int),0)+120 MTDQty,COALESCE(Cast(MTDAmt as int),0)+2001 MTDAmt,COALESCE(Cast(YTDQty as int),0)+1 YTDQty,COALESCE(Cast(YTDAmt as int),0)+1422 YTDAmt FROM #Data1                      
+--union                    
+--SELECT RegionCode,'INS' SalesType,TrxType,COALESCE(Cast(MTDQty as int),0)+250 MTDQty,COALESCE(Cast(MTDAmt as int),0)+1521 MTDAmt,COALESCE(Cast(YTDQty as int),0)+123 YTDQty,COALESCE(Cast(YTDAmt as int),0)+4224 YTDAmt FROM #Data1                      
+--union                    
+--SELECT RegionCode,'CLP' SalesType,TrxType,COALESCE(Cast(MTDQty as int),0)+100 MTDQty,COALESCE(Cast(MTDAmt as int),0)+4524 MTDAmt,COALESCE(Cast(YTDQty as int),0)+421 YTDQty,COALESCE(Cast(YTDAmt as int),0)+2553 YTDAmt FROM #Data1                      
+--union                    
+--SELECT RegionCode,'INC' SalesType,TrxType,COALESCE(Cast(MTDQty as int),0)+456 MTDQty,COALESCE(Cast(MTDAmt as int),0)+7534 MTDAmt,COALESCE(Cast(YTDQty as int),0)+324 YTDQty,COALESCE(Cast(YTDAmt as int),0)+3854 YTDAmt FROM #Data1                      
+--union                    
+--SELECT RegionCode,'TEN' SalesType,TrxType,COALESCE(Cast(MTDQty as int),0)+360 MTDQty,COALESCE(Cast(MTDAmt as int),0)+2104 MTDAmt,COALESCE(Cast(YTDQty as int),0)+224 YTDQty,COALESCE(Cast(YTDAmt as int),0)+7542 YTDAmt FROM #Data1SELECT  RegionCode,'PVT' SalesType,TrxType,                
+    COALESCE(CAST(ROUND(MTDQty, 0) AS INT), 0) + 120 AS MTDQty,                
+    COALESCE(CAST(ROUND(MTDAmt, 0) AS INT), 0) + 2001 AS MTDAmt,                
+    COALESCE(CAST(ROUND(YTDQty, 0) AS INT), 0) + 1 AS YTDQty,                
+    COALESCE(CAST(ROUND(YTDAmt, 0) AS INT), 0) + 1422 AS YTDAmt                
+FROM #Data1                
+UNION                
+SELECT  RegionCode,'INS' SalesType,TrxType,                
+    COALESCE(CAST(ROUND(MTDQty, 0) AS INT), 0) + 250 AS MTDQty,                
+    COALESCE(CAST(ROUND(MTDAmt, 0) AS INT), 0) + 1521 AS MTDAmt,                
+    COALESCE(CAST(ROUND(YTDQty, 0) AS INT), 0) + 123 AS YTDQty,                
+    COALESCE(CAST(ROUND(YTDAmt, 0) AS INT), 0) + 4224 AS YTDAmt                
+FROM #Data1                
+UNION                
+SELECT  RegionCode,'CLP' SalesType,TrxType,                
+    COALESCE(CAST(ROUND(MTDQty, 0) AS INT), 0) + 100 AS MTDQty,                
+    COALESCE(CAST(ROUND(MTDAmt, 0) AS INT), 0) + 4524 AS MTDAmt,                
+    COALESCE(CAST(ROUND(YTDQty, 0) AS INT), 0) + 421 AS YTDQty,                
+    COALESCE(CAST(ROUND(YTDAmt, 0) AS INT), 0) + 2553 AS YTDAmt                
+FROM #Data1                
+UNION                
+SELECT  RegionCode,'INC' SalesType,TrxType,                
+    COALESCE(CAST(ROUND(MTDQty, 0) AS INT), 0) + 456 AS MTDQty,                
+    COALESCE(CAST(ROUND(MTDAmt, 0) AS INT), 0) + 7534 AS MTDAmt,                
+    COALESCE(CAST(ROUND(YTDQty, 0) AS INT), 0) + 324 AS YTDQty,                
+    COALESCE(CAST(ROUND(YTDAmt, 0) AS INT), 0) + 3854 AS YTDAmt                
+FROM #Data1          
+UNION                
+SELECT  RegionCode,'TEN' SalesType,TrxType,                
+    COALESCE(CAST(ROUND(MTDQty, 0) AS INT), 0) + 360 AS MTDQty,                
+    COALESCE(CAST(ROUND(MTDAmt, 0) AS INT), 0) + 2104 AS MTDAmt,                
+    COALESCE(CAST(ROUND(YTDQty, 0) AS INT), 0) + 224 AS YTDQty,                
+    COALESCE(CAST(ROUND(YTDAmt, 0) AS INT), 0) + 7542 AS YTDAmt                
+FROM #Data1;                
+                      
+                
+                
+                
+drop table #ItemData                
+drop table #MonthlyItemData                
+drop table #YearlyItemData                 
+drop table #ItemYearlyData                
+drop table #Data1                
+                
+   */    
+end

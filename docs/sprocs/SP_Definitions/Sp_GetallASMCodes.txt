@@ -1,0 +1,27 @@
+-- ============================================================
+-- Stored Procedure: Sp_GetallASMCodes
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:45
+-- Definition Length: 430 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   tblRole
+--   tblUser
+--   tblUserDetails
+--   tblUserRole
+
+-- ============================================================
+
+CREATE  PRoc Sp_GetallASMCodes    
+@UserCode Varchar(50)='admin'    
+    
+ AS    
+Begin    
+    
+ Select distinct Sup.Code ASMCODE,Sup.Description as ASMNAME  From tblUser U Inner join tblUserDetails UD On UD.USerCode=U.Code  
+Inner join tblUserRole UR On UR.UserCode=UD.UserCode  
+Inner join tblRole R On R.COde =UR.ROleCOde and R.Code='ASM'  
+Inner join (Select Code,Description from tblUser) Sup on Sup.Code=UD.ReportsTO   
+END

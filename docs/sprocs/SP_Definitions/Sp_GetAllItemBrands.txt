@@ -1,0 +1,22 @@
+-- ============================================================
+-- Stored Procedure: Sp_GetAllItemBrands
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:45
+-- Definition Length: 229 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   tblItem
+--   tblItemGroup
+
+-- ============================================================
+
+CREATE Proc Sp_GetAllItemBrands
+@UserCode Varchar(50)=''
+
+as begin
+Select distinct  B.Code BrandCode,B.Description BrandName FROM tblItem I                                 
+  join tblItemGroup B on I.GroupLevel2=B.Code    
+
+  End

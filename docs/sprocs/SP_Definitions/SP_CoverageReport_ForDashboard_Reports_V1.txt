@@ -1,0 +1,215 @@
+-- ============================================================
+-- Stored Procedure: SP_CoverageReport_ForDashboard_Reports_V1
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:54
+-- Definition Length: 11355 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   R
+--   Split
+--   tblCustomerDetail
+--   tblCustomerVisit
+--   tblDailyJourneyPlan
+--   tblErrorLog
+--   tblRoute
+--   tblTrxHeader
+--   tblUser
+--   tblUserDetails
+--   udf_GetAllChildRoutes
+--   ufnSplit
+
+-- ============================================================
+
+-- SP_CoverageReport_ForDashboard_Reports_V1 'Daily','','','','4920','','2017-05-13','2017-05-18','','1=1','','',''                                                                                                                     
+            
+CREATE PROCEDURE [dbo].SP_CoverageReport_ForDashboard_Reports_V1                                               
+--Declare    
+ @Type VARCHAR(10) = 'Daily',                                                                                                                        
+@SelectedCountries VARCHAR(MAX) = '',                                                                                                                        
+@SelectedLocations VARCHAR(MAX) = '',                                                                                                                        
+@SelectedCities VARCHAR(MAX) = '',                                                                                                                      
+@UserCode Varchar(50)='4920',                                                                                                        
+@ChannelCodes  Varchar(max) = '',                                                                                                      
+@StartingDate datetime = '2017-07-22',                                                                                                      
+@EndingDate datetime = '2017-07-22',                                                                            
+@SalesOrganizations  Varchar(max) = ''  ,                                    
+@SearchString Varchar(max)='' ,                                  
+@selectedRoutes Varchar(max)='11014,11015,11017,11018,11020,11022,11023,11029,11030,11032,11034',                          
+@selectedDepots Varchar(max)='',                    
+@RoleCode VARCHAR(255)='admin'                                                                                                              
+,@CurrencyCode varchar(200)='SAR'                                                                                                             
+AS                                            
+BEGIN                   
+  
+  
+Insert INTO tblErrorLog(Err_Procedure,Err_Message,Err_Date)  
+select 'SP_CoverageReport_ForDashboard_Reports_V1','@selectedRoutes:'+@selectedRoutes,Getdate()  
+  
+DECLARE @ScheduledCalls INT, @ActualCalls INT, @SellingCalls INT, @TotalActualCalls INT, @PlannedSellingCalls INT               
+,@Index int,@UserCodes VARCHAR(MAX)=''                                    
+            
+      Select RouteCode,UserCode,UserType INTO #tempAssignedRoutes from [dbo].[udf_GetAllChildRoutes]  (@UserCOde,'ALL')    
+    
+DECLARE @varStartingDate DATETIME=@StartingDate,              
+@varEndingDate DATETIME=@EndingDate            
+         
+ /*           
+SET @Index=CharIndex('U.UserCode',@SearchString)                                    
+IF @Index>0                                    
+Begin                                    
+                                    
+Set @SearchString =SUBSTRING(@SearchString,@Index,LEN(@SearchString)+1-@Index)                                    
+                                    
+Set @SearchString =SUBSTring(@SearchString,3,CharIndex(')',@SearchString)-2)                                    
+Print @SearchString                                                      
+END                                    
+Else                                    
+Set @SearchString='1=1'               
+            
+IF(@SearchString!='1=1')            
+BEGIN            
+ SELECT @UserCodes=REPLACE(REPLACE(REPLACE(@SearchString,'U.UserCode IN(',''),'''',''),')','')            
+END            
+         
+ */         
+set @UserCodes=@SearchString          
+            
+CREATE TABLE #Results(UserCode VARCHAR(50),PlannedCustomers INT DEFAULT 0,VisitedCustomers INT DEFAULT 0,TotalCalls INT DEFAULT 0,              
+UniqueCalls INT DEFAULT 0,TotalProductiveCalls INT DEFAULT 0,UniqueProductiveCalls INT DEFAULT 0)              
+     
+CREATE TABLE #CovUsers(UserCode VARCHAR(50), SalesOrgCode VARCHAR(50),RouteCode VARCHAR(50))              
+            
+            
+CREATE TABLE #CustomerVisits([Date] DATE,ClientCode VARCHAR(50),UserCode VARCHAR(50),RouteCode VARCHAR(50))              
+CREATE TABLE #Transactions(TrxDate DATE,UserCode VARCHAR(50),OrgCode VARCHAR(50),ClientCode VARCHAR(50),RouteCode VARCHAR(50))              
+            
+            
+            
+INSERT INTO #CovUsers(UserCode,SalesOrgCode,RouteCode)            
+SELECT DISTINCT U.Code,UD.SalesOrgCOde,U.RouteCode AS RouteCode            
+FROM     
+/*dbo.udf_GetAllChildUsers(@UserCode,'All') A                           
+INNER JOIN tblUser U With(NoLock) ON A.UserCode=U.Code             
+*/    
+#tempAssignedRoutes A                           
+INNER JOIN tblUser U With(NoLock) ON A.ROuteCode=U.RouteCode             
+    
+AND (@UserCodes='' OR U.Code IN (SELECT Items FROM dbo.Split(@UserCodes,',')))                        
+INNER JOIN tblUserDetails UD WITH(NOLOCK) ON U.Code=UD.UserCode            
+AND (@SalesOrganizations='' OR UD.SalesOrgCode IN (SELECT Items FROM dbo.Split(@SalesOrganizations,',')))                         
+INNER JOIN tblRoute R With(NoLock) ON U.RouteCode=R.Code                
+AND (@selectedDepots='' OR R.AreaCode IN (select Item from ufnSplit(@selectedDepots,','))) AND                
+(@selectedRoutes='' OR R.Code IN (select Item from ufnSplit(@selectedRoutes,',')))            
+            
+            
+            
+            
+INSERT INTO #CustomerVisits(Date,UserCode,ClientCode,RouteCode)              
+SELECT DISTINCT CAST([Date] AS date) AS [Date], U.UserCode,              
+ClientCode AS CustomerCode,U.RouteCode              
+FROM tblCustomerVisit CV With(NoLock)             
+INNER JOIN #CovUsers U ON CV.RouteCode=U.RouteCode              
+AND DATEDIFF(dd,@varStartingDate,[Date]) >= 0 AND DATEDIFF(dd,[Date],@varEndingDate) >= 0              
+INNER JOIN tblCustomerDetail CD  With(NoLock) ON CV.ClientCode=CD.CustomerCode              
+AND CD.SalesOrgCode=U.SalesOrgCode              
+            
+INSERT INTO #Transactions(TrxDate,UserCode,OrgCode,ClientCode,RouteCode)              
+SELECT DISTINCT CAST(TrxDate AS DATE) AS TrxDate, TH.UserCode, OrgCode,              
+ISNULL(TH.ClientBranchCode, TH.ClientCode) AS ClientCode,V.RouteCode              
+FROM tblTrxHeader TH  With(NoLock)              
+INNER JOIN #CovUsers V On V.RouteCode = TH.RouteCode/*V.UserCode = TH.UserCode*/              
+AND DATEDIFF(dd,@varStartingDate,TrxDate) >= 0 AND DATEDIFF(dd,TrxDate,@varEndingDate) >= 0              
+AND TH.TrxType IN (1,3,5) AND TH.TrxStatus = 200             
+INNER JOIN tblCustomerDetail CD  With(NoLock) ON ISNULL(TH.ClientBranchCode, TH.ClientCode)=CD.CustomerCode              
+AND CD.SalesOrgCode=V.SalesOrgCode              
+AND ((@SalesOrganizations='') OR (CD.SalesOrgCode IN (SELECT Items FROM dbo.Split(@SalesOrganizations,','))))              
+INNER JOIN tblCustomerVisit CV   With(NoLock) ON CV.RouteCode = TH.RouteCode              
+AND CV.ClientCode=TH.ClientCode AND TH.VisitCode=CV.VisitCode AND DATEDIFF(DD,TrxDate,CV.[Date])=0             
+            
+            
+            
+            
+INSERT INTO #Results(UserCode, PlannedCustomers, VisitedCustomers)              
+SELECT T.UserCode,COUNT(T.CustomerCode) AS PlannedCustomers,COUNT(V.ClientCode) AS VisitedCustomers              
+FROM              
+(              
+SELECT DISTINCT CAST(D.JourneyDate AS DATE) AS JourneyDate,D.UserCode,D.CustomerCode              
+FROM tblDailyJourneyPlan (nolock) D              
+INNER JOIN #CovUsers V On V.RouteCode = D.UserCode              
+AND DATEDIFF(dd,@varStartingDate,JourneyDate) >= 0 AND DATEDIFF(dd,JourneyDate,@varEndingDate) >= 0              
+INNER JOIN tblCustomerDetail CD   With(NoLock) ON CD.CustomerCode=D.CustomerCode              
+AND CD.SalesOrgCode=V.SalesOrgCode              
+) AS T              
+LEFT OUTER JOIN #CustomerVisits AS V ON V.ClientCode = T.CustomerCode AND V.RouteCode = T.UserCode              
+AND DATEDIFF(DD,CAST(T.JourneyDate AS date),CAST(V.Date AS date))=0              
+GROUP BY T.UserCode              
+            
+            
+SELECT D.RouteCode AS UserCode,COUNT(1) AS TotalCalls,COUNT(DISTINCT ClientCode) AS UniqueCalls              
+INTO #Calls              
+FROM #CustomerVisits D              
+GROUP BY D.RouteCode            
+            
+            
+SELECT D.UserCode,COUNT(*) AS UniqueProductiveCalls      
+INTO #ProductiveCalls              
+FROM (SELECT DISTINCT CAST(TrxDate AS DATE) AS TrxDate, TH.RouteCode AS UserCode, OrgCode,              
+ClientCode AS ClientCode              
+FROM #Transactions TH              
+INNER JOIN tblDailyJourneyPlan DJP   With(NoLock) ON TH.ClientCode=DJP.CustomerCode              
+AND DATEDIFF(DD,TH.TrxDate,DJP.JourneyDate)=0 AND DJP.UserCode=TH.RouteCode              
+INNER JOIN tblCustomerDetail CD   With(NoLock) ON TH.ClientCode=CD.CustomerCode              
+AND CD.SalesOrgCode=TH.OrgCode) AS D              
+GROUP BY D.UserCode              
+            
+SELECT D.RouteCode AS UserCode,COUNT(1) AS SellingCalls,COUNT(DISTINCT ClientCode) AS UniqueSellingCalls              
+INTO #SellingCalls              
+FROM #Transactions D              
+GROUP BY D.RouteCode              
+            
+            
+INSERT INTO #Results(UserCode, PlannedCustomers, VisitedCustomers)              
+SELECT UserCode, 0, 0              
+FROM #Calls              
+WHERE UserCode NOT IN (SELECT UserCode FROM #Results)              
+            
+INSERT INTO #Results(UserCode, PlannedCustomers, VisitedCustomers)              
+SELECT UserCode, 0, 0 FROM #ProductiveCalls              
+WHERE UserCode NOT IN (SELECT UserCode FROM #Results)              
+            
+INSERT INTO #Results(UserCode, PlannedCustomers, VisitedCustomers)              
+SELECT UserCode, 0, 0 FROM #SellingCalls              
+WHERE UserCode NOT IN (SELECT UserCode FROM #Results)              
+            
+UPDATE R              
+SET TotalCalls = C.TotalCalls,UniqueCalls = C.UniqueCalls              
+FROM #Results R              
+INNER JOIN #Calls C ON C.UserCode = R.UserCode              
+            
+UPDATE R              
+SET UniqueProductiveCalls = C.UniqueProductiveCalls              
+FROM #Results R              
+INNER JOIN #ProductiveCalls C ON C.UserCode = R.UserCode              
+            
+UPDATE R              
+SET TotalProductiveCalls = C.SellingCalls              
+FROM #Results R              
+INNER JOIN #SellingCalls C ON C.UserCode = R.UserCode              
+            
+DROP TABLE #CovUsers              
+DROP TABLE #Calls              
+DROP TABLE #ProductiveCalls              
+DROP TABLE #CustomerVisits              
+DROP TABLE #SellingCalls              
+DROP TABLE #Transactions              
+            
+SELECT ISNULL(SUM(ISNULL(PlannedCustomers,0)),0) AS ScheduledCalls,ISNULL(SUM(ISNULL(TotalCalls,0)),0) AS TotalActualCalls,              
+ISNULL(SUM(ISNULL(VisitedCustomers,0)),0) AS ActualCalls,ISNULL(SUM(ISNULL(TotalProductiveCalls,0)),0) AS SellingCalls,              
+ISNULL(SUM(ISNULL(UniqueProductiveCalls,0)),0) AS PlannedSellingCalls              
+FROM #Results              
+            
+DROP TABLE #Results              
+Drop Table #tempAssignedRoutes                                      
+END

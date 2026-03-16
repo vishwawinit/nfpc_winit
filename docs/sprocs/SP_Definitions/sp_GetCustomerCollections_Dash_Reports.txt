@@ -1,0 +1,81 @@
+-- ============================================================
+-- Stored Procedure: sp_GetCustomerCollections_Dash_Reports
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:50
+-- Definition Length: 5166 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   tblPermissions
+--   tblRolePermission
+
+-- ============================================================
+
+--Declare                              
+CREATE PROC [dbo].[sp_GetCustomerCollections_Dash_Reports]                                  
+@searchstring VARCHAR(MAX) = '',                                              
+@SelectedCountries VARCHAR(MAX) = '',                                              
+@SelectedLocations VARCHAR(MAX) = '',                                              
+@SelectedCities VARCHAR(MAX) = '',                                                    
+@UserCode Varchar(50)='Admin',                                      
+@Type VARCHAR(10) = '1',                                    
+@RoleCode Varchar(255)='admin',                                               
+@StartingDate datetime='05/02/2020',                                             
+@EndingDate datetime='05/02/2020',                                      
+@ChannelCodes Varchar(max)='',              
+@SalesOrganizations Varchar(max) =''  ,
+@SalesExecutive VARCHAR(MAX)='',
+@Hos VARCHAR(MAX)='',
+@Asm VARCHAR(MAX)='',
+@Supervisor VARCHAR(MAX)='',
+@Salesman VARCHAR(MAX)='',
+@Route VARCHAR(MAX)='',
+@Category VARCHAR(MAX)='',
+@Brand VARCHAR(MAX)='',
+@SubBrand VARCHAR(MAX)='',
+@GrandChannel VARCHAR(MAX)='',
+@Channel VARCHAR(MAX)='',
+@Subchannel VARCHAR(MAX)='',
+@ServiceBy VARCHAR(MAX)=''
+AS                                  
+IF (LEN(@searchString) = 0)                                                
+    SET @searchString = '1=1'                        
+                          
+Declare @SalesmanWiseCollection int =1                       
+                      
+IF LOWER(@RoleCode) != 'admin'                                  
+BEGIN                                  
+IF NOT Exists(Select 0 from tblRolePermission RP JOIN tblPermissions P on RP.PermissionId = P.PermissionId                                         
+  AND  RoleCode=@RoleCode and Rp.IsActive=1 and P.IsActive = 1                                         
+    AND PermissionCode ='SalesmanWiseCollection')                                        
+ SET @SalesmanWiseCollection=0                       
+END                                              
+                                                
+DECLARE @TypeSearchString VARCHAR(MAX),@strQuery VARCHAR(MAX)                                                               
+IF (@Type = 1)                                                                
+    SET @TypeSearchString = 'DATEDIFF(DD,O.TrxDate,GETDATE()) = 0'                                                                
+ELSE IF (@Type = 2)                                                                
+    SET @TypeSearchString = 'DATEDIFF(WK,GETDATE(),O.TrxDate) = 0'                                                              
+ELSE IF (@Type = 3)                                                                
+    SET @TypeSearchString = 'DATEDIFF(MM,O.TrxDate,GETDATE()) = 0'                                                               
+                                  
+IF (@TypeSearchString <> '')                                                              
+BEGIN                                                              
+    SET @strQuery='                                                              
+    SELECT U.Code UserCode, U.Description UserName, ISNULL(SUM(PH.[Amount]), 0) [Amount]                                                              
+    FROM tblPaymentHeader PH                                                                      
+    Inner Join dbo.udf_GetAllChildUsers(''' + @UserCode+ ''',''ALL'') CU On PH.EmpNo=CU.UserCode                                          
+    INNER JOIN tblCustomer C ON C.[Code] = PH.SITE_NUMBER                                         
+    INNER JOIN tblUser U ON U.Code = CU.UserCode AND U.RouteCode=PH.RouteCode/*AND U.SalesOrgCode = PH.SalesOrgCode */AND U.IsActive = 1                                                                      
+    WHERE (' + @searchString + ') AND ( CAST(PH.tripDate AS DATE) BETWEEN '''+cast(@StartingDate as VARCHAR)+''' AND '''+ cast(@EndingDate as VARCHAR)+''')        
+    AND (''' + @SalesOrganizations + ''' = '''' OR PH.SalesOrgCode IN(SELECT Item FROM ufnSplit(''' + @SalesOrganizations + ''', '','')))                                              
+    AND (''' + @SelectedCountries + ''' = '''' OR C.CountryCode IN(SELECT Item FROM ufnSplit(''' + @SelectedCountries + ''', '','')))                                              
+    AND (''' + @SelectedLocations + ''' = '''' OR C.RegionCode IN(SELECT Item FROM ufnSplit(''' + @SelectedLocations + ''', '','')))                                              
+  AND (''' + @SelectedCities + ''' = '''' OR C.CityCode IN(SELECT Item FROM ufnSplit(''' + @SelectedCities + ''', '','')))                                                       
+    GROUP BY U.Code, U.Description                                                
+    HAVING ISNULL(SUM(PH.[Amount]), 0) > 0                                            
+    '                                              
+    SELECT  @SalesmanWiseCollection AS SalesmanWiseCollection                                     
+    EXEC(@strQuery)                                                             
+END

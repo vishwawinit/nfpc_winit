@@ -1,0 +1,137 @@
+-- ============================================================
+-- Stored Procedure: sp_GetSKUsSold_Formula_Dashboard
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:45
+-- Definition Length: 8281 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   Split
+--   tblItem
+--   tblItem_Sub_Group_Pickinglists
+--   tblRoute
+--   tblTrxDetail
+--   tblTrxHeader
+--   tblUser
+--   tblUserDetails
+--   udf_GetAllChildRoutes
+
+-- ============================================================
+
+CREATE PROCEDURE sp_GetSKUsSold_Formula_Dashboard--_17Apr2017                         
+--dECLARE    
+ @Date DateTime ='2018-04-20',                            
+ @EndDate DateTime ='2018-04-20',                             
+ @Area VARCHAR(MAX)='',                                                  
+ @SubArea VARCHAR(MAX)='',                                                  
+ @Route VARCHAR(MAX)='',                                                  
+ @Supervisor VARCHAR(MAX)='',                                                  
+ @Salesman VARCHAR(MAX)='',                                                  
+ @UserCode VARCHAR(50)='admin'                 
+,@CurrencyCode varchar(200)='SAR'                          
+AS                            
+bEGIN      
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED  
+ Declare @End_Date_New DATETIME =@EndDate      
+ Declare @End_Date DATETIME =DateAdd(D,1,@EndDate)              
+   
+ Select RouteCode,UserCode,UserType INTO #tempAssignedRoutes from [dbo].[udf_GetAllChildRoutes]  (@UserCOde,'ALL')  
+      
+                      
+Create table #tblSkus([Type] varchar(50),SubCategorySold int,ServedClients int,SKUSOLD Float)             
+            
+            
+CREATE TABLE #User9(ROuteCode VARCHAR(50))                                                   
+                                
+INSERT INTO #User9(ROuteCode)                                
+SELECT Distinct U.ROuteCode  
+FROM /*dbo.udf_GetAllChildUsers(@UserCode,'All')   U       */       
+#tempAssignedRoutes U  
+INNER JOIN tblUser UU With(NoLock) ON U.RouteCode =UU.ROuteCode              
+INNER JOIN tblRoute R  With(NoLock) ON UU.RouteCode=R.Code             
+  AND (R.Code IN (SELECT Items FROM dbo.Split(@Route,',')) OR ISNULL(@Route,'')='')            
+  AND (R.AreaCode IN (SELECT Items FROM dbo.Split(@Area,',')) OR ISNULL(@Area,'')='')                                                  
+AND (R.SubAreaCode IN (SELECT Items FROM dbo.Split(@SubArea,',')) OR ISNULL(@SubArea,'')='')               
+where (IsNull(@Salesman,'')='' OR UserCode In (Select Items From dbo.Split(@Salesman,',')))                
+                       
+            
+            
+            
+select TH.TrxCode  ,CASE WHEN TH.TrxType=5 then Convert(Date,TH.FinalizedDate)  WHEN TH.TrxType=4                           
+then Convert(Date,TH.CollectionDate) else Convert(Date,TH.TRIPDATE ) end AS TrxDate,TrxType ,TH.ClientCode ,OrgCode,TH.RouteCode,TH.UserCode                    
+into #Trx                      
+from tblTrxHeader TH With(NoLock)                
+INNER JOIN #User9 U ON TH.ROuteCode=U.ROuteCode                              
+where TH.TrxType IN (1,12,5,4) AND TH.TRXStatus=200                                
+AND ((TH.TrxType IN (1,12) AND TH.TRIPDATE>=@Date AND TRIPDATE <@End_Date)                                    
+ OR (TH.TrxType IN (5) AND TH.FinalizedDate >=@Date AND FinalizedDate <@End_Date)                                                
+ OR (TH.TrxType IN (4) AND TH.CollectionDate>=@Date AND CollectionDate <@End_Date  )   )          
+       
+       
+       
+           
+select TrxCode  ,CASE WHEN TH.TrxType=5 then Convert(Date,TH.FinalizedDate)  WHEN TH.TrxType=4                           
+then Convert(Date,TH.CollectionDate) else Convert(Date,TH.TRIPDATE ) end AS TrxDate,TrxType ,TH.ClientCode ,OrgCode,TH.RouteCode,TH.UserCode                    
+into #TrxMTD                      
+from tblTrxHeader TH With(NoLock)                
+INNER JOIN #User9 U ON TH.ROuteCode=U.ROuteCode                              
+where TH.TrxType IN (1,12,5,4) AND TH.TRXStatus=200                                
+AND ((TH.TrxType IN (1,12) AND month(TH.TRIPDATE)=Month(@End_Date_New) and year(TH.TRIPDATE)=year(@End_Date_New) )                                    
+ OR (TH.TrxType IN (5) AND Month(TH.FinalizedDate) =Month(@End_Date_New) AND year(TH.FinalizedDate) =year(@End_Date_New))                                                
+ OR(TH.TrxType IN (4) AND month(TH.CollectionDate)=month(@End_Date_New) AND year(TH.CollectionDate)=year(@End_Date_New)  )   )          
+          
+             
+Insert INTO #tblSkus([Type],SubCategorySold,ServedClients,SKUSOLD)                        
+SELECT 'Daily' AS [Type],ISNULL(Sum(SubCategorySold),0) AS SubCategorySold,ISNULL(SUM(ServedClients),0) AS ServedClients,                      
+CASE WHEN SUM(ServedClients)>0 THEN Round(CAST(SUM(SubCategorySold) AS Float)/SUM(ServedClients),2) Else 0 END AS SKUSOLD                      
+From (                                              
+SELECT 'Daily' AS Type,Count(Distinct A.ItemSubGroupDescription/*I.Attribute10*/) AS SubCategorySold,Count(Distinct TH.ClientCode) AS ServedClients                            
+                                               
+FROM #Trx TH                                                  
+INNER JOIN tblTrxDetail(NOLOCK) TD ON TD.TrxCode=TH.TrxCode                                                  
+INNER JOIN tblItem  I With(NoLock) ON TD.ItemCode=I.Code  AND I.SalesOrgCode=TH.OrgCode                                                 
+INNER JOIN tblUser U With(NoLock) ON TH.UserCode=U.Code                                                   
+INNER JOIN tblUserDetails UD With(NoLock) ON U.Code=UD.UserCode                                                  
+AND (UD.ReportsTo IN (SELECT Items FROM dbo.Split(@Supervisor,',')) OR ISNULL(@Supervisor,'')='')                                                                                      
+Inner Join tblItem_Sub_Group_Pickinglists A On I.Code=A.ItemCode        
+/*INNER JOIN tblItemGroup IG With(NoLock) ON I.GroupLevel4=IG.Code AND IG.ItemGroupLevelId=3                                                  
+AND ISNULL(IG.IsActive,1)=1                                                  
+INNER JOIN tblItemGroupLevel IGL ON IG.ItemGroupLevelId=IGL.LevelId                                                  
+AND IGL.LevelName='Sub Category'*/                      
+Group By TH.ClientCode,Convert(Date,TH.TrxDate)                       
+) AS T                                                 
+                            
+                            
+ Insert INTO #tblSkus([Type],SubCategorySold,ServedClients,SKUSOLD)                         
+ SELECT 'MTD' AS [Type],Sum(SubCategorySold) AS SubCategorySold,SUM(ServedClients) AS ServedClients,                      
+CASE WHEN SUM(ServedClients)>0 THEN Round(CAST(SUM(SubCategorySold) AS Float)/SUM(ServedClients),2) Else 0 END AS SKUSOLD                      
+From (                                                
+SELECT 'MTD' AS Type,Count(Distinct A.ItemSubGroupDescription/*I.Attribute10*/) AS SubCategorySold,Count(Distinct TH.ClientCode) AS ServedClients                                                
+FROM #TrxMTD (NOLOCK) TH                     
+INNER JOIN tblTrxDetail(NOLOCK) TD ON TD.TrxCode=TH.TrxCode AND DateDiff(MM,TrxDate, GETDATE())=0                     
+                                         
+INNER JOIN tblItem  I With(NoLock) ON TD.ItemCode=I.Code  AND I.SalesOrgCode=TH.OrgCode                                                 
+INNER JOIN tblUser U With(NoLock) ON TH.UserCode=U.Code                   
+INNER JOIN tblUserDetails UD With(NoLock) ON U.Code=UD.UserCode                                                  
+AND (UD.ReportsTo IN (SELECT Items FROM dbo.Split(@Supervisor,',')) OR ISNULL(@Supervisor,'')='')                                                  
+Inner Join tblItem_Sub_Group_Pickinglists A On I.Code=A.ItemCode        
+        
+/*        
+INNER JOIN tblItemGroup IG With(NoLock) ON I.GroupLevel4=IG.Code AND IG.ItemGroupLevelId=3                                                  
+AND ISNULL(IG.IsActive,1)=1                                                  
+INNER JOIN tblItemGroupLevel IGL ON IG.ItemGroupLevelId=IGL.LevelId                                                  
+AND IGL.LevelName='Sub Category' */Group By TH.ClientCode   ,Convert(Date,TH.TrxDate)                    
+  ) AS T                            
+                            
+                                       
+                       
+select * from  #tblSkus              
+              
+                    
+Drop table  #tblSkus              
+Drop table  #Trx         
+Drop table  #TrxMTD         
+           
+ drop table #User9   
+ enD

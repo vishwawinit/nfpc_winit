@@ -1,0 +1,90 @@
+-- ============================================================
+-- Stored Procedure: SP_StrikeRate_ForDashboard_Reports
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:46
+-- Definition Length: 4825 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   udf_GetAllChildUsers
+
+-- ============================================================
+
+CREATE PROC [dbo].[SP_StrikeRate_ForDashboard_Reports]                         
+--  [SP_StrikeRate_ForDashboard_Reports] '1=1',1,'','','','admin','','07/01/2016','07/31/2016'                                                                                          
+@searchString VARCHAR(MAX) = '1=1',                                                                                        
+@Type INT = 1,                                                                
+@SelectedCountries VARCHAR(MAX) = '',                                                                
+@SelectedLocations VARCHAR(MAX) = '',                                                                
+@SelectedCities VARCHAR(MAX) = '',                                                  
+@UserCode Varchar(50)='Admin',                                                  
+@ChannelCodes  Varchar(max)='',                                                  
+@StartingDate datetime='07/01/2016',                                                  
+@EndingDate datetime='07/31/2016',                              
+@SalesOrganizations  Varchar(max)='',          
+@selectedRoutes Varchar(max)='',
+@selectedDepots VARCHAR(MAX)='' ,
+@SubArea     varchar(max)='',
+@Supervisor	 varchar(100)='',
+@Salesman	 varchar(100)=''
+                                                                                            
+AS                      
+BEGIN         
+      
+IF (LEN(@searchString) = 0)                                                                        
+    SET @searchString = '1=1'          
+      
+ELSE                
+    SET @searchstring = REPLACE(@searchstring, ' U.UserCode', ' CU.UserCode')          
+      
+DECLARE  @strQuery VARCHAR(MAX)                
+      
+CREATE TABLE #User9(UserCode VARCHAR(50))                    
+              
+INSERT INTO #User9(UserCode)              
+SELECT UserCode              
+FROM dbo.udf_GetAllChildUsers(@UserCode,'All')              
+      
+      
+CREATE TABLE #StrikeRate ( RouteCode VARCHAR(50), RouteName VARCHAR(50),ClientCode VARCHAR(50), StrikeInvoiceCount FLOAT,TotalInvoiceCount FLOAT, TRXDATE DATE)      
+      
+       
+  SET @strQuery = '              
+  SELECT   R.Code,R.Description ,O.Clientcode As ClientCode ,CAST(O.TrxDate AS DATE),       
+   CASE When (R.RouteCatCode =''1'' AND SUM(ISNULL(O.TotalAmount, 0)) > 100 ) then  1 WHEN (R.RouteCatCode=''2'' AND SUM(ISNULL(O.TotalAmount, 0)) > 100) THEN 1 ELSE  0 END  As StrikeInvoiceCount  ,  1 As TotalInvoiceCount                                 
+
+
+   
+  
+                                                  
+     
+    FROM tblTrxHeader O                      
+    INNER JOIN tblCustomer C ON C.[Code] = O.ClientCode                                                    
+    INNER JOIN #User9 CU On O.UserCode=CU.UserCode              
+    Inner Join tblUserDetails UD on O.UserCode = UD.UserCode AND O.OrgCode = UD.SalesOrgCode                                                        
+    INNER JOIN tblUser U ON U.Code = UD.UserCode 
+    /* AND (''' + @selectedRoutes + ''' = '''' OR U.RouteCode IN(SELECT Item FROM ufnSplit(''' + @selectedRoutes + ''', '',''))) */                                                        
+    INNER JOIN tblRoute R ON R.Code=U.RouteCode
+	       
+    WHERE O.TrxType IN(1, 5) AND O.TRXStatus IN(200)
+	AND ('''+@selectedDepots+'''='''' OR R.AreaCode IN (select Item FRom ufnSplit('''+@selectedDepots+''','','')))       
+      
+    AND (CAST(O.TrxDate AS DATE) BETWEEN ''' + CAST(@StartingDate as VARCHAR) + ''' AND ''' + CAST(@EndingDate as VARCHAR) + ''')                   
+    AND (' + @searchString + ')                                                            
+    AND (''' + @SalesOrganizations + ''' = '''' OR O.OrgCode IN(SELECT Item FROM ufnSplit(''' + @SalesOrganizations + ''', '','')))                                                            
+    /*AND (''' + @SelectedCountries + ''' = '''' OR C.CountryCode IN(SELECTItem FROM ufnSplit(''' + @SelectedCountries + ''', '','')))           
+    AND (''' + @SelectedLocations + ''' = '''' OR C.RegionCode IN(SELECT Item FROM ufnSplit(''' + @SelectedLocations + ''', '','')))                                                    
+    AND (''' + @SelectedCities + ''' = '''' OR C.CityCode IN(SELECT Item FROM ufnSplit(''' + @SelectedCities + ''', '',''))) */                    
+    GROUP BY R.Code,R.Description,R.RouteCatCode ,CAST(O.TrxDate AS DATE), O.Clientcode                               
+         
+  '      
+  INSERT INTO #StrikeRate(RouteCode, RouteName,ClientCode,Trxdate, StrikeInvoiceCount, TotalInvoiceCount)      
+ EXEC(@strQuery)      
+      
+ SELECT Round( (SUM(StrikeInvoiceCount) / SUM(TotalInvoiceCount)) * 100,2) As StrikeRate from #StrikeRate      
+      
+      
+DROP TABLE #User9          
+DROP TABLE #StrikeRate                       
+END

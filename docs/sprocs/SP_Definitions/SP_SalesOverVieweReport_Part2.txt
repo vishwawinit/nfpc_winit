@@ -1,0 +1,94 @@
+-- ============================================================
+-- Stored Procedure: SP_SalesOverVieweReport_Part2
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:03:03
+-- Definition Length: 4072 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   tblCustomerDetail
+--   tblCustomerVisit
+--   tblMiddlewarePendingInvoice
+--   tblPendingInvoice
+--   tblRoute
+--   tblRouteCoverageSummary
+--   tblRouteSalesSummaryByItemCustomer
+--   tblTrxHeader
+
+-- ============================================================
+
+CREATE PROC [dbo].[SP_SalesOverVieweReport_Part2]                                
+@Area VARCHAR(MAX)='',                                
+@SubArea VARCHAR(MAX)='',                                
+@Route VARCHAR(MAX)='211',                                
+@SalesOrgCode VARCHAR(MAX)='',                                
+@Supervisor VARCHAR(MAX)='',                                
+@Salesman VARCHAR(MAX)='',                                
+@Date DATETIME='2025-01-29',                                
+@UserCode VARCHAR(50)='admin'      ,                  
+@StartDate varchar(100) ='2025-01-29'                            
+AS    
+BEGIN   
+  
+DECLARE @TotalCalls INT=0,@TotalInvoice INT=0,@TotalProductiveMin FLOAT=0,                              
+@CashSales FLOAT=0,@CreditSales FLOAT=0,@TCSales FLOAT=0,                              
+@InvoiceShort INT=0,@TotalCashDue FLOAT,@TCLimit FLOAT,                              
+@TCPending FLOAT,@14daysAmount FLOAT,@21daysAmount FLOAT,                           
+@28daysAmount FLOAT,@35daysAmount FLOAT,@42daysAmount FLOAT,                              
+@DiscountAmount FLOAT    
+  
+select @TotalCalls=SUM(TotalActualCalls) from tblRouteCoverageSummary where VisitDate between @StartDate and @Date  
+  
+select @TotalInvoice=COunt(1),@InvoiceShort=Count(1),@DiscountAmount=SUM(ISNULL(TotalDiscountAmount,0)) from tblTrxHeader where cast(TrxDate as Date) between @StartDate and @Date  
+and TrxTYpe in (1,4) and TrxStatus=200  
+  
+SELECT @TotalProductiveMin=SUM(TotalTimeInMins)                              
+FROM tblCustomerVisit CV                              
+INNER JOIN (SELECT DISTINCT ClientCode,UserCode,VisitCode,TrxDate                              
+FROM tblTrxHeader where cast(TrxDate as Date) between @StartDate and @Date  
+and TrxTYpe in (1,4) and TrxStatus=200) TH ON TH.ClientCode=CV.ClientCode                              
+AND TH.UserCode=CV.UserCode AND DATEDIFF(DD,CV.Date,TrxDate)=0                              
+AND TH.VisitCode=CV.VisitCode   
+  
+  
+select @CashSales =SUM(case WHEN CD.CustomerType='Cash' THEN TotalSales ELSE 0 END)   
+,@CreditSales =SUM(case WHEN CD.CustomerType='Credit' THEN TotalSales ELSE 0 END)   
+from tblRouteSalesSummaryByItemCustomer ER  
+Inner join tblRoute R on R.Code=ER.RouteCode   
+inner join tblCustomerDetail CD on CD.CustomerCode=ER.CustomerCode and CD.SalesOrgCode=R.SalesOrgCode  
+where [Date] between @StartDate and @Date  
+  
+select @TotalCashDue=SUM(PendingAmount) from (  
+select SUM(PendingAmount) PendingAmount from tblMiddlewarePendingInvoice where TrxDateTime between @StartDate and @Date  
+Union All  
+select SUM(PendingAmount) PendingAmount from tblPendingInvoice where TrxDateTime between @StartDate and @Date  
+) as T  
+  
+  
+select '' Code,'' Description,0 JPCalls,0 CallsExcept  
+  
+  
+SELECT 'Call Summary' Category,'Total Calls' [Type],Round(ISNULL(@TotalCalls,0),2) [Value]                              
+UNION ALL                              
+SELECT 'Call Summary','Total Inv.',Round(ISNULL(@TotalInvoice,0),2)                              
+UNION ALL                              
+SELECT 'Sales Details','Prod. Minutes',Round(ISNULL(@TotalProductiveMin,0),2)                              
+UNION ALL                              
+SELECT 'Sales Details','Cash Sales',Round(ISNULL(@CashSales,0),2)                              
+UNION ALL                              
+SELECT 'Sales Details','Credit Sales',Round(ISNULL(@CreditSales,0),2)                  
+UNION ALL                              
+SELECT 'Sales Details','Daily Sales',Round(ISNULL(@CashSales,0)+ISNULL(@CreditSales,0),2)                  
+UNION ALL                           
+SELECT 'Sales Details','Discount',Round(ISNULL(@DiscountAmount,0) ,2)                             
+UNION ALL                              
+SELECT 'Sales Details','Invoice Short',Round(ISNULL(@InvoiceShort,0),2)                              
+UNION ALLSELECT 'Sales Details','Total Cash Due',Round(ISNULL(@TotalCashDue,0),2)    
+  
+  
+select 'Call Summary' Category  
+UNION ALL   
+select 'Sales Details' Category  
+  
+END

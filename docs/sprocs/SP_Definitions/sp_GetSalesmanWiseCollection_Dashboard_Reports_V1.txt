@@ -1,0 +1,74 @@
+-- ============================================================
+-- Stored Procedure: sp_GetSalesmanWiseCollection_Dashboard_Reports_V1
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:54
+-- Definition Length: 5606 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   udf_GetAllChildUsers
+
+-- ============================================================
+
+--Declare                            
+CREATE PROC [dbo].[sp_GetSalesmanWiseCollection_Dashboard_Reports_V1]                                                                
+@searchString VARCHAR(MAX) = '1=1',                                                                                            
+@Type Varchar(10) = '1',                                                                      
+@SelectedCountries VARCHAR(MAX) = '',                                                                      
+@SelectedLocations VARCHAR(MAX) = '',                                                                      
+@SelectedCities VARCHAR(MAX) = '',                                                            
+@UserCode Varchar(50)='Admin',                                                            
+@ChannelCodes  Varchar(max)='',                                                            
+@StartingDate datetime='04/01/2020',                                                            
+@EndingDate datetime='04/30/2020',                                            
+@SalesOrganizations VARCHAR(MAX) = '',                          
+@selectedRoutes Varchar(max)='' ,                
+@selectedDepots Varchar(max)='',        
+@RoleCode VARCHAR(255)='admin'                                                                                            
+                                                                                                
+AS                                                         
+BEGIN                                                            
+IF (LEN(@searchString) = 0)                                                                      
+    SET @searchString = '1=1'                                    
+ELSE                                    
+    SET @searchstring = REPLACE(@searchstring, ' U.UserCode', ' CU.UserCode')                                                                      
+                                                                
+DECLARE @TypeSearchString VARCHAR(MAX),@strQuery VARCHAR(MAX)                                
+CREATE TABLE #User10(UserCode VARCHAR(50))                                                 
+                              
+INSERT INTO #User10(UserCode)                              
+SELECT UserCode                              
+FROM dbo.udf_GetAllChildUsers(@UserCode,'All')                                    
+                                                                                             
+SET @strQuery='                                                                                  
+SELECT /*U.Code UserCode, U.Username UserName,*/R.Code UserCode,R.Description UserName, ISNULL(SUM(R.[Amount]), 0) [Amount]
+FROm ( 
+    SELECT DISTINCT  R.Code ,R.Description ,PH.Receipt_Number ,P1.[Amount]                                                                              
+    FROM tblPaymentHeader PH     
+    INNER JOIN tblSalesOrganization SO ON PH.SalesOrgCode = SO.Code                                 
+    INNER JOIN tblPaymentDetail PD ON  PH.Receipt_Number=PD.Receipt_Number           
+    INNER JOIN tblPaymentInvoice P1 ON PH.Receipt_Number=P1.Receipt_Number        
+    INNER JOIN tblTrxHeader TH ON P1.Invoice_Number=Th.TrxCode                     
+    left JOIN tblCustomer C ON C.CODE = PH.SITE_NUMBER                                 
+    INNER JOIN Vw_salesUsers BU ON BU.Code = PH.EmpNo AND  BU.RouteCode=PH.RouteCode--AND C.IsActive = 1 AND BU.IsActive = 1                                  
+    INNER JOIN dbo.udf_GetAllChildUsers('''+@UserCode+''',''All'') CU On BU.Code=CU.UserCode            
+    INNER JOIN dbo.udf_GetAllSalesOrgOfUser('''+@UserCode+''')  USA ON USA.SalesOrgCOde=PH.SalesOrgCode                   
+    INNER JOIN tblRoute R ON PH.RouteCode=R.Code                    
+    WHERE (IsNull('''+@selectedDepots+''','''')='''' OR R.AreaCode IN (select Item from ufnSplit('''+@selectedDepots+''','',''))) AND(' + @searchString + ') AND ( CAST(PH.TripDate AS DATE) BETWEEN '''+CAST(@StartingDate as VARCHAR)+''' AND '''+ CAST(@EndingDate as VARCHAR)+''')                                                         
+    AND (''' + @SalesOrganizations + ''' = '''' OR PH.SalesOrgCode IN(SELECT Item FROM ufnSplit(''' + @SalesOrganizations + ''', '','')))  
+    AND (''' + @selectedRoutes + ''' = '''' OR BU.RouteCode IN(SELECT Item FROM ufnSplit(''' + @selectedRoutes + ''', '','')))                                                           
+    /*AND (''' + @SelectedCountries + ''' = '''' OR C.CountryCode IN(SELECT Item FROM ufnSplit(''' + @SelectedCountries + ''', '','')))                                                                  
+    AND (''' + @SelectedLocations + ''' = '''' OR C.RegionCode IN(SELECT Item FROM ufnSplit(''' + @SelectedLocations + ''', '','')))                                                                  
+    AND (''' + @SelectedCities + ''' = '''' OR C.CityCode IN(SELECT Item FROM ufnSplit(''' + @SelectedCities + ''', '',''))) */  
+	) R                                                                                                                    
+GROUP BY R.Code,R.Description                               
+--HAVING ISNULL(SUM(R.[Amount]), 0) > 0                       
+'                                                                  
+                                      
+EXEC(@strQuery)  
+PRINT @strQuery                             
+                              
+DROP TABLE #User10                                                      
+                                                                                          
+END

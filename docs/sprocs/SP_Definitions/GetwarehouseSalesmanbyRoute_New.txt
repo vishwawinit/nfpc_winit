@@ -1,0 +1,32 @@
+-- ============================================================
+-- Stored Procedure: GetwarehouseSalesmanbyRoute_New
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:42
+-- Definition Length: 477 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   split
+--   tblroute
+--   tbluser
+--   tblwarehouse
+
+-- ============================================================
+
+CREATE proc GetwarehouseSalesmanbyRoute_New     
+--declare  
+@RouteCode varchar(90)  ='108'  
+as    
+begin    
+    
+    
+select R.WHCode WHCode,'['+R.WHCode+']'+W.Description as WHName ,U.Code SalesmanCode,'['+U.Code+']'+U.Description SalesmanName from tblroute R    
+inner join tblwarehouse W on R.WHCode=W.Code    
+inner join tbluser U on R.Code=U.RouteCode    
+where R.Code in (select items from dbo.split(@RouteCode,','))    
+--R.Code=isnull(@RouteCode,'')   
+  
+  
+   
+End

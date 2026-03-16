@@ -1,0 +1,103 @@
+-- ============================================================
+-- Stored Procedure: proc_Report_ProductivityInner_Visits
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:36
+-- Definition Length: 6036 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   tblCustomerDetail
+--   tblCustomerVisit
+--   tblTrxHeader
+--   ufnSplit
+
+-- ============================================================
+
+CREATE procedure [dbo].[proc_Report_ProductivityInner_Visits]      
+@searchString VARCHAR(max) = ' 1 = 1 ',                                                                          
+@Type VARCHAR(10) = 'daily',                                                      
+@Startdate VARCHAR(50) = '2014-10-22',                                                    
+@EndDate VARCHAR(50) = '2014-11-21',                  
+@SessionUserCode VARCHAR(50) = '' ,                
+@UserCode Varchar(50)='21021',    
+@ChannelCodes VARCHAR(max) = '',      
+@SalesTeamCodes VARCHAR(max)=''                                                                            
+AS                                                                     
+                    
+IF @StartDate = ''                                                        
+SET @StartDate = CAST(GETDATE() AS VARCHAR)                                 
+                                              
+IF @EndDate = ''                                                        
+SET @EndDate = CAST(GETDATE() AS VARCHAR)                                                                       
+                                              
+--IF LEN(@searchString) = 0                                                                                                                                      
+SET @searchString = ' 1 = 1 '      
+    
+--DECLARE @strChannelCode varchar(1000)='1=1' ,@strSalesteam Varchar(MAX)='1=1'       
+        
+--IF ISNULL(@ChannelCodes,'') <> ''          
+--SET @strChannelCode=' '''+@ChannelCodes+''' = '''' OR CD.ChannelCode IN (Select items from dbo.Split('''+@ChannelCodes+''','','') )'          
+        
+--IF (ISNULL(@SalesTeamCodes,'')<>'')        
+--SET @strSalesteam=' C.Code in (Select distinct vC.CustomerCode from vw_GetUserClients vC         
+--INNER JOIN tblUserItemGRoup UIG ON UIG.UserCode=vC.UserCode  AND ('''+@SalesTeamCodes+''' = '''' OR  UIG.SalesteamCode in (Select items from dbo.split('''+@SalesTeamCodes+''','','')))) ';                                             
+                                            
+    
+--create table #temp([Date] DATETIME,[Time] DATETIME,ProductiveStatus BIT,SalesAmount FLOAT)         
+      
+--INSERT INTO #temp values (GETDATE(),GETDATE(),1,2587645.80)       
+--INSERT INTO #temp values (GETDATE(),GETDATE(),0,54879.80)       
+--INSERT INTO #temp values (GETDATE(),GETDATE(),1,45879.80)       
+--INSERT INTO #temp values (GETDATE(),GETDATE(),0,87549.80)       
+      
+--select * from #temp      
+--DROP table #temp      
+            
+              
+--EXEC('SELECT ClientCode CustomerCode,Status ProductiveStatus,  VisitDate Date,MIN(ArrivalTime) Time,     
+--SUM(OrderAmount) SalesAmount,SUM(AmountCollected) AmountCollected     
+--FROM                            
+--(                            
+--SELECT V.ClientCode,                                                  
+--CASE ISNULL(TH.TrxCode,''N/A'')                                                  
+--WHEN ''N/A'' THEN 0                                                  
+--ELSE 1 END AS Status,                                                
+--CONVERT(VARCHAR(10),V.Date,126)  AS VisitDate, V.ArrivalTime,     
+--SUM(TH.TotalAmount) OrderAmount,                                        
+--SUM(PH.Amount) AmountCollected    
+--FROM tblUser U                                                 
+--INNER JOIN tblCustomerVisit V ON V.UserCode = U.Code AND DATEDIFF(DD,'''+@StartDate+''',V.[Date]) >= 0 AND U.IsActive = 1                                                              
+--AND DATEDIFF(DD,'''+@EndDate+''',V.[Date]) <= 0  AND V.ClientCode='''+@UserCode+'''                                       
+--INNER JOIN tblCustomer C ON C.Code = V.ClientCode AND ('+@strSalesteam+')           
+--INNER JOIN tblCustomerDetail CD On C.Code = CD.CustomerCode AND U.SalesOrgCode = CD.SalesOrgCode AND ('+@strChannelCode+')                     
+--INNER JOIN dbo.udf_GetAllChildUsers('''+@SessionUserCode+''',''All'') CU On U.Code = CU.UserCode                                       
+--LEFT OUTER JOIN tblTrxHeader TH ON TH.UserCode = V.UserCode AND TH.VisitCode = V.VisitCode AND V.ClientCode = TH.ClientCode    
+--AND TH.TrxType IN(1,3,5) AND TH.TrxStatus IN(100,3,200)                                     
+--AND '+@SearchString +                      
+--' LEFT OUTER JOIN tblPaymentHeader PH ON PH.EmpNo = V.UserCode AND PH.VisitCode = V.VisitCode                                                                         
+--AND V.ClientCode = PH.Site_Number                             
+--LEFT OUTER JOIN tblSalesOrganization SO on  U.SalesOrgCode=SO.Code                 
+--GROUP BY V.ClientCode,                                                
+--CASE ISNULL(TH.TrxCode,''N/A'')         
+--WHEN ''N/A'' THEN 0                                                  
+--ELSE 1 END,                                                
+--V.Date, V.ArrivalTime) AS Temp                             
+--GROUP BY ClientCode,Status,VisitDate')   
+  
+              
+SElECT V.ClientCode CUSTOMERCODE, CONVERT(VARCHAR(10),V.Date,126) Date, V.ArrivalTime Time,  
+CASE ISNULL(TH.TrxCode,'N/A')                                                  
+WHEN 'N/A' THEN 0                                                  
+ELSE 1 END AS ProductiveStatus,  
+SUM(TH.TotalAmount - TH.TotalDiscountAmount) AS SalesAmount  
+FROM tblCustomerVisit V  
+INNER JOIN tblCustomerDetail CD On V.ClientCode = CD.CustomerCode AND (@ChannelCodes = '' OR CD.ChannelCode IN(SELECT Item FROM ufnSplit(@ChannelCodes, ',')))                
+LEFT OUTER JOIN tblTrxHeader TH ON TH.UserCode = V.UserCode AND TH.VisitCode = V.VisitCode                
+ AND V.ClientCode = TH.ClientCode  
+ AND TH.OrgCode = CD.SalesOrgCode       
+ AND TH.TrxType IN (1,5) AND TH.TrxStatus IN (100,200,3)            
+ AND DATEDIFF(d, TH.TrxDate, V.Date) = 0  
+WHERE (DATEDIFF(dd,@StartDate,V.[Date]) >= 0 AND DATEDIFF(dd,@EndDate,V.[Date]) <= 0)  
+ AND V.ClientCode = @UserCode                    
+GROUP BY V.ClientCode,TH.TrxCode,V.Date,V.ArrivalTime

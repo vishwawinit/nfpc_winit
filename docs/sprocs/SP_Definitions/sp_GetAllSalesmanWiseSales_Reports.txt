@@ -1,0 +1,54 @@
+-- ============================================================
+-- Stored Procedure: sp_GetAllSalesmanWiseSales_Reports
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:51
+-- Definition Length: 1850 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   sp_GetSalesmanWiseSales_Dashboard_Reports
+--   tblPermissions
+--   tblRolePermission
+
+-- ============================================================
+
+CREATE PROC [dbo].[sp_GetAllSalesmanWiseSales_Reports]                         
+@searchstring VARCHAR(MAX) = '',                            
+@SelectedCountries VARCHAR(MAX) = '',                            
+@SelectedLocations VARCHAR(MAX) = '', /* Using as Depots */                           
+@SelectedCities VARCHAR(MAX) = '',                                  
+@UserCode Varchar(50)='Admin',                    
+@Type VARCHAR(10) = 'Daily',                  
+@RoleCode Varchar(255)='admin',                             
+@StartingDate datetime='01/01/2016',                           
+@EndingDate datetime='11/23/2016',                    
+@ChannelCodes Varchar(max)='',  
+@SalesOrganizations Varchar(max)=''
+
+AS                             
+Begin                    
+
+Declare @TypeId int                    
+if @Type = 'Daily'                    
+set @TypeId=1                   
+
+Declare @SalesmanWiseSales int =1             
+
+IF LOWER(@RoleCode) != 'admin'                  
+BEGIN                  
+IF NOT Exists(Select 0 from tblRolePermission RP JOIN tblPermissions P on RP.PermissionId = P.PermissionId                           
+AND  RoleCode=@RoleCode and Rp.IsActive=1 and P.IsActive = 1                           
+AND PermissionCode ='SalesmanWiseSales')                          
+SET @SalesmanWiseSales=0                   
+END                 
+SELECT                  
+@SalesmanWiseSales AS SalesmanWiseSales            
+
+IF @SalesmanWiseSales=1                                          
+EXEC sp_GetSalesmanWiseSales_Dashboard_Reports  @searchString,@TypeId,@SelectedCountries,@SelectedLocations,@SelectedCities,@UserCode,                            
+@ChannelCodes,@StartingDate,@EndingDate,@SalesOrganizations,@SelectedLocations                                 
+ELSE                          
+Select 1 as NODATA                   
+
+End

@@ -1,0 +1,61 @@
+-- ============================================================
+-- Stored Procedure: sp_GetOrderWiseCollection_Dash_Reports
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:50
+-- Definition Length: 3543 chars
+-- ============================================================
+
+CREATE PROC [dbo].[sp_GetOrderWiseCollection_Dash_Reports]                                      
+@searchString VARCHAR(MAX) = '1=1',                                                      
+@Type INT = 1,                                
+@SelectedCountries VARCHAR(MAX) = '',                                
+@SelectedLocations VARCHAR(MAX) = '',                                
+@SelectedCities VARCHAR(MAX) = '',                                      
+@ChannelCodes  Varchar(max),                                      
+@StartingDate datetime,                                      
+@EndingDate datetime,                     
+@SalesOrganizations Varchar(max) =''  ,
+@SalesExecutive VARCHAR(MAX)='',
+@Hos VARCHAR(MAX)='',
+@Asm VARCHAR(MAX)='',
+@Supervisor VARCHAR(MAX)='',
+@Salesman VARCHAR(MAX)='',
+@Route VARCHAR(MAX)='',
+@Category VARCHAR(MAX)='',
+@Brand VARCHAR(MAX)='',
+@SubBrand VARCHAR(MAX)='',
+@GrandChannel VARCHAR(MAX)='',
+@Channel VARCHAR(MAX)='',
+@Subchannel VARCHAR(MAX)='',
+@ServiceBy VARCHAR(MAX)=''
+
+AS                          
+IF (LEN(@searchString) = 0)                                        
+    SET @searchString = '1=1'                                        
+                                        
+DECLARE @TypeSearchString VARCHAR(MAX),@strQuery VARCHAR(MAX)                                                          
+IF (@Type = 1)                                                        
+    SET @TypeSearchString = 'DATEDIFF(DD,O.TrxDate,GETDATE()) = 0'                                                        
+ELSE IF (@Type = 2)                                                        
+    SET @TypeSearchString = 'DATEDIFF(WK,O.TrxDate,GETDATE()) = 0'                                                      
+ELSE IF (@Type = 3)                                                        
+    SET @TypeSearchString = 'DATEDIFF(MM,O.TrxDate,GETDATE()) = 0'                            
+                              
+IF (@TypeSearchString <> '')                                                      
+BEGIN                                                      
+    SET @strQuery = '                    
+    SELECT PH.ReceiptId, PH.Receipt_Number, ISNULL(SUM(PH.[Amount]), 0) [Amount]                                           
+    FROM tblPaymentHeader PH                                          
+    INNER JOIN tblCustomer C ON C.[Code] = PH.SITE_NUMBER                  
+    INNER JOIN tblUser U ON U.Code = PH.EmpNo AND U.SalesOrgCode = PH.SalesOrgCode AND U.IsActive = 1                                                                               
+    WHERE (CAST(PH.ReceiptDate AS DATE) BETWEEN '''+cast(@StartingDate as VARCHAR)+''' AND '''+ cast(@EndingDate as VARCHAR)+''')  
+    AND (' + @searchString + ')  
+    AND (''' + @SalesOrganizations + ''' = '''' OR PH.SalesOrgCode IN(SELECT Item FROM ufnSplit(''' + @SalesOrganizations + ''', '','')))                      
+    AND (''' + @SelectedCountries + ''' = '''' OR C.CountryCode IN(SELECT Item FROM ufnSplit(''' + @SelectedCountries + ''', '','')))                        
+    AND (''' + @SelectedLocations + ''' = '''' OR C.RegionCode IN(SELECT Item FROM ufnSplit(''' + @SelectedLocations + ''', '','')))                        
+    AND (''' + @SelectedCities + ''' = '''' OR C.CityCode IN(SELECT Item FROM ufnSplit(''' + @SelectedCities + ''', '','')))                                            
+    GROUP BY PH.ReceiptId,PH.Receipt_Number'                    
+                        
+   EXEC(@strQuery)                                                       
+END

@@ -1,0 +1,65 @@
+-- ============================================================
+-- Stored Procedure: sp_TargerVsAchieved_Inner
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:03:00
+-- Definition Length: 2058 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   tblItem
+--   tblItemGroup
+--   tblTarget
+--   tblTrxDetail
+--   tblTrxHeader
+--   tblUser
+
+-- ============================================================
+
+--sp_TargerVsAchieved_Inner '21333',1,2015      
+CREATE PROC [dbo].[sp_TargerVsAchieved_Inner]      
+@UserCode Varchar(50),       
+@Month Varchar(50),       
+@Year Varchar(500)    
+AS      
+BEGIN      
+      
+Declare  @SalesOrgCode Varchar(50)        
+SELECT @SalesOrgCode=SalesOrgCode from tblUser where Code=@UserCode      
+      
+Select AgencyAliasName, Round(Sum(Acheived),2) Acheived, Round(Sum(Target),2) [Target],       
+Round((Sum(Target) - Sum(Acheived)),2) as Balance       
+From(       
+SELECT Ag.AliasName AgencyAliasName,       
+YEAR(TH.TrxDate) [Year] ,MONTH(TH.TrxDate) [Month],       
+ISNULL(SUM((ISNULL(TD.PriceUsedLevel1,0) * ISNULL(TD.QuantityLevel1,0))       
+- ISNULL(TD.TotalDiscountAmount,0)) ,0) Acheived, 0 as [Target]       
+FROM       
+tblTrxHeader TH       
+INNER JOIN tblTrxDetail TD On TD.TrxCode=TH.TrxCode AND YEAR(TH.TrxDate)       
+= YEAR(GETDATE()) AND MONTH(TH.TrxDate) = MONTH(GETDATE())       
+INNER JOIN tblItem I On TD.ItemCode = I.Code AND I.SalesOrgCode =       
+@SalesOrgCode --TH.OrgCode = @SalesOrgCode       
+INNER JOIN (SELECT Code, Description, Description AliasName FROM tblItemGroup WHERE       
+ItemGroupLevelId = 0) Ag ON I.GroupLevel1 = Ag.Code       
+WHERE TH.UserCode = @UserCode AND TH.TrxType IN (1,5) AND TH.TrxStatus IN (100,3,200)       
+AND DATEDIFF(DD, TH.TrxDate, GETDATE()) != 0       
+AND YEAR(TH.TrxDate) = @Year And MONTH(TH.TrxDate) = @Month       
+GROUP BY Ag.Code,Ag.Description,Ag.AliasName, YEAR(TH.TrxDate)       
+,MONTH(TH.TrxDate)       
+      
+Union       
+      
+SELECT IG.Description AgencyAliasName,       
+T.Year, T.Month, 0 as Acheived, SUM(ISNULL(T.Amount,0)) [Target]       
+FROM tblTarget T       
+INNER JOIN tblItemGroup IG ON ItemGroupLevelId = 0 AND T.AgencyCode =       
+IG.Code       
+WHERE T.SalesmanCode = @UserCode AND T.Year = YEAR(GETDATE()) AND       
+T.Month = MONTH(GETDATE())       
+AND T.YEAR = @Year And T.MONTH = @Month       
+GROUP BY T.AgencyCode,IG.Description,IG.Description, T.Year, T.Month) as T       
+Group By AgencyAliasName      
+      
+      
+END

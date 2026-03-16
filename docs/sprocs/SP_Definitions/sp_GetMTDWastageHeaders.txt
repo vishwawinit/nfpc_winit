@@ -1,0 +1,139 @@
+-- ============================================================
+-- Stored Procedure: sp_GetMTDWastageHeaders
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:03:05
+-- Definition Length: 6123 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   A
+
+-- ============================================================
+
+--declare      
+ CREATE PROCEDURE [dbo].[sp_GetMTDWastageHeaders]                         
+ @searchstring varchar(max)='1=1  AND ( DATEDIFF(dd,''2025-01-01'',rs.Date) >= 0 AND DATEDIFF(dd,''2025-01-12'', rs.Date) <= 0 )',   
+@sortExpression varchar(50)='TH.ClientCode' ,                              
+@UserCode varchar(50)='admin' ,
+@StartDate VARCHAR(20)='2025-01-01',
+@EndDate VARCHAR(20)='2025-01-12'
+AS 
+BEGIN
+ /*                                        
+IF LEN(@searchString) = 0                                                                
+BEGIN                                                                
+SET @searchString = '1=1'                              
+END                           
+                                
+IF(@sortExpression='TH.ClientCode')                  
+SET @sortExpression='TH.ClientCode'                                                                            
+BEGIN                
+              
+              
+CREATE TABLE #MTDWastageReport(Category VARCHAR(100),ClientCode VARCHAR(100),CustomerName VARCHAR(100),              
+QuantityCS INT,QuantityPCS INT,percentage FLOAT,ExpiredValue INT,DamagedValue INT,DamagedPercentage FLOAT)              
+              
+CREATE TABLE #TrxCodes(TrxCode VARCHAR(100))              
+              
+EXEC('              
+INSERT INTO #MTDWastageReport(Category,ClientCode,CustomerName)              
+SELECT   DISTINCT                        
+CD.SubChannelCode as Category,TH.ClientCode as CustomerCode,C.Description as CustomerName              
+from tblTrxHeader TH                               
+INNER JOIN tblTrxDetail TD on TD.TrxCode=TH.TrxCode and TD.ItemType=''D''                             
+INNER JOIN tblCustomer C on C.Code=TH.ClientCode                              
+INNER JOIN tblCustomerDetail CD on CD.CustomerCode=C.Code   and CD.salesorgcode=TH.orgcode                            
+INNER JOIN tblUser U on U.Code=TH.UserCode                           
+where ('+@searchstring+')                                
+              
+')              
+              
+EXEC('              
+INSERT INTO #TrxCodes(TrxCode)              
+SELECT   DISTINCT                        
+TH.TrxCode from tblTrxHeader TH                               
+INNER JOIN tblTrxDetail TD on TD.TrxCode=TH.TrxCode and TD.ItemType=''D''                             
+INNER JOIN tblCustomer C on C.Code=TH.ClientCode                              
+INNER JOIN tblCustomerDetail CD on CD.CustomerCode=C.Code     and CD.salesorgcode=TH.orgcode                          
+INNER JOIN tblUser U on U.Code=TH.UserCode                           
+where ('+@searchstring+')                                
+')              
+             
+      Declare @CS INT,@PC INT        
+              
+   SELECT @CS=0 ,@PC=CAST(SUM(TD.QuantityLevel3) AS Numeric(18,3))          
+   FROM tblTrxHeader TH                     
+INNER JOIN tblTrxDetail TD ON TH.TrxCode=Td.TrxCode AND TD.ItemType='D'                   
+INNER JOIN #TrxCodes TT ON TH.TrxCode=TT.TrxCode       
+              
+        
+Declare @TS Numeric(18,2),@TR Numeric(18,2)        
+        
+ /*SELECT @TS=SUM(TotalAmount + ISNULL(FOC_Amount,0)/*-TotalDiscountAmount*/) ,@TR=SUM(ReplacementValue)         
+FROM tblTrxHeader TH               
+INNER JOIN #TrxCodes TT ON TH.TrxCode=TT.TrxCode   */
+SELECT 
+      
+        @TS= SUM(CASE WHEN TH.TrxDate BETWEEN @StartDate AND @EndDate THEN TotalAmount + ISNULL(FOC_Amount, 0) ELSE 0 END),
+        
+       
+        @TR= SUM(CASE WHEN TT.TrxCode IS NOT NULL AND TH.TrxDate BETWEEN @StartDate AND @EndDate 
+                 THEN TotalAmount + ISNULL(FOC_Amount, 0) ELSE 0 END) 
+    FROM tblTrxHeader TH
+    LEFT JOIN #TrxCodes TT ON TH.TrxCode = TT.TrxCode 
+
+         
+Declare @ExpiredValue Numeric(18,2),@DamagedValue Numeric(18,2)        
+SELECT             
+ @DamagedValue = (-1) * SUM(CASE               
+  WHEN TD.Reason Like 'Damage%' THEN               
+  (TD.PriceUsedLevel2 * TD. QuantityLevel2) + (TD.PriceUsedLevel3 * TD. QuantityLevel3)               
+  ELSE 0 END )         
+,@ExpiredValue=(-1) * SUM(CASE               
+  WHEN TD.Reason Like 'Expiry%' THEN               
+  (TD.PriceUsedLevel2 * TD. QuantityLevel2) + (TD.PriceUsedLevel3 * TD. QuantityLevel3)               
+  ELSE 0 END )         
+FROM tblTrxHeader TH               
+INNER JOIN tblTrxDetail TD ON TH.TrxCode=Td.TrxCode AND TD.ItemType='D'               
+INNER JOIN #TrxCodes TT ON TH.TrxCode=TT.TrxCode              
+      
+ SELECT @CS QuantityCS,@PC QuantityPCS,CASE WHEN @TS!=0 THEN CAST((@TR / @TS) *100 As Numeric(18,2)) ELSE 0 END PERCENTAGE,          
+ @ExpiredValue  ExpiredValue,@DamagedValue  DamagedValue,@TS TotalSales      
+ ,CASE WHEN @TS!=0 THEN  abs(Cast((@DamagedValue/@TS)*100 as Numeric(18,2))) ELSE 0 END  DamagedPercentage        
+      
+   --Select COUNT(*) from #TrxCodes     
+                     
+  drop table #MTDWastageReport 
+  drop table #TrxCodes
+  */
+
+CREATE TABLE #tempResult (                     
+QuantityPCS INT,TotalQty INT,ExpiredValue INT,DamagedValue INT,percentage FLOAT,QuantityCS INT,DamagedPercentage FLOAT,TotalSales INT) 
+
+insert into #tempResult
+
+exec('
+select sum(TOtalGRqty)+sum(TotalDamageQty)+sum(TotalExpiryQty) as QuantityPCS,sum(TotalQty) as TotalQty,
+-1* sum(TotalExpirySales) as ExpiredValue, -1*sum(TotalDamageSales) as DamagedValue,0 percentage,0 QuantityCS,0 DamagedPercentage,sum(TotalSales) TotalSales from tblRouteSalesSummaryByItemCustomer rs
+inner join tblroute r on r.code = rs.routecode
+INNER JOIN tblCustomer C on C.Code=Rs.CustomerCode                                      
+INNER JOIN tblCustomerDetail CD on CD.CustomerCode=C.Code and cd.SalesOrgCode = r.salesorgcode    
+where ('+@searchstring+') 
+')
+
+
+UPDATE A  
+SET A.percentage = CASE   
+                      WHEN A.TotalQty = 0 THEN 0   
+                      ELSE abs(CAST((A.QuantityPCS* 1.0 / A.TotalQty) * 100 AS Numeric(18, 2)))   
+                  END , 
+ a.DamagedPercentage = case when a.totalsales=0 then 0 
+else abs(cast((a.damagedValue* 1.0 / a.totalsales)*100 as Numeric(18, 2)))
+end
+FROM #tempResult A 
+
+select * from  #tempResult
+
+drop table #tempResult
+END

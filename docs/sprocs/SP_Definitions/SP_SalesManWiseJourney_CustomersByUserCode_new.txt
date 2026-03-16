@@ -1,0 +1,68 @@
+-- ============================================================
+-- Stored Procedure: SP_SalesManWiseJourney_CustomersByUserCode_new
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:40
+-- Definition Length: 2728 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   tblCustomer
+--   tblCustomerDetail
+--   tblCustomerVisit
+--   tblDailyJourneyPlan
+--   tblTrxheader
+--   tblUser
+
+-- ============================================================
+
+CREATE procedure [dbo].[SP_SalesManWiseJourney_CustomersByUserCode_new]            
+
+            
+@UserCode VARCHAR(100)='11039',                                
+@searchString VARCHAR(MAX)='1=1',                                
+@date DATETIME ='2017-01-12'                                
+            
+as                              
+            
+BEGIN                                
+                                
+IF(LEN(@searchString) = 0)                                
+SET @searchString = '1=1'                                
+                                
+DECLARE @strQuery VARCHAR(MAX)                               
+DECLARE @strQuery2 VARCHAR(MAX)             
+            
+            
+               
+         
+            
+            
+                                
+SELECT DISTINCT CV.ClientCode CustomerCode
+, C.Description CustomerName
+,CAST(CV.Date as Date)[Date]
+,MAX(CV.ArrivalTime) ArrivalTime
+,MAX(CV.OutTime)     OutTime          
+,Datediff(Minute, MAX(CV.ArrivalTime),MAX(CV.OutTime)  ) TotalTimeInMins,                                
+CASE WHEN ISNULL(DJP.CustomerCode,'') = '' THEN 0 ELSE 1 END AS IsHasJourney,            
+sum(round(ISNULL(TH.TotalAmount,0)+ISNULL(TH.TotalTaxAMount,0)-isNULL(TH.TotalDiscountAmount,0),0)) Sales  ,          
+round(sum(round(ISNULL(TH.TotalAmount,0)+ISNULL(TH.TotalTaxAMount,0)-isNULL(TH.TotalDiscountAmount,0),0))/ case when Datediff(Minute, MAX(CV.ArrivalTime), MAX(CV.OutTime) )=0 then 1 else Datediff(Minute, MAX(CV.ArrivalTime), MAX(CV.OutTime) ) end,0)  SalesEffectiveness ,      
+case when ISNULL(TH.TrxStatus,0)=200 then  'Invoiced'    
+when ISNULL(TH.TrxStatus,0) in (-105,-100) then  'Cancelled'     
+else 'Pending' end [Status]                           
+FROM tblCustomerVisit CV  (nolock)                              
+INNER JOIN tblUser U (nolock) ON CV.UserCode = U.Code AND U.IsActive = 1                                  
+INNER JOIN tblCustomer C  (nolock) ON C.Code = CV.ClientCode AND C.IsActive = 1                                
+INNER JOIN tblCustomerDetail CD  (nolock) ON C.Code = CD.CustomerCode                               
+LEFT JOIN tblDailyJourneyPlan DJP  (nolock) ON CV.ClientCode = DJP.CustomerCode  AND DATEDIFF(dd,JourneyDate,[Date])=0 AND CV.RouteCode=DJP.UserCode               
+LEFT JOIN tblTrxheader   TH  (nolock) on TH.ClientCode=CV.ClientCode  and Th.VisitCode=CV.VisitCode                        
+WHERE CV.RouteCode   = @UserCode AND DATEDIFF(dd,CV.DATE,@date) = 0            
+group by CV.ClientCode,C.Description,CAST(CV.Date as Date),TH.TrxStatus,DJP.CustomerCode
+order by  CAST(CV.Date as Date) ASC                         
+                                
+            
+            
+      
+                       
+END

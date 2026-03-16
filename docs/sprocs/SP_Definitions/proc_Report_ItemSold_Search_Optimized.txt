@@ -1,0 +1,136 @@
+-- ============================================================
+-- Stored Procedure: proc_Report_ItemSold_Search_Optimized
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:38
+-- Definition Length: 8766 chars
+-- ============================================================
+
+CREATE PROC [dbo].[proc_Report_ItemSold_Search_Optimized]                                                 
+                                                
+@sortExpression  VARCHAR(100) = 'USERNAME',                                                                                                         
+@maximumRows INT = 10,                                                                  
+@startRowIndex INT = 0,                                                                  
+@searchString VARCHAR(max) = ' 1=1 ',                                                      
+@Type VARCHAR(10) = 'daily' ,                                
+@Startdate VARCHAR(50) = '2014-10-13',                                
+@EndDate VARCHAR(50) = '2014-11-13',          
+@SessionUserCode VARCHAR(50) = ''                                                               
+AS                                                    
+BEGIN                                                    
+    
+SET @startRowIndex=@startRowIndex+1          
+                    
+IF @StartDate = ''                                  
+SET @StartDate = CAST(GETDATE() AS VARCHAR)                                  
+                    
+IF @EndDate = ''                                  
+SET @EndDate = CAST(GETDATE() AS VARCHAR)                              
+                                 
+DECLARE @QueryAll VARCHAR(MAX)=''                                              
+DECLARE @QueryPaging VARCHAR(MAX)=''                                                                                                                                                                             
+                    
+IF LEN(@searchString) = 0                                                                                                                  
+SET @searchString = ' 1 = 1 '                                                     
+                    
+IF (@Type = 'daily')                                                    
+BEGIN                                  
+                              
+SET @QueryAll='SELECT U.Code UserCode, U.USERNAME, COUNT(DISTINCT V.VisitCode) CallsMade,                            
+COUNT(DISTINCT TH.VisitCode) AS ProductiveCalls,                      
+SUM(CASE ISNULL(D.ItemCode,''N/A'')                      
+WHEN ''N/A'' THEN 0                      
+ELSE 1 END) AS ItemsSold                          
+--Count(ISNULL(D.Units,0)) ItemsSold                                         
+FROM tblUser U                             
+INNER JOIN tblCustomerVisit V ON V.UserCode = U.Code U.IsActive = 1                         
+INNER JOIN tblCustomer C ON C.Code = V.ClientCode          
+INNER JOIN dbo.udf_GetAllChildUsers('''+@SessionUserCode+''',''All'') CU On U.Code = CU.UserCode                                
+LEFT OUTER JOIN tblTrxHeader TH ON TH.UserCode = V.UserCode AND TH.VisitCode = V.VisitCode                           
+INNER JOIN  tblTrxDetail D ON TH.TrxCode = D.TrxCode                                       
+AND V.ClientCode = TH.ClientCode                                         
+AND DATEDIFF(d, TH.TrxDate, V.Date) = 0                                        
+AND ' + @searchString +'            
+WHERE --DATEDIFF(dd,GETDATE(),V.[Date]) = 0 AND                                  
+DATEDIFF(DD,'''+@StartDate+''',V.[Date]) >= 0                              
+AND DATEDIFF(DD,'''+@EndDate+''',V.[Date]) <= 0                                     
+GROUP BY U.USERNAME, U.Code'                                       
+                    
+END                                                    
+ELSE IF (@Type = 'monthly')                                                 
+BEGIN                                  
+                    
+SET @QueryAll='SELECT U.Code UserCode,U.USERNAME, COUNT(V.ClientCode) CallsMade,                                    
+COUNT(DISTINCT TH.VisitCode) ProductiveCalls,                   
+COUNT(DISTINCT TH.ItemCode) ItemsSoldFROM tblUser U INNER JOIN                                    
+tblCustomerVisit V ON V.UserCode = U.Code U.IsActive = 1               
+INNER JOIN dbo.udf_GetAllChildUsers('''+@SessionUserCode+''',''All'') CU On U.Code = CU.UserCode             
+LEFT OUTER JOIN                                  
+(                                  
+SELECT H.TrxCode, H.UserCode, H.ClientCode, H.TrxDate, H.TrxType, D.ItemCode                                  
+FROM tblTrxHeader H INNER JOIN                                  
+tblTrxDetail D ON H.TrxCode = D.TrxCode                                  
+WHERE' +@searchString +             
+') AS TH ON TH.UserCode = V.UserCode                                   
+AND TH.ClientCode = V.ClientCode                                   
+AND DATEDIFF(d, TH.TrxDate, V.Date) = 0                                   
+WHERE DATEDIFF(MM,GETDATE(), V.[Date]) = 0                                             
+GROUP BY U.USERNAME, U.Code--, TH.OrderNumber                                  
+ORDER BY U.Code'                                   
+                    
+END                                           
+ELSE IF(@Type = 'weekly')                                                    
+BEGIN                              
+                    
+SET @QueryAll='SELECT U.Code UserCode,U.USERNAME, COUNT(V.ClientCode) CallsMade,                                    
+COUNT(DISTINCT TH.VisitCode) ProductiveCalls,                                      
+COUNT(DISTINCT TH.ItemCode) ItemsSold                                  
+FROM tblUser U INNER JOIN                                    
+tblCustomerVisit V ON V.UserCode = U.Code AND U.IsActive = 1              
+INNER JOIN dbo.udf_GetAllChildUsers('''+@SessionUserCode+''',''All'') CU On U.Code = CU.UserCode             
+LEFT OUTER JOIN                                  
+(                                  
+SELECT H.TrxCode, H.UserCode, H.ClientCode, H.TrxDate, H.TrxType,D.ItemCode                                  
+FROM tblTrxHeader H INNER JOIN                                  
+tblTrxDetail D ON H.TrxCode = D.TrxCode                                  
+WHERE '+@searchString +            
+') AS TH ON TH.UserCode = V.UserCode                                   
+AND TH.ClientCode = V.ClientCode                                   
+AND DATEDIFF(d, TH.TrxDate, V.Date) = 0                                   
+WHERE DATEDIFF(dd,DATEADD(dd,-7,GETDATE()),V.[Date]) > 0                                           
+AND DATEDIFF(dd,GETDATE(),V.[Date]) <= 0            
+GROUP BY U.USERNAME, U.Code                                  
+ORDER BY U.Code'                                   
+                    
+END                                                          
+ELSE IF(@Type = 'yearly')           
+BEGIN                                   
+                    
+SET @QueryAll='SELECT U.Code UserCode,U.USERNAME, COUNT(V.ClientCode) CallsMade,                                    
+COUNT(DISTINCT TH.TrxCode) ProductiveCalls,                                  
+COUNT(DISTINCT TH.ItemCode) ItemsSold                                  
+FROM tblUser U INNER JOIN                                    
+tblCustomerVisit V ON V.UserCode = U.Code AND U.IsActive = 1               
+INNER JOIN dbo.udf_GetAllChildUsers('''+@SessionUserCode+''',''All'') CU On U.Code = CU.UserCode             
+LEFT OUTER JOIN                                  
+(                                  
+SELECT H.TrxCode, H.UserCode, H.ClientCode, H.TrxDate, H.TrxType,D.ItemCode                                  
+FROM tblTrxHeader H INNER JOIN                                  
+tblTrxDetail D ON H.TrxCode = D.TrxCode                                  
+WHERE '+@searchString +                                
+') AS TH ON TH.UserCode = V.UserCode                                   
+AND TH.ClientCode = V.ClientCode                                   
+AND DATEDIFF(d, TH.TrxDate, V.Date) = 0WHERE DATEDIFF(YYYY,GETDATE(), V.[Date]) = 0                                          
+GROUP BY U.USERNAME, U.Code                  
+ORDER BY U.Code'                                      
+                    
+END                                               
+                    
+SET @QueryPaging = 'select * from (select row_number() over(order by ' + @sortExpression + ') as ind,* from (' + @QueryAll + ') as T) as Q where ind >= '                                                                                  
+  + CAST(@startRowIndex AS VARCHAR(10)) + ' and ind < ' + CAST((@startRowIndex + @MaximumRows)  AS VARCHAR(10))                                                                                
+                                                          
+EXEC(@QueryPaging)                                               
+    
+EXEC('select COUNT(1) AS LinesSoldCount  from (' + @QueryAll + ') as T')        
+           
+END

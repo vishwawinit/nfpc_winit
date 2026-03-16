@@ -1,0 +1,82 @@
+-- ============================================================
+-- Stored Procedure: SP_ProductivityCoverageReport_Headers
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:35
+-- Definition Length: 5570 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   tblRouteCoverageSummary
+
+-- ============================================================
+
+--declare    
+  CREATE PROC [dbo].[SP_ProductivityCoverageReport_Headers]                      
+-- [SP_ProductivityCoverageReport_Headers] 'Daily','','','','2014-12-03','2015-01-03','admin',1,'1,1000'                                                                                                                    
+@Type VARCHAR(10) = 'Daily',                                                                                                                              
+@SelectedCountries VARCHAR(MAX) = '',                                                                                                                              
+@SelectedLocations VARCHAR(MAX) = '',                                                                                                     
+@SelectedCities VARCHAR(MAX) = '',                                                                                                                              
+@StartDate DATETIME = '2025-01-01 00:00:00.000',                                                                                                                              
+@EndDate DATETIME = '2025-01-30 00:00:00.000',                                                                              
+@SessionUserCode VARCHAR(50) = '',                                                                      
+@TrxType INT = 1,                                                                      
+@TrxStatus VARCHAR(100)='',                      
+@ChannelCodes VARCHAR(MAX) = '',                    
+@SalesTeamCodes VARCHAR(MAX) = '',   
+  
+/*Newly Added*/  
+@SalesOrg VARCHAR(MAX) = NULL,  
+@RSM VARCHAR(MAX) = NULL,  
+@SalesManager VARCHAR(MAX) = NULL,  
+@Supervisor VARCHAR(MAX) = NULL,  
+@SalesExecutive VARCHAR(MAX) = NULL,  
+@Salesman VARCHAR(MAX) = NULL,  
+@Route VARCHAR(MAX) = NULL,  
+@Category VARCHAR(MAX) = NULL,  
+@Brand VARCHAR(MAX) = NULL,  
+@SubBrand VARCHAR(MAX) = NULL,  
+@GrandChannel VARCHAR(MAX) = NULL,  
+@SubChannel VARCHAR(MAX) = NULL,  
+@ServerBy VARCHAR(MAX) = NULL  
+      
+as     
+begin      
+If @StartDate = ''                                                                                                                      
+SET @StartDate = GETDATE()                                                                                                                      
+                                                                                                                      
+IF @EndDate = ''                                                                                                                      
+SET @EndDate = GETDATE()                                                                                                                      
+                                                                                                                      
+DECLARE @ScheduledCalls INT, @ActualCalls INT, @SellingCalls INT,@TotalWorkingTime INT,@TotalSellingTime INT,@ZeroSalesOutlet INT,@TotalSalesValue FLOAT,                                                                                                      
+  
+    
+      
+         
+@TotalUnitSold INT,@TotalLines INT, @CustomerSellingCalls INT,@TotalBills INT,@ActualCoverageCount INT,@DurationCoverageCount INT ,      
+@ActualPlannedCalls INT,@PlannedSellingCalls INT,@PromoLine INT   ,@TotalActualCalls int                                                                
+      
+Declare @VisitDate Varchar(50)='' ,@RouteCOde Varchar(50)='',@UserCode Varchar(50),@UserName Varchar(50)          
+SET @DurationCoverageCount = ISNULL(@DurationCoverageCount,0)                                                                                                                  
+SET @ActualCoverageCount = (@ActualCoverageCount + @DurationCoverageCount)              
+           
+/*Select  @ScheduledCalls=SUM(ScheduledCalls),@ActualPlannedCalls=SUM(ActualCalls),@ActualCalls=SUM(ActualCalls),@TotalActualCalls = SUM(TotalActualCalls),@SellingCalls=SUM(SellingCalls),@PlannedSellingCalls=SUM(PlannedSellingCalls)      
+ --@RouteCOde= RouteCode UserName=RouteDescription,@UserCode= UserCode,@UserName=UserDescription */    
+     
+Select @ScheduledCalls = SUM(ScheduledCalls),@ActualCalls =SUM(TotalActualCalls),@SellingCalls=SUM(SellingCalls),@ActualPlannedCalls = sum(actualCalls),@PlannedSellingCalls = sum(PlannedSellingCalls)    
+    
+from tblRouteCoverageSummary       
+WHERE CAST(VisitDate AS DATE) BETWEEN CAST(@StartDate AS DATE) AND CAST(@EndDate AS DATE);      
+--Group by ScheduledCalls,TotalActualCalls,ActualCalls,SellingCalls,PlannedSellingCalls,VisitDate      
+                                                                                                        
+                                
+SELECT Isnull(@ScheduledCalls,0) ScheduledCalls, Isnull(@ActualCalls,0) ActualCalls, ISnull(@SellingCalls,0) SellingCalls,Isnull(@TotalWorkingTime,0) TotalWorkingTime,                                               
+                                        
+@TotalSellingTime TotalSellingTime,@ZeroSalesOutlet ZeroSalesOutlet,ISNULL(@TotalSalesValue,0.0) TotalSalesValue,ISNULL(@TotalUnitSold,0) TotalUnitSold,                                             
+ISNULL(@TotalLines,0) TotalLines ,Isnull(@TotalBills,0) AS TotalBills,@ActualCoverageCount AS ActualCoverageCount,ISNULL(@ActualPlannedCalls,0) AS ActualPlannedCalls,      
+ISnull(@PlannedSellingCalls,0) AS PlannedSellingCalls, @PromoLine AS PromoLines                                             
+      
+      
+end      
+--Select * From tblRouteCoverageSummary

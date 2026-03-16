@@ -1,0 +1,64 @@
+-- ============================================================
+-- Stored Procedure: sp_GetCustomerWiseSales_Dash_Reports
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:49
+-- Definition Length: 4007 chars
+-- ============================================================
+
+CREATE PROC [dbo].[sp_GetCustomerWiseSales_Dash_Reports]  --[sp_GetCustomerWiseSales_Dash_Reports] @StartingDate='2015-01-01', @EndingDate='2015-11-03'                      
+@searchString VARCHAR(MAX) = '1=1',                                                      
+@Type INT = 1,                                
+@SelectedCountries VARCHAR(MAX) = '',                                
+@SelectedLocations VARCHAR(MAX) = '',                                
+@SelectedCities VARCHAR(MAX) = '',                                         
+@StartingDate datetime,                                       
+@EndingDate datetime,                                
+@ChannelCodes Varchar(max)='',            
+@SalesOrganizations Varchar(max)='',
+ @SalesExecutive VARCHAR(MAX),
+    @Hos VARCHAR(MAX)='',
+    @Asm VARCHAR(MAX)='',
+    @Supervisor VARCHAR(MAX)='',
+    @Salesman VARCHAR(MAX)='',
+    @Route VARCHAR(MAX)='',
+    @Category VARCHAR(MAX)='',
+    @Brand VARCHAR(MAX)='',
+    @SubBrand VARCHAR(MAX)='',
+    @GrandChannel VARCHAR(MAX)='',
+    @Channel VARCHAR(MAX)='',
+    @Subchannel VARCHAR(MAX)='',
+    @ServiceBy VARCHAR(MAX)=''
+AS                          
+IF (LEN(@searchString) = 0)                                        
+    SET @searchString = '1=1'                                        
+                                        
+DECLARE @TypeSearchString VARCHAR(MAX),@strQuery VARCHAR(MAX)                                                       
+IF (@Type = 1)                                                        
+    SET @TypeSearchString = 'DATEDIFF(DD,O.TrxDate,GETDATE()) = 0'                                                        
+ELSE IF (@Type = 2)                                                        
+    SET @TypeSearchString = 'DATEDIFF(WK,GETDATE(),O.TrxDate) = 0'                                                      
+ELSE IF (@Type = 3)                                                        
+    SET @TypeSearchString = 'DATEDIFF(MM,O.TrxDate,GETDATE()) = 0'                                                       
+                          
+IF (@TypeSearchString <> '')                                                      
+BEGIN                                                      
+SET @strQuery = '                                   
+    SELECT C.Code SiteCode, REPLACE(C.Description,'''''''','''') SiteName, SUM(O.TotalAmount) [Amount]                                                     
+    FROM tblTrxHeader O                               
+    INNER JOIN tblCustomer C ON C.[Code] = O.ClientCode                    
+    INNER JOIN tblUser U ON U.Code = O.UserCode AND U.IsActive = 1   
+    Left JOIN tblRoute R ON R.Code=U.RouteCode    
+    INNER JOIN tblUserDetails UD ON UD.UserCode = U.Code    
+     AND UD.SalesOrgCode = O.OrgCode                                                           
+    WHERE O.TrxType IN(1, 5) AND O.TRXStatus IN(200)   
+    AND (Isnull('''+@SelectedLocations+''','''')='''' OR R.AreaCode IN (select Item FRom ufnSplit('''+@SelectedLocations+''','','')))  
+    AND (CAST(O.TrxDate AS DATE) BETWEEN '''+cast(@StartingDate as VARCHAR)+''' AND '''+ cast(@EndingDate as VARCHAR)+''')       
+    AND (' + @searchString +')                                                
+    AND (''' + @SalesOrganizations + ''' = '''' OR O.OrgCode IN(SELECT Item FROM ufnSplit(''' + @SalesOrganizations + ''', '','')))                        
+    AND (''' + @SelectedCountries + ''' = '''' OR C.CountryCode IN(SELECT Item FROM ufnSplit(''' + @SelectedCountries + ''', '','')))                            
+    AND (''' + @SelectedLocations + ''' = '''' OR C.RegionCode IN(SELECT Item FROM ufnSplit(''' + @SelectedLocations + ''', '','')))                            
+    AND (''' + @SelectedCities + ''' = '''' OR C.CityCode IN(SELECT Item FROM ufnSplit(''' + @SelectedCities + ''', '','')))                                                     
+    GROUP BY C.Code, C.Description'                    
+EXEC(@strQuery)                                                      
+END

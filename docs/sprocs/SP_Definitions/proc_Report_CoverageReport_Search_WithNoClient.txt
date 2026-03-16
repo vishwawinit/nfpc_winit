@@ -1,0 +1,181 @@
+-- ============================================================
+-- Stored Procedure: proc_Report_CoverageReport_Search_WithNoClient
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:34
+-- Definition Length: 10454 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   Split
+--   tblDailYJourneyPlan
+--   tblUSER
+--   tblUserItemGRoup
+--   UA
+--   udf_GetAllChildUsers
+--   ufnSplit
+--   vw_GetUserClients
+--   Vw_SalesUserHierarchy
+--   vw_UserPlannedVisitWithChannel
+--   vw_UserScheduleCallsWithChannel
+--   vw_UserVisitsWithChannel
+
+-- ============================================================
+
+-- [proc_Report_CoverageReport_Search_WithNoClient] @Startdate='2015-02-05',@EndDate='2015-02-06',@maximumRows=30                    
+CREATE PROC [dbo].[proc_Report_CoverageReport_Search_WithNoClient]                    
+@sortExpression VARCHAR(100) = 'USERNAME DESC',                    
+@maximumRows INT = 10,                    
+@startRowIndex INT = 0,                    
+@searchString VARCHAR(max) = '1=1',                    
+@Type VARCHAR(10) = '',                    
+@Startdate VARCHAR(50) = '2024-02-01',                    
+@EndDate VARCHAR(50) = '2025-02-16',                    
+@SessionUserCode VARCHAR(50) = 'admin'    ,                                                                               
+@ChannelCodes VARCHAR(max) = '',            
+@SalesTeamCodes VARCHAR(max)='',
+
+/*Newly Added*/
+@SalesOrg VARCHAR(MAX) = NULL,
+@HOS VARCHAR(MAX) = NULL,
+@ASM VARCHAR(MAX) = NULL,
+@Supervisor VARCHAR(MAX) = NULL,
+@SalesExecutive VARCHAR(MAX) = NULL,
+@Salesman VARCHAR(MAX) = NULL,
+@Route VARCHAR(MAX) = NULL,
+@Category VARCHAR(MAX) = NULL,
+@Brand VARCHAR(MAX) = NULL,
+@SubBrand VARCHAR(MAX) = NULL,
+@GrandChannel VARCHAR(MAX) = NULL,
+@SubChannel VARCHAR(MAX) = NULL,
+@SubSubChannel VARCHAR(MAX) = NULL,
+@ServerBy VARCHAR(MAX) = NULL
+                        
+AS                    
+                
+DECLARE  @TotalCalls AS TABLE (TotalCalls Float,UserCode VARCHAR(50));                                                                                        
+DECLARE  @TotalProductiveCalls AS TABLE (SellingCalls Float, TotalActualCalls FLOAT, UserCode VARCHAR(50));                                                                                                                                                 
+DECLARE  @ActualCalls AS TABLE (ActualCalls Float, PlannedSellingCalls FLOAT, UserCode VARCHAR(50));                 
+                
+IF @StartDate = ''                    
+SET @StartDate = CAST(GETDATE() AS VARCHAR)                    
+IF @EndDate = ''                    
+SET @EndDate = CAST(GETDATE() AS VARCHAR)                    
+CREATE TABLE #Users(Id1 INT IDENTITY(1,1),UserCode VARCHAR(50), UserName VARCHAR(200), CallsMade INT,                    
+ProductiveCalls INT, ActualCalls INT, PlannedSellingCalls INT,TotalCalls INT )                    
+SET @startRowIndex = @startRowIndex + 1                    
+--IF LEN(@searchString) = 0                    
+SET @searchString = ' 1 = 1 '                    
+                  
+/* written by Saurav on 20th Apr 2025 */ 
+
+
+select S.Code UserCode INTO #UserHierarchy         
+from Vw_SalesUserHierarchy S   
+where (ISNULL(@SalesMan,'')='' OR S.Code in (select Items from dbo.Split(@SalesMan,',')))        
+and  (ISNULL(@Supervisor,'')='' OR S.Supervisor in (select Items from dbo.Split(@Supervisor,',')))          
+and  (ISNULL(@HOS,'')='' OR S.HeadOfSales in (select Items from dbo.Split(@HOS,',')))          
+and  (ISNULL(@SalesExecutive,'')='' OR S.SalesExecutive in (select Items from dbo.Split(@SalesExecutive,',')))          
+and  (ISNULL(@ASM,'')='' OR S.ASMCode in (select Items from dbo.Split(@ASM,',')))
+
+
+/* written by vishal on 6th Feb 2015 */                
+                                          
+    INSERT INTO @TotalCalls                    
+    SELECT SUM(ScheduledCalls), U.UserCode                                                                                                          
+    FROM vw_UserScheduleCallsWithChannel U                          
+    INNER JOIN dbo.udf_GetAllChildUsers(@SessionUserCode,'All') CU On U.UserCode = CU.UserCode 
+	INNER JOIN #UserHierarchy UH On UH.UserCode=U.UserCode
+    AND (@ChannelCodes = '' OR U.ChannelCode IN(SELECT Item FROM ufnSplit(@ChannelCodes, ',')))        
+    AND U.UserCode in (Select distinct vC.UserCode from vw_GetUserClients vC             
+      INNER JOIN tblUserItemGRoup UIG ON UIG.UserCode=vC.UserCode AND (@SalesTeamCodes = '' OR UIG.SalesteamCode in (Select items from dbo.split(@SalesTeamCodes,','))))                               
+    AND DATEDIFF(DD, @StartDate, VisitDate) >= 0  AND  DATEDIFF(DD, @EndDate, VisitDate) <= 0                    
+    GROUP BY U.UserCode                 
+                    
+                    
+    INSERT INTO @TotalProductiveCalls                   
+    SELECT Sum(ProductiveCalls) SellingCalls, SUM(CallsMade) TotalActualCalls,  U.Code                           
+    FROM vw_UserVisitsWithChannel U                          
+    INNER JOIN dbo.udf_GetAllChildUsers(@SessionUserCode,'All') CU On U.Code = CU.UserCode
+	INNER JOIN #UserHierarchy UH On UH.UserCode=U.Code
+     AND (@ChannelCodes = '' OR U.ChannelCode IN(SELECT Item FROM ufnSplit(@ChannelCodes, ',')))        
+    AND U.Code in (Select distinct vC.UserCode from vw_GetUserClients vC             
+      INNER JOIN tblUserItemGRoup UIG ON UIG.UserCode=vC.UserCode AND (@SalesTeamCodes = '' OR UIG.SalesteamCode in (Select items from dbo.split(@SalesTeamCodes,','))))                                 
+    AND DATEDIFF(DD, @StartDate, VisitDate) >= 0  AND  DATEDIFF(DD, @EndDate, VisitDate) <= 0                  
+    GROUP BY U.Code                            
+                      
+  INSERT INTO @ActualCalls                   
+    SELECT SUM(PlannedCalls) ActualCalls,SUM(ProductiveCalls) PlannedSellingCalls, U.UserCode                            
+    FROM vw_UserPlannedVisitWithChannel U
+	INNER JOIN #UserHierarchy UH On UH.UserCode=U.UserCode
+ INNER JOIN dbo.udf_GetAllChildUsers(@SessionUserCode,'All') CU On U.UserCode = CU.UserCode        
+    AND (@ChannelCodes = '' OR U.ChannelCode IN(SELECT Item FROM ufnSplit(@ChannelCodes, ',')))        
+    AND U.UserCode in (Select distinct vC.UserCode from vw_GetUserClients vC             
+      INNER JOIN tblUserItemGRoup UIG ON UIG.UserCode=vC.UserCode AND (@SalesTeamCodes = '' OR UIG.SalesteamCode in (Select items from dbo.split(@SalesTeamCodes,','))))                               
+    AND DATEDIFF(DD, @StartDate, VisitDate) >= 0  AND  DATEDIFF(DD, @EndDate, VisitDate) <= 0                    
+    GROUP BY U.UserCode                    
+                              
+                
+/* End of vishal code */                
+    INSERT INTO #Users(UserCode, UserName, CallsMade, ProductiveCalls, ActualCalls, PlannedSellingCalls,TotalCalls)                    
+    Select DISTINCT U.Code, U.UserName,0,0, 0, 0, 0 
+	from dbo.udf_GetAllChildUsers(@SessionUserCode,'ALL') UI        
+	INNER JOIN #UserHierarchy UH On UH.UserCode=UI.UserCode
+    Inner Join tblDailYJourneyPlan DJP On UI.UserCode=DJP.UserCode              
+ AND DATEDIFF(DD,@StartDate,DJP.JourneyDate) >= 0 AND DATEDIFF(DD,@EndDate,DJP.JourneyDate) <= 0                
+ Inner Join tblUSER U On UI.UserCode=U.Code                    
+    --INNER JOIN tblUSER U On UI.UserCode=U.Code AND U.IsActive = 1                    
+    --INNER JOIN tblRole R ON U.RoleCode = R.Code AND R.UserTypeCode = 'User'        
+                             
+                   
+--Update UA SET UA.CallsMade=Res.CallsMade, UA.ProductiveCalls=Res.ProductiveCalls from #Users UA                    
+--INNER JOIN (                    
+--SELECT U.Code AS Code, U.USERNAME, SUM(CallsMade) CallsMade,                    
+--SUM(ProductiveCalls) AS ProductiveCalls                    
+--FROM vw_UserVisits U                   
+--INNER JOIN dbo.udf_GetAllChildUsers(@SessionUserCode,'All') CU On U.Code = CU.UserCode                   
+--WHERE                   
+--DATEDIFF(DD, @StartDate,VisitDate) >= 0                    
+--AND DATEDIFF(DD,@EndDate,VisitDate) <= 0                    
+--GROUP BY U.USERNAME, U.Code ) RES On UA.UserCode=Res.Code                 
+    Update UA SET UA.CallsMade=TPC.TotalActualCalls, UA.ProductiveCalls=TPC.SellingCalls,                
+    UA.ActualCalls = AC.ActualCalls,                   
+    UA.PlannedSellingCalls = AC.PlannedSellingCalls,UA.TotalCalls = T.TotalCalls                    
+    from #Users UA                    
+    LEFT JOIN @TotalProductiveCalls TPC On TPC.UserCode=UA.UserCode                 
+    LEFT JOIN @ActualCalls AC On AC.UserCode=UA.UserCode                 
+    LEFT JOIN @TotalCalls T On T.UserCode=UA.UserCode                
+                    
+SELECT * FROM                    
+(                    
+SELECT ROW_NUMBER() OVER(ORDER BY UserCode DESC) as Id, * FROM #Users                    
+) AS U                    
+WHERE (@maximumRows = 0) OR (Id BETWEEN @startRowIndex AND (@startRowIndex + @maximumRows) - 1)                    
+ORDER BY UserName ASC                    
+                  
+SELECT U.UserCode AS UserCode, U.USERNAME, SUM(PlannedCalls) PlannedCalls, SUM(ProductiveCalls) PlannedSellingCalls                    
+FROM vw_UserPlannedVisitWithChannel U                      
+INNER JOIN dbo.udf_GetAllChildUsers(@SessionUserCode,'All') CU On U.UserCode = CU.UserCode
+INNER JOIN #UserHierarchy UH On UH.UserCode=U.UserCode
+ AND (@ChannelCodes = '' OR U.ChannelCode IN(SELECT Item FROM ufnSplit(@ChannelCodes, ',')))        
+ AND U.UserCode in (Select distinct vC.UserCode from vw_GetUserClients vC             
+      INNER JOIN tblUserItemGRoup UIG ON UIG.UserCode=vC.UserCode AND (@SalesTeamCodes = '' OR UIG.SalesteamCode in (Select items from dbo.split(@SalesTeamCodes,','))))                    
+WHERE                   
+DATEDIFF(DD,@StartDate,VisitDate) >= 0              
+AND DATEDIFF(DD,@EndDate,VisitDate) <= 0                    
+GROUP BY U.USERNAME, U.UserCode                   
+                  
+SELECT U.UserCode AS UserCode, U.USERNAME, SUM(ScheduledCalls) ScheduledCalls                    
+FROM vw_UserScheduleCallsWithChannel U
+INNER JOIN #UserHierarchy UH On UH.UserCode=U.UserCode
+INNER JOIN dbo.udf_GetAllChildUsers(@SessionUserCode,'All') CU On U.UserCode = CU.UserCode        
+AND (@ChannelCodes = '' OR U.ChannelCode IN(SELECT Item FROM ufnSplit(@ChannelCodes, ',')))        
+AND U.UserCode in (Select distinct vC.UserCode from vw_GetUserClients vC             
+      INNER JOIN tblUserItemGRoup UIG ON UIG.UserCode=vC.UserCode AND (@SalesTeamCodes = '' OR UIG.SalesteamCode in (Select items from dbo.split(@SalesTeamCodes,','))))                    
+WHERE                    
+DATEDIFF(DD,@StartDate,VisitDate) >= 0                    
+AND DATEDIFF(DD,@EndDate,VisitDate) <= 0                    
+GROUP BY U.USERNAME, U.UserCode                    
+DROP TABLE #Users           
+        
+------------------------------------------------------------------------------------------

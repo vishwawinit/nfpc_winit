@@ -1,0 +1,72 @@
+-- ============================================================
+-- Stored Procedure: sp_MarketSalesPerformance
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:56
+-- Definition Length: 1718 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   Msg 207, Level 16, State 1, Server WINITDEV, Procedure sp_MarketSalesPerformance, Line 10
+--   Invalid column name 'f1'.
+--   Msg 207, Level 16, State 1, Server WINITDEV, Procedure sp_MarketSalesPerformance, Line 10
+--   Invalid column name 'f2'.
+--   Msg 207, Level 16, State 1, Server WINITDEV, Procedure sp_MarketSalesPerformance, Line 10
+--   Invalid column name 'f3'.
+--   Msg 207, Level 16, State 1, Server WINITDEV, Procedure sp_MarketSalesPerformance, Line 10
+--   Invalid column name 'f4'.
+--   Msg 2020, Level 16, State 1, Server WINITDEV, Line 1
+--   The dependencies reported for entity "dbo.sp_MarketSalesPerformance" might not include references to all columns. This is either because the entity references an object that does not exist or because of an error in one or more statements in the entity.  Before rerunning the query, ensure that there are no errors in the entity and that all objects referenced by the entity exist.
+
+-- ============================================================
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CREATE PROCEDURE sp_MarketSalesPerformance -- sp_MarketSalesPerformance '', ''
+@Supervisor Varchar(Max)='',
+@CategoryCode Varchar(Max)='',
+@CountryCode Varchar(Max)='',
+@UnitorSAR Varchar(Max)=''
+AS
+
+INSERt INTO temp(f1,f2,f3,f4)
+Select @Supervisor, @CategoryCode, @CountryCode, @UnitorSAR
+
+-- User Current And Previous Month Data
+Select SUM(Sales) as Sales, SUM(TargetAmount) as Target, Month, Year, DateName(MONTH,CAST('' + Cast(Month as Varchar(10)) + '/01/' + Cast(Year as Varchar(10)) + '' AS DATE)) as MonthName
+INTO #tmpUserData
+From
+( 
+Select Month(TargetDate) Month, Year(TargetDate) Year, SUM(TargetAmount)as TargetAmount, 0 as Sales
+From vw_UserTraget_MarketSalesPerformance 
+Group By Month(TargetDate), Year(TargetDate)
+
+UNION
+
+Select  Month, Year, 0 as Target, SUM(Sales) as Sales
+From vw_UserSales_MarketSalesPerformance 
+Group By Month, Year
+) T Group By Year, Month
+
+
+
+Select * from #tmpUserData
+
+Select Year, SUM(Sales) as YTDSales, SUM(Target) as YTDTarget 
+From #tmpUserData 
+Group By Year
+
+Select UDL.Month,
+ISNULL(  
+Case When IsNull(UDL.Sales,0) = 0 AND IsNull(UDC.Sales,0) = 0 Then 0  
+When IsNull(UDL.Sales,0) = 0 Then 100  
+ELSE  
+(UDC.Sales - UDL.Sales)/UDL.Sales  END,0)  
+AS Growth,UDL.MonthName
+INTO #tempGrowth
+from #tmpUserData UDL
+Left Outer Join #tmpUserData UDC ON UDL.Month = UDC.Month AND UDC.Year = Year(GETDATE()) AND UDL.Year = Year(GETDATE())-1
+
+Select * from #tempGrowth
+
+Select SUM(Growth) as YTDGrowth from #tempGrowth

@@ -1,0 +1,175 @@
+-- ============================================================
+-- Stored Procedure: sp_tblActualTarget_SEL_Search
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:03:00
+-- Definition Length: 9303 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   Split
+--   udf_GetAllChildUsers
+--   Vw_SalesUserHierarchy
+
+-- ============================================================
+
+--Declare      
+CREATE PROCEDURE [dbo].[sp_tblActualTarget_SEL_Search] -- [sp_tblActualTarget_SEL_Search] 'AchievedAmount ASC',505,1,'', '2016', '7', 'admin', 1                  
+@sortExpression VARCHAR(100) = 'AchievedAmount DESC',                  
+@maximumRows INT = 50,                  
+@startRowIndex INT = 0,                  
+@searchString VARCHAR(1000) = '1=1',                  
+@years VARCHAR(MAX) = '2020',                  
+@months VARCHAR(MAX) = '4',                  
+@SessionUserCode VARCHAR(50)='admin',                  
+@TrxType INT = 1,       
+    
+/*Newly Added*/    
+@SalesOrg VARCHAR(200) = NULL,        
+@RSM VARCHAR(200) = NULL,        
+@SalesManager VARCHAR(200) = NULL,        
+@Supervisor VARCHAR(200) = NULL,        
+@SalesExecutive VARCHAR(200) = NULL,        
+@Salesman VARCHAR(200) = NULL,        
+@Route VARCHAR(200) = NULL,        
+@Category VARCHAR(200) = NULL,        
+@Brand VARCHAR(200) = NULL,        
+@SubBrand VARCHAR(200) = NULL,        
+@GrandChannel VARCHAR(200) = NULL,        
+@SubChannel VARCHAR(200) = NULL,        
+@ServerBy VARCHAR(200) = NULL      
+AS                  
+--SET @startRowIndex = @startRowIndex + 1                  
+IF LEN(@sortExpression) = 0                  
+SET @sortExpression = 'SALESMANCODE ASC'                  
+IF LEN(@searchString) = 0                  
+SET @searchString = ' 1=1'                  
+                  
+CREATE TABLE ##Users(UserCode VARCHAR(50))                  
+                  
+INSERT INTO ##Users(UserCode)                  
+SELECT UserCode                  
+FROM dbo.udf_GetAllChildUsers(@SessionUserCode,'All')     
+    
+select S.Code UserCode INTO #UserHierarchy         
+from Vw_SalesUserHierarchy    S        
+where (ISNULL(@Salesman,'')='' OR S.Code in (select Items from dbo.Split(REPLACE(@Salesman,'''',''),',')))        
+and  (ISNULL(@Supervisor,'')='' OR S.Supervisor in (select Items from dbo.Split(REPLACE(@Supervisor,'''',''),',')))        
+and  (ISNULL(@RSM,'')='' OR S.ASMCode in (select Items from dbo.Split(REPLACE(@RSM,'''',''),',')))        
+and  (ISNULL(@SalesExecutive,'')='' OR S.SalesExecutive in (select Items from dbo.Split(REPLACE(@SalesExecutive,'''',''),',')))   
+  
+SET @Route = CASE WHEN ISNULL(@Route, '') = '' THEN '' ELSE REPLACE(@Route,'''','') END;    
+                  
+DECLARE @TrxDates VARCHAR(MAX), @TargetDates VARCHAR(MAX)                  
+SET @TrxDates = '1=1'                  
+SET @TargetDates = '1=1'                  
+IF LEN(@years) > 0 AND LEN(@months) > 0                  
+BEGIN                  
+SET @TrxDates = 'YEAR(H.TrxDate) IN(''' + @years + ''') AND MONTH(H.TrxDate) IN(''' + @months + ''')'                  
+SET @TargetDates = 'T.YEAR IN(''' + @years + ''') AND T.MONTH IN(''' + @months + ''')'                  
+END                  
+ELSE IF LEN(@years) > 0                  
+BEGIN                  
+SET @TrxDates = 'YEAR(H.TrxDate) IN(''' + @years + ''')'                  
+SET @TargetDates = 'T.YEAR IN(''' + @years + ''')'                  
+END                  
+ELSE IF LEN(@months) > 0                  
+BEGIN                  
+SET @TrxDates = 'MONTH(H.TrxDate) IN(''' + @months + ''')'                  
+SET @TargetDates = 'T.MONTH IN(''' + @months + ''')'                  
+END                  
+EXEC(                  
+' select * from (SELECT ROW_NUMBER() OVER(ORDER BY ' + @sortExpression + ') as RowNum, * from (                  
+select one.SALESMANCODE, one.USERID, one.USERNAME, one.AchievedAmount, one.CurrencyCode,                  
+SUM(ISNULL(T.Amount, 0)) TargetAmount                  
+from                  
+(                  
+SELECT DISTINCT                  
+ISNULL(AchievedAmount, 0) AS AchievedAmount,                  
+R.Code AS SALESMANCODE, R.Code AS USERID,R.Description As USERNAME, A.CurrencyCode                  
+FROM tblUser U               
+INNER JOIN tblRoute R On R.Code = U.RouteCode                  
+LEFT JOIN(                  
+SELECT                  
+Round(SUm(CASE WHEN H.TrxType=4 THEn -1* H.TotalAmount ELSE H.TotalAmount END      
+          + CASE WHEN H.TrxType=4 THEN -1 * ISNULL(H.TotalTaxAmount,0) ELSE ISNULL(H.TotalTaxAmount,0) END      
+     + CASE WHEN H.TrxType=4 THEn -1 * ISNULL(H.ExciseDutyTaxAmount,0) ELSE ISNULL(H.ExciseDutyTaxAmount,0) END      
+      -CASE WHEN H.TrxType=4 THEN -1 * ISNULL(H.TotalDiscountAMount,0) ELSE ISNULL(H.TotalDiscountAMount,0) END),2)       
+/*SUM(Round((((TD.PriceUsedLevel2 * TD.QuantityLevel2) + (TD.PriceUsedLevel3 * TD.QuantityLevel3))              
++((ISNULL(TD.FOC_CS_PRICE,0) * TD.QuantityLevel2) + (ISNULL(TD.FOC_PC_PRICE,0) * TD.QuantityLevel3)))              
+/*-ISNULL(TD.TotalDiscountAmount,0)*/,1,1))*/ AchievedAmount                
+, H.RouteCode As UserCode                  
+,RTRIM(LTRIM(ISNULL(NULLIF(H.CurrencyCode, ''''), ''SAR''))) AS CurrencyCode                  
+FROM tblTrxHeader H (NOLOCK)             
+/*Inner Join tblTrxDetail TD With(NoLock) ON H.TrxCode=TD.TrxCode*/              
+Inner Join tblUser U With(NoLock) ON U.ROuteCode=H.RouteCode    AND H.TrxType IN (1,12,5,4) AND H.TRXStatus=200          
+AND ' + @TrxDates + '                  
+GROUP BY H.RouteCode, RTRIM(LTRIM(ISNULL(NULLIF(H.CurrencyCode, ''''), ''SAR'')))                  
+)AS A ON U.RouteCode = A.UserCode  AND U.IsActive = 1                  
+INNER JOIN ##Users CU On U.Code = CU.UserCode     
+INNER JOIN #UserHierarchy UH ON UH.UserCode = U.Code    
+WHERE  (' + @searchString + ') AND U.IsActive=1   
+AND (isNULL('''+@Route+''','''')='''' OR U.RouteCode in (select Items from dbo.split('''+@Route+''','','')))               
+GROUP BY R.Code, R.Description, AchievedAmount, A.CurrencyCode                  
+) one            
+LEFT JOIN tblCommonTarget T ON one.salesmancode = T.RouteCode AND ' + @TargetDates + '                
+              
+GROUP BY one.SALESMANCODE, one.USERID, one.USERNAME, one.CurrencyCode, one.AchievedAmount                 
+)  as t )as tab WHERE (' + @maximumRows + ' = 0) OR (RowNum BETWEEN ' + @startRowIndex +                  
+' AND (' + @startRowIndex + ' + '                  
++ @maximumRows+ ') - 1)')                  
+                  
+--EXEC('                  
+--SELECT COUNT(DISTINCT Ro.Code) ActualTargetCount                  
+--FROM tblUser U                  
+--INNER JOIN tblRoute Ro ON Ro.Code = U.RouteCode              
+--INNER JOIN ##Users CU On U.Code = CU.UserCode                  
+--WHERE  ('+@searchString+') AND U.IsActive=1                  
+--')
+
+EXEC(                  
+' select Count(1) ActualTargetCount from (                  
+select one.SALESMANCODE, one.USERID, one.USERNAME, one.AchievedAmount, one.CurrencyCode,                  
+SUM(ISNULL(T.Amount, 0)) TargetAmount                  
+from                  
+(                  
+SELECT DISTINCT                  
+ISNULL(AchievedAmount, 0) AS AchievedAmount,                  
+R.Code AS SALESMANCODE, R.Code AS USERID,R.Description As USERNAME, A.CurrencyCode                  
+FROM tblUser U               
+INNER JOIN tblRoute R On R.Code = U.RouteCode                  
+LEFT JOIN                  
+(                  
+SELECT                  
+Round(SUm(CASE WHEN H.TrxType=4 THEn -1* H.TotalAmount ELSE H.TotalAmount END      
+          + CASE WHEN H.TrxType=4 THEN -1 * ISNULL(H.TotalTaxAmount,0) ELSE ISNULL(H.TotalTaxAmount,0) END      
+     + CASE WHEN H.TrxType=4 THEn -1 * ISNULL(H.ExciseDutyTaxAmount,0) ELSE ISNULL(H.ExciseDutyTaxAmount,0) END      
+      -CASE WHEN H.TrxType=4 THEN -1 * ISNULL(H.TotalDiscountAMount,0) ELSE ISNULL(H.TotalDiscountAMount,0) END),2)       
+/*SUM(Round((((TD.PriceUsedLevel2 * TD.QuantityLevel2) + (TD.PriceUsedLevel3 * TD.QuantityLevel3))              
++((ISNULL(TD.FOC_CS_PRICE,0) * TD.QuantityLevel2) + (ISNULL(TD.FOC_PC_PRICE,0) * TD.QuantityLevel3)))              
+/*-ISNULL(TD.TotalDiscountAmount,0)*/,1,1))*/ AchievedAmount, H.RouteCode As UserCode                  
+,RTRIM(LTRIM(ISNULL(NULLIF(H.CurrencyCode, ''''), ''SAR''))) AS CurrencyCode                  
+FROM tblTrxHeader H (NOLOCK)             
+/*Inner Join tblTrxDetail TD With(NoLock) ON H.TrxCode=TD.TrxCode*/              
+Inner Join tblUser U With(NoLock) ON U.ROuteCode=H.RouteCode    AND H.TrxType IN (1,12,5,4) AND H.TRXStatus=200          
+AND ' + @TrxDates + '                  
+GROUP BY H.RouteCode, RTRIM(LTRIM(ISNULL(NULLIF(H.CurrencyCode, ''''), ''SAR'')))                  
+)AS A ON U.RouteCode = A.UserCode  AND U.IsActive = 1                  
+INNER JOIN ##Users CU On U.Code = CU.UserCode     
+INNER JOIN #UserHierarchy UH ON UH.UserCode = U.Code    
+WHERE  (' + @searchString + ') AND U.IsActive=1   
+AND (isNULL('''+@Route+''','''')='''' OR U.RouteCode in (select Items from dbo.split('''+@Route+''','','')))               
+GROUP BY R.Code, R.Description, AchievedAmount, A.CurrencyCode                  
+) one            
+LEFT JOIN tblCommonTarget T ON one.salesmancode = T.RouteCode AND ' + @TargetDates + '                
+              
+GROUP BY one.SALESMANCODE, one.USERID, one.USERNAME, one.CurrencyCode, one.AchievedAmount                 
+)  as t ')      
+ --select * from ##Users                 
+ DROP TABLE ##Users
+ DROP TABLE #UserHierarchy
+              
+--select TotalTAXAmount from tblTrxHeader              
+              
+--select * from tblTarget              
+--select * from tblcurrentTarget

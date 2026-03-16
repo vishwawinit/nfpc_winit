@@ -1,0 +1,128 @@
+-- ============================================================
+-- Stored Procedure: sp_DashboardDetails_Reports_V2
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:46
+-- Definition Length: 9845 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   SP_CoverageReport_ForDashboard_Reports_V1
+--   SP_GetDashboardRouteDetails_Dashboard_Reports_V1
+--   sp_GetSalesmanWiseCollection_Dashboard_Reports_V1
+--   sp_tblOrder_Total_SalesAndCollection_Dashboard_Reports
+--   sp_tblOrder_Weekly_Dashboard_Reports_V1
+--   sp_tblPaymentHeader_Weekly_Dashboard_Reports_V1
+--   tblPermissions
+--   tblRolePermission
+
+-- ============================================================
+
+--[sp_DashboardDetails_Reports_V1] '1=1','','','','admin','Daily','admin'                                                                                      
+CREATE PROC [dbo].[sp_DashboardDetails_Reports_V2]                                                                            
+@searchstring VARCHAR(MAX) = '1=1 ',                                                                                  
+@SelectedCountries VARCHAR(MAX) = '',                                                                                  
+@SelectedLocations VARCHAR(MAX) = '',                                                                                  
+@SelectedCities VARCHAR(MAX) = '',                                    
+@UserCode Varchar(50)='Admin',                                                                          
+@Type VARCHAR(10) = 'Daily',                                                                        
+@RoleCode VARCHAR(255)='admin',                                                                           
+@StartingDate DATETIME = '2016-07-01',                                                                         
+@EndingDate DATETIME = '2016-07-31',                                                                  
+@ChannelCodes VARCHAR(MAX) = '',                                                      
+@SalesOrganizations VARCHAR(MAX) = '' ,                       
+@selectedRoutes  VARCHAR(MAX) = ''   ,              
+@selectedDepots VARCHAR(MAX)='11'    ,      
+@CurrencyCode VARCHAR(MAX)='SAR'         
+AS                                                                                   
+BEGIN                                                                          
+                                    
+DECLARE @TypeId INT                                                                          
+IF @Type = 'Daily'                                                                          
+SET @TypeId=1                                                                         
+                                    
+Declare @TodayTotalSales int =1,@TodayCollection int =1, @CallsCoverageProductivity int =1,@SalesmanWiseSales int =1,                                        
+@SalesmanWiseCollection int =1,@SalesmanWiseVisit int =1,@SalesteamWiseTarget int =1,                                        
+@PromotionalVsNonPromotionalItems int =1 , @StrikeRate int =1                                                                                                       
+                                    
+IF LOWER(@RoleCode) != 'admin'                                                                        
+BEGIN                                                                        
+IF NOT Exists(Select 0 from tblRolePermission RP JOIN tblPermissions P on RP.PermissionId = P.PermissionId                                                                         
+AND  RoleCode=@RoleCode and Rp.IsActive=1 and P.IsActive = 1  
+AND PermissionCode ='CallsCoverageProductivity')                                                                        
+SET @CallsCoverageProductivity=0                                                                        
+                                    
+IF NOT Exists(Select 0 from tblRolePermission RP JOIN tblPermissions P on RP.PermissionId = P.PermissionId                                                                         
+AND  RoleCode=@RoleCode and Rp.IsActive=1 and P.IsActive = 1                                                                         
+AND PermissionCode ='PromotionalVsNonPromotionalItems')                                                                        
+SET @PromotionalVsNonPromotionalItems=0                                                                        
+                                    
+IF NOT Exists(Select 0 from tblRolePermission RP JOIN tblPermissions P on RP.PermissionId = P.PermissionId        
+AND  RoleCode=@RoleCode and Rp.IsActive=1 and P.IsActive = 1                                                       
+AND PermissionCode ='SalesmanWiseCollection')                     
+SET @SalesmanWiseCollection=0                    
+                                    
+IF NOT Exists(Select 0 from tblRolePermission RP JOIN tblPermissions P on RP.PermissionId = P.PermissionId                                                                 
+AND  RoleCode=@RoleCode and Rp.IsActive=1 and P.IsActive = 1                                                                         
+AND PermissionCode ='SalesmanWiseSales')                                                                        
+SET @SalesmanWiseSales=0                                                                        
+                                    
+IF NOT Exists(Select 0 from tblRolePermission RP JOIN tblPermissions P on RP.PermissionId = P.PermissionId                                    
+AND  RoleCode=@RoleCode and Rp.IsActive=1 and P.IsActive = 1                                                 
+AND PermissionCode ='SalesmanWiseVisit')                                     
+SET @SalesmanWiseVisit=0                                                                        
+                                    
+IF NOT Exists(Select 0 from tblRolePermission RP JOIN tblPermissions P on RP.PermissionId = P.PermissionId                                                    
+AND  RoleCode=@RoleCode and Rp.IsActive=1 and P.IsActive = 1                                       
+AND PermissionCode ='TodayCollection')                                                                        
+SET @TodayCollection=0                                                                     
+                                    
+IF NOT Exists(Select 0 from tblRolePermission RP JOIN tblPermissions P on RP.PermissionId = P.PermissionId                                                                         
+AND  RoleCode=@RoleCode and Rp.IsActive=1 and P.IsActive = 1                                                                         
+AND PermissionCode ='TodayTotalSales')                                                             
+SET @TodayTotalSales=0                                                        
+                                    
+IF NOT Exists(Select 0 from tblRolePermission RP JOIN tblPermissions P on RP.PermissionId = P.PermissionId                                                                         
+AND  RoleCode=@RoleCode and Rp.IsActive=1 and P.IsActive = 1                                                                         
+AND PermissionCode ='SalesTeamWiseTarget')                                                                        
+SET @SalesteamWiseTarget=0                                                                        
+                                    
+END                            
+                                                                  
+                                    
+SELECT @CallsCoverageProductivity AS CallsCoverageProductivity,                                                                        
+@PromotionalVsNonPromotionalItems AS PromotionalVsNonPromotionalItems,                                                                        
+@SalesmanWiseCollection AS SalesmanWiseCollection,                                                                        
+@SalesmanWiseSales AS SalesmanWiseSales,                                                                        
+@SalesmanWiseVisit AS SalesmanWiseVisit,                                                                        
+@TodayCollection AS TodayCollection,                                                           
+@TodayTotalSales AS TodayTotalSales,                                                    
+@SalesteamWiseTarget AS SalesTeamWiseTargetsEXEC sp_tblOrder_Total_SalesAndCollection_Dashboard_Reports  @searchstring,@SelectedCountries,@SelectedLocations,@SelectedCities,@UserCode,               
+@ChannelCodes,@StartingDate,@EndingDate,@SalesOrganizations,@selectedRoutes ,@selectedDepots                                  
+             
+EXEC [sp_tblOrder_Weekly_Dashboard_Reports_V1]  @searchstring,@SelectedCountries,@SelectedLocations,@SelectedCities,@UserCode,               
+@ChannelCodes,@StartingDate,@EndingDate,@SalesOrganizations,@selectedRoutes ,@selectedDepots  ,@Type, @RoleCode    
+                               
+    
+EXEC sp_tblPaymentHeader_Weekly_Dashboard_Reports_V1  @searchstring,@SelectedCountries,@SelectedLocations,@SelectedCities,@UserCode,               
+@ChannelCodes,@StartingDate,@EndingDate,@SalesOrganizations,@selectedRoutes ,@selectedDepots  ,@Type, @RoleCode,@CurrencyCode    
+    
+EXEC SP_CoverageReport_ForDashboard_Reports_V1  @Type,@SelectedCountries,@SelectedLocations,@SelectedCities,@UserCode,               
+@ChannelCodes,@StartingDate,@EndingDate,@SalesOrganizations,@searchstring,@selectedRoutes ,@selectedDepots  , @RoleCode,@CurrencyCode    
+    
+EXEC [sp_GetSalesmanWiseCollection_Dashboard_Reports_V1]  @searchstring,@Type,@SelectedCountries,@SelectedLocations,@SelectedCities,@UserCode,               
+@ChannelCodes,@StartingDate,@EndingDate,@SalesOrganizations,@selectedRoutes ,@selectedDepots  ,@RoleCode,@CurrencyCode    
+    
+    
+EXEC SP_GetDashboardRouteDetails_Dashboard_Reports_V1  @searchstring,@Type,@SelectedCountries,@SelectedLocations,@SelectedCities,@UserCode,               
+@ChannelCodes,@StartingDate,@EndingDate,@SalesOrganizations,@selectedRoutes ,@selectedDepots  ,@RoleCode,@CurrencyCode    
+   
+    
+--EXEC sp_GetSKUsSold_Formula_DashboardV1 @StartingDate,@EndingDate,@selectedDepots,'',@selectedRoutes,@Type,@SelectedCountries,@SelectedLocations,@SelectedCities,@UserCode,               
+  
+--@ChannelCodes,@SalesOrganizations,@selectedRoutes ,@selectedDepots  ,@RoleCode,@CurrencyCode    
+     
+    
+  
+    
+END

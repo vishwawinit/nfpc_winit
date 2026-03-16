@@ -1,0 +1,89 @@
+-- ============================================================
+-- Stored Procedure: sp_GetSalesmanWiseSales_Dashboard_Reports
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:55
+-- Definition Length: 7561 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   udf_GetAllChildUsers
+
+-- ============================================================
+
+--Declare                    
+CREATE PROC [dbo].[sp_GetSalesmanWiseSales_Dashboard_Reports]                                                    
+--  [sp_GetSalesmanWiseSales_Dashboard_Reports] '1=1',1,'','','','admin','GROCERY,PHARMACY OTHERS,SELF-SERVICE','12/13/2014','12/19/2014'                                                                 
+@searchString VARCHAR(MAX) = '1=1',                                                                                                
+@Type INT = 1,                                                                        
+@SelectedCountries VARCHAR(MAX) = '',                                                                        
+@SelectedLocations VARCHAR(MAX) = '',                                                                        
+@SelectedCities VARCHAR(MAX) = '',                                                          
+@UserCode Varchar(50)='Admin',                                                          
+@ChannelCodes  Varchar(max)='',                                                          
+@StartingDate datetime='05/01/2020',                                                          
+@EndingDate datetime='05/01/2020',                                      
+@SalesOrganizations  Varchar(max)='',                  
+@selectedRoutes Varchar(max)='',        
+@selectedDepots Varchar(max)=''                                                                                                                                                                                                                 
+AS                          
+BEGIN                                                                  
+IF (LEN(@searchString) = 0)                                                                                
+    SET @searchString = '1=1'                        
+ELSE                        
+    SET @searchstring = REPLACE(@searchstring, ' U.UserCode', ' CU.UserCode')                                                                                 
+                                                                                
+DECLARE @TypeSearchString VARCHAR(MAX),@strQuery VARCHAR(MAX)                                                                                                
+IF (@Type = 1)                                                                                                
+    SET @TypeSearchString = 'DATEDIFF(DD,O.TrxDate,GETDATE()) = 0'                                                                                                
+ELSE IF (@Type = 2)                                                                                                
+    SET @TypeSearchString = 'DATEDIFF(WK,GETDATE(),O.TrxDate) = 0'                                                                                              
+ELSE IF (@Type = 3)                                                                                                
+    SET @TypeSearchString = 'DATEDIFF(MM,O.TrxDate,GETDATE()) = 0'                                                                                                  
+                      
+CREATE TABLE #User9(UserCode VARCHAR(50))                                         
+                      
+INSERT INTO #User9(UserCode)                      
+SELECT A.UserCode                      
+FROM dbo.udf_GetAllChildUsers(@UserCode,'All') A         
+      
+                      
+                                                                                
+--IF (@TypeSearchString <> '')                                                                                                
+--BEGIN                                                                                                
+    SET @strQuery = '                                                                                        
+    SELECT /*U.Code UserCode, U.Username UserName*/ O.Code UserCode,O.Description UserName,    
+ SUM(O.TotalAmount + O.TotalTAXAmount+ O.ExciseDutyTaxAmount + Attribute7 - O.TotalDiscountAmount) Amount    
+ FROM(     
+   Select DISTINCT O.TrxCode,R.Code,R.Description ,O.TrxDate,    
+   CASE WHEN O.TrxType=4 THEn -1 * O.TotalAmount ELSE O.TotalAmount END TotalAmount,    
+      CASE WHEN O.TrxType=4 THEn -1 * O.TotalTAXAmount ELSE O.TotalTAXAmount END TotalTAXAmount,    
+      CASE WHEN O.TrxType=4 THEn -1 * O.ExciseDutyTaxAmount ELSE O.ExciseDutyTaxAmount END ExciseDutyTaxAmount,    
+      CASE WHEN O.TrxType=4 THEn -1 * O.TotalDiscountAmount ELSE O.TotalDiscountAmount END TotalDiscountAmount,
+	  CASE WHEN O.TrxType=4 THEn -1* ISNULL(Convert(float,O.Attribute7 ),0) ELSE ISNULL(Convert(float,O.Attribute7 ),0) END Attribute7                                                                                            
+      FROM tblTrxHeader O                              
+      INNER JOIN tblCustomer C ON C.[Code] = O.ClientCode                                                            
+      INNER JOIN #User9 CU On O.UserCode=CU.UserCode                      
+      /*Inner Join tblUserDetails UD on O.UserCode = UD.UserCode AND O.OrgCode = UD.SalesOrgCode*/                                                                
+      INNER JOIN tblUser U ON U.Code = O.UserCode        
+      AND (''' + @selectedRoutes + ''' = '''' OR O.RouteCode IN(SELECT Item FROM ufnSplit(''' + @selectedRoutes + ''', '','')))                                                                
+      INNER JOIN tblRoute R ON R.Code=O.RouteCode              
+      WHERE  O.TRXStatus IN(200)      
+      AND (IsNull('''+@selectedDepots+''','''')='''' OR R.AreaCode IN (select Item from ufnSplit('''+@selectedDepots+''','','')))                             
+      AND (CAST(O.TripDate AS DATE) BETWEEN ''' + CAST(@StartingDate as VARCHAR) + ''' AND ''' + CAST(@EndingDate as VARCHAR) + ''')                           
+      AND (' + @searchString + ')                                                                    
+      AND (''' + @SalesOrganizations + ''' = '''' OR O.OrgCode IN(SELECT Item FROM ufnSplit(''' + @SalesOrganizations + ''', '','')))                                                                    
+      /*AND (''' + @SelectedCountries + ''' = '''' OR C.CountryCode IN(SELECT Item FROM ufnSplit(''' + @SelectedCountries + ''', '','')))                                                      
+      AND (''' + @SelectedLocations + ''' = '''' OR C.RegionCode IN(SELECT Item FROM ufnSplit(''' + @SelectedLocations + ''', '','')))                                                                    
+      AND (''' + @SelectedCities + ''' = '''' OR C.CityCode IN(SELECT Item FROM ufnSplit(''' + @SelectedCities + ''', '',''))) */    
+  ) O                                                                         
+    GROUP BY O.Code,O.Description                                                        
+    --HAVING ISNULL(SUM(O.TotalAmount + O.TotalTAXAmount+ O.ExciseDutyTaxAmount - O.TotalDiscountAmount), 0) > 0                                        
+    '                        
+                             
+    EXEC(@strQuery)                                              
+                      
+DROP TABLE #User9                                                            
+----------------------------------------------------------------------------------------------------------------------------------------                                                 
+----------------------------------------------------------------------------------------------------------------------------------------                           
+END

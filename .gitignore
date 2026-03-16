@@ -1,0 +1,14 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+node_modules/
+frontend/node_modules/
+vpn-auth.txt
+/tmp/
+test-results/
+playwright-report/
+*.output
+.DS_Store
+etl/logs/
+frontend/dist/

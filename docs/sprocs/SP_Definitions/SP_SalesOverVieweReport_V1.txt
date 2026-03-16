@@ -1,0 +1,141 @@
+-- ============================================================
+-- Stored Procedure: SP_SalesOverVieweReport_V1
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:03:02
+-- Definition Length: 6715 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   Split
+--   tblCustomerDetail
+--   tblItem
+--   tblRoute
+--   tblRouteSalesSummaryByItemCustomer
+--   tblSalesOrganization
+--   Vw_SalesUserHierarchy
+
+-- ============================================================
+
+CREATE PROCedure [dbo].[SP_SalesOverVieweReport_V1]                                
+@Area VARCHAR(MAX)='',                                
+@SubArea VARCHAR(MAX)='',                                
+@Route VARCHAR(MAX)='',                                
+@SalesOrgCode VARCHAR(MAX)='',                                
+@Supervisor VARCHAR(MAX)='',                                
+@Salesman VARCHAR(MAX)='',                                
+@Date DATETIME='',                                
+@UserCode VARCHAR(50)='admin',                              
+@RouteType INT = 0   ,                          
+@SalesorgCodes VARCHAR(MAX)='',
+@RSMs VARCHAR(MAX)='',
+@SalesManager VARCHAR(MAX)='',
+@SalesExecutive VARCHAR(MAX)='',     
+@Category VARCHAR(MAX)='',
+@Brand VARCHAR(MAX)='',
+@SubBrand VARCHAR(MAX)='',
+@Channel VARCHAR(MAX)='',
+@SubChannel VARCHAR(MAX)='',
+@StartDate varchar(100)='2025-01-29'    ,                          
+@EndDate DATETIME = '2025-01-30'      
+    
+as
+ 
+BEGIN              
+      
+           
+    
+select S.Code UserCode INTO #UserHierarchy     
+from Vw_SalesUserHierarchy    S    
+where (ISNULL(@Salesman,'')='' OR S.Code in (select Items from dbo.Split(@Salesman,',')))    
+and  (ISNULL(@Supervisor,'')='' OR S.Supervisor in (select Items from dbo.Split(@Supervisor,',')))    
+and  (ISNULL(@RSMs,'')='' OR S.ASMCode in (select Items from dbo.Split(@RSMs,',')))    
+and  (ISNULL(@SalesExecutive,'')='' OR S.SalesExecutive in (select Items from dbo.Split(@SalesExecutive,',')))    
+
+select Code,ParentSalesOrg INTO #SalesOrgData from tblSalesOrganization      
+
+
+
+
+Select * into #RouteSalesSummaryByItemCustomer From tblRouteSalesSummaryByItemCustomer  ER Where MONTH(ER.[Date])=MONTH(@StartDate) and YEAR(ER.[Date]) =YEAR(@StartDate)      
+
+
+
+select T.ItemCode,I.Description as ItemName,Round(GrossSales,2) GrossSales       
+,0 Target,0 Variance,Round(MTD_GrossSales,2) MTD_GrossSales,0 MTD_Target,ROUND(MTD_Wastage,2) MTD_Wastage      
+from (      
+select ItemCode      
+,SUM(case WHEN Datediff(dd,@StartDate,[Date])=0 THEN TotalSales ELSE 0 END) GrossSales       
+,SUM(TotalSales) MTD_GrossSales      
+,SUM(TotalGRSales+TotalDamageSales+TotalExpirySales) MTD_Wastage      
+from #RouteSalesSummaryByItemCustomer ER  
+  
+inner join #UserHierarchy  U on U.UserCode=ER.UserCode      
+Inner join tblRoute R on R.Code=ER.RouteCode      
+Inner join #SalesOrgData S on S.Code=R.SalesOrgCode      
+Inner join tblItem I on I.Code=ER.ItemCode and I.SalesOrgCode=S.ParentSalesOrg       
+Inner join tblCustomerDetail CD on CD.CustomerCode=ER.CustomerCode and CD.SalesOrgCode=R.SalesOrgCode      
+where    
+ (ISNULL(@SalesOrgCodes,'')='' OR S.Code in (select Items from dbo.Split(@SalesOrgCodes,',') ))      
+and (ISNULL(@Route,'')='' OR ER.RouteCode in (select Items from dbo.Split(@Route,',') ))      
+and (ISNULL(@Category,'')='' OR I.GroupLevel4 in (select Items from dbo.Split(@Category,',') ))      
+and (ISNULL(@Brand,'')='' OR I.GroupLevel2 in (select Items from dbo.Split(@Brand,',') ))      
+and (ISNULL(@SubBrand,'')='' OR I.GroupLevel3 in (select Items from dbo.Split(@SubBrand,',') ))      
+and (ISNULL(@Channel,'')='' OR CD.ChannelCode in (select Items from dbo.Split(@Channel,',') ))      
+and (ISNULL(@SubChannel,'')='' OR CD.SubChannelCode in (select Items from dbo.Split(@SubChannel,',') ))
+and MONTH(ER.[Date])=MONTH(@StartDate) and YEAR(ER.[Date]) =YEAR(@StartDate)      
+group by ItemCode      
+) as T      
+inner join (select distinct Code,Description from tblItem) I on I.Code = T.ITemCode      
+Order by 1      
+
+Drop table #SalesOrgData
+Drop table #UserHierarchy
+Drop table #RouteSalesSummaryByItemCustomer
+        
+  /*      
+      
+Declare @CurrentMonthDays int,@MonthHolidays int,@TillNowHolidays int,                                
+@WorkingDays int,@PassedWorkingDays int, @IsReportTypeFrozen BIT = 0                              
+         
+ CREATE TABLE #tblCommonTarget(SubCategoryCode VARCHAR(50),SubCategoryName VARCHAR(50),                              
+TargetDate DATETIME,Target FLOAT)                            
+                    
+                              
+INSERT INTO #tblCommonTarget(SubCategoryCode,SubCategoryName,TargetDate,Target)                                            
+select  IsNull(Code,'Others'), IsNull(Description,'Others'),StartDate,(sum(Amount)/@WorkingDays)*@PassedWorkingDays as Amount                              
+from(                              
+SELECT IG.Code,                            
+IG.Description, CT.StartDate,                            
+ROUND(SUM(ISNULL(Amount,0)),2)  Amount                              
+FROM tblCommonTarget CT                              
+INNER JOIN tblItem I ON CT.ItemKey=I.Code         
+/*AND CT.SalesOrgCode=@SalesOrgCode */                      
+AND (CT.RouteCode IN (SELECT Items FROM dbo.Split(@Route,',')) OR ISNULL(@Route,'')='')                            
+AND CT.ItemLevel='I' AND CT.TimeFrame IN ('D','M') AND [MONTH]=Month(@Date) AND [YEAR]=YEAR(@Date)                      
+INNER JOIN tblUser U ON U.RouteCode = CT.RouteCode                            
+INNER JOIN tblRoute R ON R.Code=CT.RouteCode  AND R.Code=CT.SalesorgCode                             
+AND (R.AreaCode IN (SELECT Items FROM dbo.Split(@Area,',')) OR ISNULL(@Area,'')='')                              
+AND (R.SubAreaCode IN (SELECT Items FROM dbo.Split(@SubArea,',')) OR ISNULL(@SubArea,'')='')                                              
+left JOIN tblItemGroup IG ON IG.Code=I.GroupLevel4  AND IG.ItemGroupLevelId=3                      
+                              
+                                  
+GROUP BY IG.Code,IG.Description,CT.StartDate ,Amount                              
+) as t                              
+group by Code,description,amount,StartDate              
+        
+        
+select TD.ItemCode,I.Description as ItemName,ROUND(SUM(TotalSales),2) as GrossSales,0 Target,        
+ROUND((SUM(TotalSales)-0/*Target*/),2) as Variance,        
+ROUND(SUM(CASE          WHEN YEAR(TD.Date) = YEAR(GETDATE())           AND MONTH(TD.Date) = MONTH(GETDATE())          THEN (TotalSales)          ELSE 0   END),2) AS MTD_GrossSales ,        
+ ROUND(SUM(CASE          WHEN YEAR(TD.Date) = YEAR(GETDATE())           AND MONTH(TD.Date) = MONTH(GETDATE())          THEN (TotalDamageSales)          ELSE 0   END),2) AS MTD_Wastage         
+ from tblRouteSalesSummaryByItemCustomer TD        
+inner join (select distinct Code,Description from tblItem) I on I.Code = TD.ITemCode         
+where DateDIFF(dd,TD.Date,@StartDate)<=0 and DateDIFF(dd,TD.Date,@Date)>=0        
+group by TD.ItemCode,I.Description         
+      
+--select * from #tblCommonTarget        
+drop table #tblCommonTarget        
+      
+*/      
+END

@@ -1,0 +1,142 @@
+-- ============================================================
+-- Stored Procedure: SP_SalesManWiseJourney_Users_NewV1
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:39
+-- Definition Length: 8529 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   Split
+--   tblCustomerVisit
+--   tblDailyJourneyPlan
+--   Vw_SalesUserHierarchy
+
+-- ============================================================
+
+--Declare                           
+CREATE PROC [dbo].[SP_SalesManWiseJourney_Users_NewV1](                              
+@sortExpression  VARCHAR(100)='code DESC',                                                                                                                               
+@maximumRows INT=50,                                                                                                                               
+@startRowIndex INT=0,                                                                                                                      
+@searchString VARCHAR(MAX) =' 1=1 ',                              
+@SalesTeamCode VARCHAR(MAX)='',                              
+@UserCode VARCHAR(100)='admin',                    
+@SalesOrgCodes VARCHAR(1000)='' ,      
+@ASMCode   varchar(1000)='' ,      
+@SupervisorCode varchar(1000)=null,      
+@DateFilter datetime='2021-12-04',        
+/* Newly Added */    
+@SalesOrg VARCHAR(MAX) = NULL,      
+@RSM VARCHAR(MAX) = NULL,        
+@SalesManager VARCHAR(MAX) = NULL,        
+@Supervisor VARCHAR(MAX) = NULL,        
+@SalesExecutive VARCHAR(MAX) = NULL,        
+@Salesman VARCHAR(MAX) = NULL,        
+@Route VARCHAR(MAX) = '''V09''',        
+@Category VARCHAR(MAX) = NULL,        
+@Brand VARCHAR(MAX) = NULL,        
+@SubBrand VARCHAR(MAX) = NULL,        
+@GrandChannel VARCHAR(MAX) = NULL,        
+@SubChannel VARCHAR(MAX) = NULL,        
+@ServerBy VARCHAR(MAX) = NULL          
+)                              
+AS                               
+BEGIN                              
+                    
+IF(ISNULL(@SalesOrgCodes,'')='')                    
+SET  @SalesOrgCodes=''           
+          
+SET @SalesTeamCode = CASE WHEN ISNULL(@SalesTeamCode,'')='' THEN '' ELSE @SalesTeamCode END       
+SET @SalesOrgCodes = CASE WHEN ISNULL(@SalesOrgCodes,'')='' THEN '' ELSE @SalesOrgCodes END       
+SET @ASMCode = CASE WHEN ISNULL(@ASMCode,'')='' THEN '' ELSE REPLACE(@ASMCode,'''','') END       
+SET @SupervisorCode = CASE WHEN ISNULL(@SupervisorCode,'')='' THEN '' ELSE @SupervisorCode END    
+  
+/*Newly Added*/  
+ SET @SalesOrg = CASE WHEN ISNULL(@SalesOrg, '') = '' THEN '' ELSE REPLACE(@SalesOrg,'''','') END;  
+ SET @RSM = CASE WHEN ISNULL(@RSM, '') = '' THEN '' ELSE REPLACE(@RSM,'''','') END;  
+ SET @SalesManager = CASE WHEN ISNULL(@SalesManager, '') = '' THEN '' ELSE REPLACE(@SalesManager,'''','') END;  
+ SET @Supervisor = CASE WHEN ISNULL(@Supervisor, '') = '' THEN '' ELSE REPLACE(@Supervisor,'''','') END;  
+ SET @SalesExecutive = CASE WHEN ISNULL(@SalesExecutive, '') = '' THEN '' ELSE REPLACE(@SalesExecutive,'''','') END;  
+ SET @Salesman = CASE WHEN ISNULL(@Salesman, '') = '' THEN '' ELSE REPLACE(@Salesman,'''','') END;  
+ SET @Route = CASE WHEN ISNULL(@Route, '') = '' THEN '' ELSE REPLACE(@Route,'''','') END;  
+ SET @Category = CASE WHEN ISNULL(@Category, '') = '' THEN '' ELSE REPLACE(@Category,'''','') END;  
+ SET @Brand = CASE WHEN ISNULL(@Brand, '') = '' THEN '' ELSE REPLACE(@Brand,'''','') END;  
+ SET @SubBrand = CASE WHEN ISNULL(@SubBrand, '') = '' THEN '' ELSE REPLACE(@SubBrand,'''','') END;  
+ SET @GrandChannel = CASE WHEN ISNULL(@GrandChannel, '') = '' THEN '' ELSE REPLACE(@GrandChannel,'''','') END;  
+ SET @SubChannel = CASE WHEN ISNULL(@SubChannel, '') = '' THEN '' ELSE REPLACE(@SubChannel,'''','') END;  
+ SET @ServerBy = CASE WHEN ISNULL(@ServerBy, '') = '' THEN '' ELSE REPLACE(@ServerBy,'''','') END; 
+
+ select S.Code UserCode INTO #UserHierarchy       
+from Vw_SalesUserHierarchy    S      
+where (ISNULL(@Salesman,'')='' OR S.Code in (select Items from dbo.Split(REPLACE(@Salesman,'''',''),',')))      
+and  (ISNULL(@Supervisor,'')='' OR S.Supervisor in (select Items from dbo.Split(REPLACE(@Supervisor,'''',''),',')))      
+and  (ISNULL(@RSM,'')='' OR S.ASMCode in (select Items from dbo.Split(REPLACE(@RSM,'''',''),',')))      
+and  (ISNULL(@SalesExecutive,'')='' OR S.SalesExecutive in (select Items from dbo.Split(REPLACE(@SalesExecutive,'''',''),',')))        
+                              
+DECLARE @strQuery VARCHAR(MAX)                              
+                              
+SET @startRowIndex = @startRowIndex + 1                              
+                              
+IF(LEN(@searchString) = 0)                              
+SET @searchString = '1=1'                              
+                              
+IF(LEN(@sortExpression) = 0)                              
+SET @sortExpression = 'Code DESC'                     
+                    
+  Create table  #tblVisitWithJourneyCustomerDetails(Id int identity(1,1),RouteCode varchar(100),CustomerCode varchar(100),[Date] varchar(100))        
+        
+  INSERT INTO #tblVisitWithJourneyCustomerDetails(RouteCode ,CustomerCode ,[Date])        
+  SELECT Distinct RouteCode,ClientCode CustomerCode ,Date          
+  From tblCustomerVisit(NOLOCK) Where Datediff(dd,Date,@DateFilter)=0        
+        
+  INSERT  INTO #tblVisitWithJourneyCustomerDetails(RouteCode ,CustomerCode ,[Date])        
+  SELECT Distinct UserCode RouteCode, DJP.CustomerCode ,DJP.JourneyDate Date          
+  From tblDailyJourneyPlan(NOLOCK) DJP LEFT JOIN #tblVisitWithJourneyCustomerDetails VIT ON VIT.RouteCode=DJP.UserCode        
+  AND VIT.CustomerCode=DJP.CustomerCode and Datediff(dd,DJP.JourneyDate,VIT.Date)=0        
+  Where Datediff(dd,JourneyDate,@DateFilter)=0 and VIT.Id is null                            
+                              
+IF(LEN(@SalesTeamCode) > 0)                              
+BEGIN                              
+SET @strQuery =  'SELECT DISTINCT U.Code, UserName FROM Vw_Salesusers U                      
+ INNER JOIN tblUser CU On U.Code=CU.Code                                       
+ INNER JOIN dbo.udf_GetAllChildUsers('''+@UserCode+''',''All'') CU On U.Code=CU.UserCode                                    
+ INNER JOIN #tblVisitWithJourneyCustomerDetails CV on CV.RouteCode=U.Routecode                              
+ INNER JOIN tblCustomerDetail CD on CD.CustomerCode=CV.CustomerCode                            
+ INNER JOIN tblUserItemGroup UIG ON UIG.UserCode = U.Code AND                                 
+ INNER JOIN  #UserHierarchy UH ON UH.UserCode = U.Code
+  WHERE U.IsActive = 1        
+  AND (isNULL('''+@Route+''','''')='''' OR U.RouteCode in (select Items from dbo.split('''+@Route+''','','')))   
+  AND (isNULL('''+@GrandChannel+''','''')='''' OR CD.ChannelCode in (select Items from dbo.split('''+@GrandChannel+''','','')))   
+  AND (isNULL('''+@SubChannel+''','''')='''' OR CD.SubChannelCode in (select Items from dbo.split('''+@SubChannel+''','','')))  
+  AND  ' + @searchString                             
+                         
+                               
+END                              
+ELSE                              
+BEGIN                              
+SET @strQuery = 'SELECT DISTINCT  R.Code,R.Description As UserName         
+FROM Vw_Salesusers U                       
+ INNER JOIN tblUser CU On U.Code=CU.Code                                   
+ INNER JOIN #tblVisitWithJourneyCustomerDetails CV on CV.RouteCode=U.Routecode                              
+ INNER JOIN tblCustomerDetail CD on CD.CustomerCode=CV.CustomerCode               
+ INNER JOIN tblRoute R ON U.RouteCode=R.Code         
+ INNER JOIN  #UserHierarchy UH ON UH.UserCode = U.Code  
+  WHERE U.IsActive = 1        
+  AND (isNULL('''+@Route+''','''')='''' OR U.RouteCode in (select Items from dbo.split('''+@Route+''','','')))  
+  AND (isNULL('''+@GrandChannel+''','''')='''' OR CD.ChannelCode in (select Items from dbo.split('''+@GrandChannel+''','','')))   
+  AND (isNULL('''+@SubChannel+''','''')='''' OR CD.SubChannelCode in (select Items from dbo.split('''+@SubChannel+''','','')))  
+   AND ' + @searchString                               
+                          
+END                              
+                              
+  PRINT @strQueryDECLARE @strQueryPaging varchar(max)                  
+ SET @strQueryPaging = 'select * from (select row_number() over(order by ' + @sortExpression + ') as ind,* from ('                               
+ + @strQuery + ') as T) as Q where ind >= ' + CAST(@StartRowIndex AS VARCHAR(10)) + ' and ind < ' +                               
+ CAST((@StartRowIndex + @MaximumRows)  AS VARCHAR(10))                               
+                               
+ EXEC(@strQueryPaging)                              
+                    
+DROP table #tblVisitWithJourneyCustomerDetails                              
+DROP table #UserHierarchy                              
+END

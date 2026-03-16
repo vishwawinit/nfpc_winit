@@ -1,0 +1,50 @@
+-- ============================================================
+-- Stored Procedure: SP_CoverageReport_ForDashboard_Reports_V1_NEW_OPTS
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:47
+-- Definition Length: 3599 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   tblRouteCoverageSummary
+--   udf_GetAllChildRoutesForFilter
+
+-- ============================================================
+
+-- SP_CoverageReport_ForDashboard_Reports_V1 'Daily','','','','4920','','2017-05-13','2017-05-18','','1=1','','',''                                                                                                                                 
+                        
+CREATE PROCEDURE [dbo].SP_CoverageReport_ForDashboard_Reports_V1_NEW_OPTS                                                         
+--Declare                
+ @Type VARCHAR(10) = 'Daily',                                                                                                                                    
+@SelectedCountries VARCHAR(MAX) = '',                                                                                                                                    
+@SelectedLocations VARCHAR(MAX) = '',                                                                                                                                    
+@SelectedCities VARCHAR(MAX) = '',                                                                                                                                  
+@UserCode Varchar(50)='ADMIN',                                                                                                                    
+@ChannelCodes  Varchar(max) = '',                                                                                                                  
+@StartingDate datetime = '2022-11-01',                                                                                                                  
+@EndingDate datetime = '2022-11-01',                                                                                        
+@SalesOrganizations  Varchar(max) = ''  ,                                                
+@SearchString Varchar(max)='' ,                                              
+@selectedRoutes Varchar(max)='',                                      
+@selectedDepots Varchar(max)='',              
+@Supervisor Varchar(max)='',               
+@ASM Varchar(max)='',               
+@RoleCode VARCHAR(255)='admin'                                                                                                                          
+,@CurrencyCode varchar(200)='SAR'                                                                                                                         
+AS                                                        
+BEGIN                                                                                                                                    
+DECLARE @ScheduledCalls INT, @ActualCalls INT, @SellingCalls INT, @TotalActualCalls INT, @PlannedSellingCalls INT                           
+,@Index int,@UserCodes VARCHAR(MAX)=''                                                
+                        
+Select RouteCode,UserCode,UserType INTO #tempAssignedRoutes from             
+[dbo].[udf_GetAllChildRoutesForFilter]  (@UserCode,'ALL',@Supervisor,@ASM,@selectedDepots,@ChannelCodes,@SalesOrganizations,@selectedRoutes)                
+                                 
+SELECT SUM(ScheduledCalls) ScheduledCalls,SUM(TotalActualCalls) TotalActualCalls,SUM(ActualCalls) ActualCalls,SUM(SellingCalls) SellingCalls    
+,SUM(PlannedSellingCalls) PlannedSellingCalls                          
+FROM tblRouteCoverageSummary(NOLOCK)  R    
+inner join #tempAssignedRoutes R1 on R1.RouteCode=R.RouteCode    
+where DATEDIFF(dd,@StartingDate,R.VisitDate) >= 0 AND DATEDIFF(dd,R.VisitDate,@EndingDate) >= 0    
+                                         
+Drop Table #tempAssignedRoutes                                   
+END

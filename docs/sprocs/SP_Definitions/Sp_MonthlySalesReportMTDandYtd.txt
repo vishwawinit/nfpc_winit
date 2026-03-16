@@ -1,0 +1,179 @@
+-- ============================================================
+-- Stored Procedure: Sp_MonthlySalesReportMTDandYtd
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:44
+-- Definition Length: 10555 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   Split
+--   tblCustomerDetail
+--   tblItem
+--   tblRoute
+--   tblRouteSalesSummaryByItemCustomer
+--   tblSalesOrganization
+--   Vw_SalesUserHierarchy
+
+-- ============================================================
+
+CREATE PROCEDURE [dbo].[Sp_MonthlySalesReportMTDandYtd]              
+             
+@sortExpression varchar(100)='RouteCode ASC',                                                          
+@maximumRows int=10000,                                                          
+@startRowIndex int=0,                                                                                                    
+@StartDate varchar(100)='2025-01-01',                                                          
+@EndDate varchar(100)='2025-03-03',                                                                 
+@ItemCode varchar(max)='',                     
+@UserCode varchar(100)='admin',
+@SalesOrgCode Varchar(max)='',
+@SalesExecutive nVarchar(max)='',
+@HOS nVarchar(max)='',
+@ASM nVarchar(max)='',
+@Supervisor nVarchar(max)='',
+@Salesman nVarchar(max)='',
+@Route nVarchar(max)='',
+@Category nVarchar(max)='',
+@Brand nVarchar(max)='',
+@SubBrand nVarchar(max)='',
+@Channel nVarchar(max)='',
+@SubChannel nVarchar(max)='',
+@SubSubChannel nVarchar(max)='',
+@ServiceBy nVarchar(max)=''
+as 
+begin
+
+SET @SalesOrgCode = REPLACE(@SalesOrgCode, '''', '')
+SET @SalesExecutive = REPLACE(@SalesExecutive, '''', '')
+SET @HOS = REPLACE(@HOS, '''', '')
+SET @ASM = REPLACE(@ASM, '''', '')
+SET @Supervisor = REPLACE(@Supervisor, '''', '')
+SET @Salesman = REPLACE(@Salesman, '''', '')
+SET @Route = REPLACE(@Route, '''', '')
+SET @Category = REPLACE(@Category, '''', '')
+SET @Brand = REPLACE(@Brand, '''', '')
+SET @SubBrand = REPLACE(@SubBrand, '''', '')
+SET @Channel = REPLACE(@Channel, '''', '')
+SET @SubChannel = REPLACE(@SubChannel, '''', '')
+SET @SubSubChannel = REPLACE(@SubSubChannel, '''', '')
+SET @ServiceBy = REPLACE(@ServiceBy, '''', '')
+
+select S.Code UserCode INTO #UserHierarchy         
+from Vw_SalesUserHierarchy S   
+where (ISNULL(@SalesMan,'')='' OR S.Code in (select Items from dbo.Split(@SalesMan,',')))        
+and  (ISNULL(@Supervisor,'')='' OR S.Supervisor in (select Items from dbo.Split(@Supervisor,',')))          
+and  (ISNULL(@HOS,'')='' OR S.HeadOfSales in (select Items from dbo.Split(@HOS,',')))          
+and  (ISNULL(@SalesExecutive,'')='' OR S.SalesExecutive in (select Items from dbo.Split(@SalesExecutive,',')))          
+and  (ISNULL(@ASM,'')='' OR S.ASMCode in (select Items from dbo.Split(@ASM,',')))
+  
+select Code,ParentSalesOrg INTO #SalesOrgData from tblSalesOrganization    
+
+select  SR.ItemCode,CD.ChannelCode,I.Description ItemDescription,LTRIM(RTRIM(CD.ChannelCode)) SalesType      
+,0 TrxType      
+,SUM(case WHEN MONTH([Date])=MONTH(@StartDate) and YEAR([Date])=YEAR(@StartDate) THEN SR.TotalQty ELSE 0 END)  MTDQty      
+,SUM(case WHEN MONTH([Date])=MONTH(@StartDate) and YEAR([Date])=YEAR(@StartDate) THEN SR.TotalSales ELSE 0 END)  MTDAmt      
+,SUM(case WHEN YEAR([Date])=YEAR(@StartDate) THEN SR.TotalQty ELSE 0 END)  YTDQty      
+,SUM(case WHEN YEAR([Date])=YEAR(@StartDate) THEN SR.TotalSales ELSE 0 END)  YTDAmt,'' PrincipalCode        
+from tblRouteSalesSummaryByItemCustomer SR 
+INNER JOIN #UserHierarchy UH On UH.UserCode=SR.UserCode
+Inner join tblRoute R on R.Code=SR.RouteCode   
+Inner join #SalesOrgData S on S.Code=R.SalesOrgCode      
+--inner join tblSalesOrganization S on S.Code=R.SalesOrgCode      
+Inner join (select distinct Code,Description,SalesOrgCode,GroupLevel4,GroupLevel3,GroupLevel2 from tblItem) I on I.Code=SR.ItemCode  and I.SalesOrgCode=S.ParentSalesOrg      
+Inner join tblCustomerDetail CD on CD.CustomerCode=SR.CustomerCode and CD.SalesOrgCode=R.SalesOrgCode      
+where YEAR(SR.[Date])=YEAR(@StartDate)  
+and (ISNULL(@SalesOrgCode,'')='' OR S.Code in (select Items from dbo.Split(@SalesOrgCode,',') ))      
+
+and (ISNULL(@ItemCode,'')='' OR SR.ItemCode in (select Items from dbo.Split(@ItemCode,',') ))      
+and (ISNULL(@Category,'')='' OR I.GroupLevel4 in (select Items from dbo.Split(@Category,',') ))      
+and (ISNULL(@Brand,'')='' OR I.GroupLevel2 in (select Items from dbo.Split(@Brand,',') ))      
+and (ISNULL(@SubBrand,'')='' OR I.GroupLevel3 in (select Items from dbo.Split(@SubBrand,',') ))      
+and (ISNULL(@Channel,'')='' OR CD.ChannelCode in (select Items from dbo.Split(@Channel,',') ))      
+and (ISNULL(@SubChannel,'')='' OR CD.SubChannelCode in (select Items from dbo.Split(@SubChannel,',') ))  
+and (ISNULL(@SubSubChannel,'')='' OR CD.SubSubChannelCode in (select Items from dbo.Split(@SubSubChannel,',') ))  
+Group by SR.ItemCode,CD.ChannelCode,      
+SR.ItemCode,I.[Description],CD.ChannelCode      
+/*      
+SELECT  distinct I.code Itemcode,I.Description ItemDescription,Th.TrxType TrxType,format(TH.TrxDate ,'yyyy-MM-01') [Month] ,                                         
+ ((CASE WHEN TH.TrxType =4 Then -1 Else 1 END) * ((TD.QuantityLevel1*TD.PriceUsedLevel1)-CAST(TD.TotalDiscountAmount As Numeric(18,2)))) AS SalesAmount,            
+CASE                                                
+WHEN TH.TrxType<>1 and Charindex('R',TH.TrxCode)=1 THEN -1 * ABS(TD.QuantityLevel1)                                                   
+WHEN TH.TrxType in (4,13,15,17) THEN -(TD.QuantityLevel1)                                                   
+ELSE ABS(TD.QuantityLevel1) END  SalesQTY  into #ItemData                            
+FROM  tblTrxheader th (NOLOCK)                      
+INNER JOIN tblTrxDetail tD (NOLOCK) ON Td.TrxCode = th.TrxCode                     
+INNER JOIN tblItem I (NOLOCK) ON I.Code = tD.ItemCode                    
+where Datediff(dd,@StartDate,th.TrxDate)>=0 AND Datediff(dd,th.TrxDate,@EndDate)<=0 and Th.TRXStatus=200          
+and ((ISnull(@ItemCode,'')='') or I.Code in (Select items from dbo.split(@ItemCode,',')))              
+order by [Month] ASC            
+            
+select Itemcode ,ItemDescription,TrxType,Month,Sum(SalesAmount) MonthlySalesAmount,sum(SalesQTY) MonthlySalesQty into #MonthlyItemData from #ItemData              
+group by Itemcode ,ItemDescription,TrxType, Month            
+            
+            
+DECLARE @Year INT = YEAR(@EndDate)           
+DECLARE @StartDateOfYear DATE = DATEFROMPARTS(@Year, 1, 1)           
+declare @EndDateOYear Date = GETDATE();           
+SELECT DISTINCT      I.code AS Itemcode,I.Description AS ItemDescription,     Th.TrxType AS TrxType,          
+((CASE WHEN TH.TrxType =4 Then -1 Else 1 END) * ((TD.QuantityLevel1*TD.PriceUsedLevel1)-CAST(TD.TotalDiscountAmount As Numeric(18,2)))) AS SalesAmount,           
+CASE WHEN TH.TrxType<>1 and Charindex('R',TH.TrxCode)=1 THEN -1 * ABS(TD.QuantityLevel1)                                                   
+WHEN TH.TrxType in (4,13,15,17) THEN -(TD.QuantityLevel1)                 
+ELSE ABS(TD.QuantityLevel1) END AS SalesQTY   INTO #ItemYearlyData                      
+FROM tblTrxHeader Th (NOLOCK)                   
+INNER JOIN tblTrxDetail TD (NOLOCK) ON TD.TrxCode = Th.TrxCode             
+INNER JOIN tblItem I (NOLOCK) ON I.Code = TD.ItemCode                 
+WHERE Th.TrxDate BETWEEN @StartDateOfYear AND @EndDateOYear and Th.TRXStatus=200          
+and ((ISnull(@ItemCode,'')='') or I.Code in (Select items from dbo.split(@ItemCode,',')))              
+        
+            
+select M.Itemcode,M.ItemDescription,sum(M.SalesAmount) TotalSalesAmount,Sum(M.SalesQTY) TotalSalesQty into #YearlyItemData from #ItemYearlyData  M            
+group by Itemcode,ItemDescription            
+            
+            
+--select M.Itemcode,M.ItemDescription,sum(M.MonthlySalesAmount) TotalSalesAmount,Sum(M.MonthlySalesQty) TotalSalesQty into #YearlyItemData from #MonthlyItemData  M            
+--WHERE YEAR(CONVERT(DATE, M.Month, 120)) = YEAR(CONVERT(DATE, @EndDate, 120))            
+--group by Itemcode,ItemDescription             
+--select  * from #YearlyItemData  order by Itemcode desc            
+            
+ CREATE TABLE #Data ( RowNum Int,Itemcode VARCHAR(50), ItemDescription VARCHAR(50),                                          
+        TrxType VARCHAR(100), MTDQty VARCHAR(250), MTDAmt VARCHAR(50), YTDQty VARCHAR(50), YTDAmt VARCHAR(50));               
+            
+insert into #Data (RowNum, Itemcode,ItemDescription , TrxType ,MTDQty  ,MTDAmt  ,YTDQty  ,YTDAmt)                                 
+select ROW_NUMBER() OVER (ORDER BY M.Itemcode) AS RowNum,M.Itemcode,M.ItemDescription,M.TrxType,M.MonthlySalesQty,M.MonthlySalesAmount,'','' from #MonthlyItemData M            
+            
+update D set D.YTDQty = Y.TotalSalesQty ,D.YTDAmt= Y.TotalSalesAmount             
+from #Data D inner join #YearlyItemData Y on Y.Itemcode=D.Itemcode            
+            
+--select * from #Data;            
+            
+SELECT RowNum,ItemCode,ItemDescription,'PVT' SalesType,TrxType,Cast(MTDQty as float)+100 MTDQty,Cast(MTDAmt as float)+2000 MTDAmt,Cast(YTDQty as float)+15 YTDQty,Cast(YTDAmt as float)+1222 YTDAmt,'' PrincipalCode FROM #Data                  
+union                
+SELECT RowNum,ItemCode,ItemDescription,'INS' SalesType,TrxType,Cast(MTDQty as float)+240 MTDQty,Cast(MTDAmt as float)+500 MTDAmt,Cast(YTDQty as float)+150 YTDQty,Cast(YTDAmt as float)+563 YTDAmt,'' PrincipalCode FROM #Data                 
+union                
+SELECT RowNum,ItemCode,ItemDescription,'CLP' SalesType,TrxType,Cast(MTDQty as float)+360 MTDQty,Cast(MTDAmt as float)+4500 MTDAmt,Cast(YTDQty as float)+200 YTDQty,Cast(YTDAmt as float)+748 YTDAmt,'' PrincipalCode FROM #Data                 
+union                
+SELECT RowNum,ItemCode,ItemDescription,'INC' SalesType,TrxType,Cast(MTDQty as float)+123 MTDQty,Cast(MTDAmt as float)+300 MTDAmt,Cast(YTDQty as float)+146 YTDQty,Cast(YTDAmt as float)+5557 YTDAmt,'' PrincipalCode FROM #Data                 
+union                
+SELECT RowNum,ItemCode,ItemDescription,'TEN' SalesType,TrxType,Cast(MTDQty as float)+534 MTDQty,Cast(MTDAmt as float)+3000 MTDAmt,Cast(YTDQty as float)+400 YTDQty,Cast(YTDAmt as float)+6698 YTDAmt,'' PrincipalCode FROM #Data                 
+union                
+SELECT RowNum,ItemCode,ItemDescription,'INS' SalesType,TrxType,Cast(MTDQty as float)+432 MTDQty,Cast(MTDAmt as float)+250 MTDAmt ,Cast(YTDQty as float)+314 YTDQty,Cast(YTDAmt as float)+5827 YTDAmt,'' PrincipalCode FROM #Data                  
+            
+            
+            
+select count(rownum) TotalRecordCount,'Itemcode' SortColumn,'Desc' SortOrder  from #Data            
+            
+            
+            
+drop table #ItemData            
+drop table #MonthlyItemData            
+drop table #YearlyItemData             
+--drop table #ItemYearlyData            
+--drop table #MiddlewearYearlyItemData            
+drop table #Data            
+            
+   */     
+   
+
+   Drop table #SalesOrgData
+     
+end

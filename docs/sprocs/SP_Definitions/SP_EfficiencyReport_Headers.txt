@@ -1,0 +1,101 @@
+-- ============================================================
+-- Stored Procedure: SP_EfficiencyReport_Headers
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:36
+-- Definition Length: 5234 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   Sp_SalesUserHierarchy
+--   Split
+--   tblCustomerDetail
+--   tblItem
+--   tblRoute
+--   tblSalesOrganization
+--   tblTrxDetail
+--   tblTrxHeader
+--   tblUserItemGRoup
+--   udf_GetAllChildUsers
+--   vw_GetUserClients
+
+-- ============================================================
+
+CREATE PROC [dbo].[SP_EfficiencyReport_Headers]                                                           
+@StartDate DATETIME = '',                                                                                                                        
+@EndDate DATETIME = '',                                                                        
+@SessionUserCode VARCHAR(50) = '',        
+@ChannelCodes VARCHAR(MAX) = '',              
+@SalesTeamCodes VARCHAR(MAX) = '',  
+  
+/*Newly Added*/  
+@SalesOrg VARCHAR(MAX) = NULL,  
+@RSM VARCHAR(MAX) = NULL,  
+@SalesManager VARCHAR(MAX) = NULL,  
+@Supervisor VARCHAR(MAX) = NULL,  
+@SalesExecutive VARCHAR(MAX) = NULL,  
+@Salesman VARCHAR(MAX) = NULL,  
+@Route VARCHAR(MAX) = NULL,  
+@Category VARCHAR(MAX) = NULL,  
+@Brand VARCHAR(MAX) = NULL,  
+@SubBrand VARCHAR(MAX) = NULL,  
+@GrandChannel VARCHAR(MAX) = NULL,  
+@SubChannel VARCHAR(MAX) = NULL,  
+@ServerBy VARCHAR(MAX) = NULL  
+AS                                                                                                                       
+If @StartDate = ''                                                                                                                
+SET @StartDate = GETDATE()                                                                                                                
+                                                                                                                
+IF @EndDate = ''                                                                                                                
+SET @EndDate = GETDATE()          
+
+SET @SalesOrg = REPLACE(@SalesOrg,'''','') ; 
+SET @RSM = REPLACE(@RSM,'''','') ;
+SET @SalesManager = REPLACE(@SalesManager,'''','') ;  
+SET @Supervisor = REPLACE(@Supervisor,'''','') ;   
+SET @SalesExecutive = REPLACE(@SalesExecutive,'''','') ;  
+SET @Salesman = REPLACE(@Salesman,'''','') ;   
+SET @Route = REPLACE(@Route,'''','') ;   
+SET @Category = REPLACE(@Category,'''','') ;  
+SET @Brand = REPLACE(@Brand,'''','') ;  
+SET @SubBrand = REPLACE(@SubBrand,'''','') ;  
+SET @GrandChannel = REPLACE(@GrandChannel,'''','') ;   
+SET @SubChannel = REPLACE(@SubChannel,'''','') ;  
+SET @ServerBy = REPLACE(@ServerBy,'''','') ;      
+      
+select S.Code UserCode INTO #UserHierarchy       
+from Sp_SalesUserHierarchy    S      
+where (ISNULL(@Salesman,'')='' OR S.Code in (select Items from dbo.Split(@Salesman,',')))      
+and  (ISNULL(@Supervisor,'')='' OR S.Supervisor in (select Items from dbo.Split(@Supervisor,',')))      
+and  (ISNULL(@RSM,'')='' OR S.ASMCode in (select Items from dbo.Split(@RSM,',')))      
+and  (ISNULL(@SalesExecutive,'')='' OR S.SalesExecutive in (select Items from dbo.Split(@SalesExecutive,',')))                                                                                                                 
+ 
+select Code,ParentSalesOrg INTO #SalesOrgData from tblSalesOrganization                  
+
+Select         
+SUM(Case WHEN I.Attribute1='REGULAR' THEN 1 ELSE 0 END) RegularCount,        
+SUM(Case WHEN I.Attribute1='PROMO' THEN 1 ELSE 0 END) PromoCount,        
+SUM(Case WHEN I.Attribute1='REGULAR' THEN ISNULL(TD.QuantityBU,0) ELSE 0 END) RegularQuantity,        
+SUM(Case WHEN I.Attribute1='PROMO' THEN ISNULL(TD.QuantityBU,0) ELSE 0 END)PromoQuantity,        
+SUM(Case WHEN I.Attribute1='REGULAR' THEN (TD.PriceUsedLevel1 * TD.QuantityLevel1)-(TD.TotalDiscountAmount)  ELSE 0 END) RegularAmount,        
+SUM(Case WHEN I.Attribute1='PROMO' THEN (TD.PriceUsedLevel1 * TD.QuantityLevel1)-(TD.TotalDiscountAmount)  ELSE 0 END) PromoAmount        
+from tblTrxDetail TD         
+INNER JOIN tblTrxHeader TH ON TH.TrxCode = TD.TrxCode AND TH.TrxStatus  in(100,3,200) AND TH.TrxType IN(1,3,5)        
+AND DATEDIFF(DD, @StartDate,TH.TrxDate) >= 0              
+AND DATEDIFF(DD,@EndDate,TH.TrxDate) <= 0         
+Inner JOIN tblItem I ON I.Code=TD.ItemCode AND TH.OrgCode=I.SalesOrgCode  
+INNER JOIN tblRoute R ON R.Code = TH.RouteCode
+inner join #UserHierarchy  U on U.UserCode=TH.UserCode 
+Inner join #SalesOrgData S on S.Code=R.SalesOrgCode 
+INNER JOIN dbo.udf_GetAllChildUsers(@SessionUserCode,'All') CU On TH.UserCode = CU.UserCode        
+AND TH.UserCode in (Select distinct vC.UserCode from vw_GetUserClients vC             
+INNER JOIN tblUserItemGRoup UIG ON UIG.UserCode=vC.UserCode 
+AND (@SalesTeamCodes = '' OR UIG.SalesteamCode in (Select items from dbo.split(@SalesTeamCodes,','))))        
+INNER JOIN tblCustomerDetail CD On TH.ClientCode = CD.CustomerCode AND TH.OrgCode = CD.SalesOrgCode        
+AND(CD.ChannelCode IN(SELECT Items FROM dbo.Split('' + @GrandChannel + '',',')) OR '' + @GrandChannel + '' = '')
+AND(CD.SubChannelCode IN(SELECT Items FROM dbo.Split('' + @SubChannel + '',',')) OR '' + @SubChannel + '' = '')
+WHERE (ISNULL(@Category,'')='' OR I.GroupLevel4 in (select Items from dbo.Split(@Category,',') ))      
+AND (ISNULL(@Brand,'')='' OR I.GroupLevel2 in (select Items from dbo.Split(@Brand,',') ))      
+AND (ISNULL(@SubBrand,'')='' OR I.GroupLevel3 in (select Items from dbo.Split(@SubBrand,',') ))  
+                                                                        
+------------------------------------------------------------------------------------------------

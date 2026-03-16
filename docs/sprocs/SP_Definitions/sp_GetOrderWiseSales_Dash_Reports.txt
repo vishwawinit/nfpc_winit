@@ -1,0 +1,50 @@
+-- ============================================================
+-- Stored Procedure: sp_GetOrderWiseSales_Dash_Reports
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:50
+-- Definition Length: 3388 chars
+-- ============================================================
+
+CREATE PROC [dbo].[sp_GetOrderWiseSales_Dash_Reports] --[sp_GetOrderWiseSales_Dash_Reports]   @StartingDate='2015-01-01',@EndingDate='2015-11-03'                                          
+@searchString VARCHAR(MAX) = '1=1',                                                  
+@Type INT = 1,                            
+@SelectedCountries VARCHAR(MAX) = '',                            
+@SelectedLocations VARCHAR(MAX) = '',                            
+@SelectedCities VARCHAR(MAX) = '',                                  
+@ChannelCodes  Varchar(max)='',                                  
+@StartingDate datetime,                                  
+@EndingDate datetime,        
+@SalesOrganizations VARCHAR(MAX) = ''                                                                                      
+AS                      
+IF (LEN(@searchString) = 0)                                    
+    SET @searchString = '1=1'                                    
+                                    
+DECLARE @TypeSearchString VARCHAR(MAX),@strQuery VARCHAR(MAX)                                                      
+IF (@Type = 1)                                                    
+    SET @TypeSearchString = 'DATEDIFF(DD,O.TrxDate,GETDATE()) = 0'                                                    
+ELSE IF (@Type = 2)                                                    
+    SET @TypeSearchString = 'DATEDIFF(WK,O.TrxDate,GETDATE()) = 0'                                                  
+ELSE IF (@Type = 3)                                                    
+    SET @TypeSearchString = 'DATEDIFF(MM,O.TrxDate,GETDATE()) = 0'                        
+                          
+IF (@TypeSearchString <> '')                                                  
+BEGIN                                                  
+    SET @strQuery = '                           
+    SELECT O.TrxCode OrderNumber, ISNULL(SUM(O.TotalAmount), 0) [Amount]                                                 
+    FROM tblTrxHeader O                           
+    INNER JOIN tblCustomer C ON C.[CODE] = O.ClientCode                
+    INNER JOIN tblUser U ON U.Code = O.UserCode  AND U.IsActive = 1     
+    INNER JOIN tblUserDetails UD ON UD.UserCode = U.Code  AND UD.SalesOrgCode = O.OrgCode                                                        
+    WHERE O.TrxType IN(1,5) AND O.TRXStatus IN(200)   
+    AND (CAST(O.TrxDate AS DATE) BETWEEN '''+cast(@StartingDate as VARCHAR)+''' AND '''+ cast(@EndingDate as VARCHAR)+''')   
+    AND (' + @searchString +')                                            
+    AND (''' + @SalesOrganizations + ''' = '''' OR O.OrgCode IN(SELECT Item FROM ufnSplit(''' + @SalesOrganizations + ''', '','')))                            
+    AND (''' + @SelectedCountries + ''' = '''' OR C.CountryCode IN(SELECT Item FROM ufnSplit(''' + @SelectedCountries + ''', '','')))                        
+    AND (''' + @SelectedLocations + ''' = '''' OR C.RegionCode IN(SELECT Item FROM ufnSplit(''' + @SelectedLocations + ''', '','')))                        
+    AND (''' + @SelectedCities + ''' = '''' OR C.CityCode IN(SELECT Item FROM ufnSplit(''' + @SelectedCities + ''', '','')))                                                 
+    GROUP BY O.TrxCode                        
+    '                
+                    
+    EXEC(@strQuery)                                                     
+END

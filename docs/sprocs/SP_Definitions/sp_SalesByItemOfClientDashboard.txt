@@ -1,0 +1,148 @@
+-- ============================================================
+-- Stored Procedure: sp_SalesByItemOfClientDashboard
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:56
+-- Definition Length: 7612 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   Split
+--   tblCustomerDetail
+--   tblItem
+--   tblRoute
+--   tblRouteSalesSummaryByItemCustomer
+--   tblSalesOrganization
+--   Vw_SalesUserHierarchy
+
+-- ============================================================
+
+CREATE PROCEDURE sp_SalesByItemOfClientDashboard                                          
+--declare                          
+@Year INT=2025,                                            
+@Month INT=1,                                            
+@Day INT=1,            
+@SalesOrg Varchar(Max)='' ,             
+@HOS Varchar(Max)='' ,             
+@ASM Varchar(Max)='' ,             
+@Supervisor Varchar(Max)='' ,             
+@SalesExecutive Varchar(Max)='' ,             
+@Salesman Varchar(Max)='''142658''' ,             
+@Route Varchar(Max)='' ,             
+@Category Varchar(Max)='' ,             
+@Brand Varchar(Max)='' ,             
+@SubBrand Varchar(Max)='' ,             
+@GrandChannel Varchar(Max)='' ,             
+@SubChannel Varchar(Max)='' ,             
+@ServerBy Varchar(Max)='',
+@SubSubChannel VARCHAR(MAX) = ''
+AS         
+        
+SET @SalesOrg = REPLACE(@SalesOrg,'''','') ; 
+SET @HOS = REPLACE(@HOS,'''','') ; 
+SET @ASM = REPLACE(@ASM,'''','') ;         
+SET @Supervisor = REPLACE(@Supervisor,'''','') ; 
+SET @SalesExecutive = REPLACE(@SalesExecutive,'''','') ;       
+SET @Salesman = REPLACE(@Salesman,'''','') ; 
+SET @Route = REPLACE(@Route,'''','') ;
+SET @Category = REPLACE(@Category,'''','') ; 
+SET @Brand = REPLACE(@Brand,'''','') ;       
+SET @SubBrand = REPLACE(@SubBrand,'''','') ; 
+SET @GrandChannel = REPLACE(@GrandChannel,'''','') ; 
+SET @SubChannel = REPLACE(@SubChannel,'''','') ; 
+SET @ServerBy = REPLACE(@ServerBy,'''','') ;
+SET @SubSubChannel = REPLACE(@SubSubChannel,'''','') ;
+            
+select S.Code UserCode INTO #UserHierarchy             
+from Vw_SalesUserHierarchy    S            
+where (ISNULL(@Salesman,'')='' OR S.Code in (select Items from dbo.Split(@Salesman,',')))            
+and  (ISNULL(@Supervisor,'')='' OR S.Supervisor in (select Items from dbo.Split(@Supervisor,',')))            
+and  (ISNULL(@ASM,'')='' OR S.ASMCode in (select Items from dbo.Split(@ASM,',')))        
+and  (ISNULL(@SalesExecutive,'')='' OR S.SalesExecutive in (select Items from dbo.Split(@SalesExecutive,',')))        
+and  (ISNULL(@HOS,'')='' OR S.HeadOfSales in (select Items from dbo.Split(@HOS,',')))           
+                    
+ /*             
+--select GroupLevel2 Brand,GroupLevel3 SubBrand,GroupLevel4 Category,GroupLevel5 SubCategory from tblItem I            
+*/            
+Declare @CurrentDate datetime                        
+                        
+select @CurrentDate =cast(cast(@Month as varchar)+'/'+cast(@Day as varchar)+'/'+cast(@Year  as varchar) as date)    
+
+DECLARE @StartOfWeek DATE = DATEADD(DAY, -DATEPART(WEEKDAY, @CurrentDate) + 1, @CurrentDate);
+
+DECLARE @EndOfWeek DATE = DATEADD(DAY, 6, @StartOfWeek);
+
+DECLARE @MonthStart DATE = DATEFROMPARTS(@Year, @Month, 1);
+
+DECLARE @MonthEnd DATE = EOMONTH(@MonthStart);
+
+DECLARE @EffectiveStart DATE = CASE 
+    WHEN @StartOfWeek < @MonthStart THEN @MonthStart 
+    ELSE @StartOfWeek END;
+
+DECLARE @EffectiveEnd DATE = CASE 
+    WHEN @EndOfWeek > @MonthEnd THEN @MonthEnd 
+    ELSE @EndOfWeek END;
+            
+select Code,ParentSalesOrg INTO #SalesOrgData from tblSalesOrganization                        
+                        
+select ItemCode,Round(CurrentMonthSales,2) CurrentMonthSales,Round(LastMonthSales,2) LastMonthSales                         
+,Round(case WHEN LastMonthSales=0 and CurrentMonthSales=0 THEN 0                          
+WHEN LastMonthSales=0 THEN 100                         
+ELSE (CurrentMonthSales-LastMonthSales)/LastMonthSales*100.00 END,2) Growth                        
+INTO #SalesData                        
+from (                        
+select ItemCode                        
+,SUM(case WHEN YEAR(ER.[Date])=@Year THEN TotalSales ELSE 0 END) CurrentMonthSales                         
+,SUM(case WHEN YEAR(ER.[Date])=@Year-1 THEN TotalSales ELSE 0 END) LastMonthSales                         
+from tblRouteSalesSummaryByItemCustomer ER             
+inner join #UserHierarchyU on U.UserCode=ER.UserCode            
+Inner join tblRoute R on R.Code=ER.RouteCode            
+Inner join #SalesOrgData S on S.Code=R.SalesOrgCode            
+Inner join tblItem I on I.Code=ER.ItemCode and I.SalesOrgCode=S.ParentSalesOrg          
+Inner join tblCustomerDetail CD on CD.CustomerCode=ER.CustomerCode and CD.SalesOrgCode=R.SalesOrgCode            
+where MONTH(ER.[Date])=@Month and YEAR(ER.[Date]) in (@Year-1,@Year)            
+and (ISNULL(@SalesOrg,'')='' OR S.Code in (select Items from dbo.Split(@SalesOrg,',') ))            
+and (ISNULL(@Route,'')='' OR ER.RouteCode in (select Items from dbo.Split(@Route,',') ))            
+and (ISNULL(@Category,'')='' OR I.GroupLevel4 in (select Items from dbo.Split(@Category,',') ))            
+and (ISNULL(@Brand,'')='' OR I.GroupLevel2 in (select Items from dbo.Split(@Brand,',') ))       
+and (ISNULL(@SubBrand,'')='' OR I.GroupLevel3 in (select Items from dbo.Split(@SubBrand,',') ))            
+and (ISNULL(@GrandChannel,'')='' OR CD.ChannelCode in (select Items from dbo.Split(@GrandChannel,',') ))            
+and (ISNULL(@SubChannel,'')='' OR CD.SubChannelCode in (select Items from dbo.Split(@SubChannel,',') ))   
+and (ISNULL(@SubSubChannel,'')='' OR CD.SubSubChannelCode in (select Items from dbo.Split(@SubSubChannel,',') ))
+group by ItemCode                        
+) as T                        
+                        
+select ER.ItemCode                        
+,SUM(ER.TotalSales ) CurrentWeekSales                         
+INTO #weekSales                        
+from tblRouteSalesSummaryByItemCustomer ER              
+inner join #UserHierarchy  U on U.UserCode=ER.UserCode            
+Inner join tblRoute R on R.Code=ER.RouteCode            
+Inner join #SalesOrgData S on S.Code=R.SalesOrgCode            
+Inner join tblItem I on I.Code=ER.ItemCode and I.SalesOrgCode=S.ParentSalesOrg             
+Inner join tblCustomerDetail CD on CD.CustomerCode=ER.CustomerCode and CD.SalesOrgCode=R.SalesOrgCode            
+where ER.[Date] BETWEEN @EffectiveStart AND @EffectiveEnd                
+and (ISNULL(@SalesOrg,'')='' OR S.Code in (select Items from dbo.Split(@SalesOrg,',') ))            
+and (ISNULL(@Route,'')='' OR ER.RouteCode in (select Items from dbo.Split(@Route,',') ))            
+and (ISNULL(@Category,'')='' OR I.GroupLevel4 in (select Items from dbo.Split(@Category,',') ))            
+and (ISNULL(@Brand,'')='' OR I.GroupLevel2 in (select Items from dbo.Split(@Brand,',') ))            
+and (ISNULL(@SubBrand,'')='' OR I.GroupLevel3 in (select Items from dbo.Split(@SubBrand,',') ))            
+and (ISNULL(@GrandChannel,'')='' OR CD.ChannelCode in (select Items from dbo.Split(@GrandChannel,',') ))            
+and (ISNULL(@SubChannel,'')='' OR CD.SubChannelCode in (select Items from dbo.Split(@SubChannel,',') )) 
+and (ISNULL(@SubSubChannel,'')='' OR CD.SubSubChannelCode in (select Items from dbo.Split(@SubSubChannel,',') ))
+Group by ItemCode                        
+                        
+                        
+select S.ItemCode,I.ItemName,Round(ISNULL(S.CurrentMonthSales,0),2) 'Current Month Sales',Round(ISNULL(S.LastMonthSales,0),2) 'LY Current Month Sales'                      
+,ROund(ISNULL(S.Growth,0),2) 'Growth %',Round(ISNULL(W.CurrentWeekSales,0),2) 'Current Week Sales'  from #SalesData S                        
+left join #weekSales W on W.ItemCode=S.ItemCode                        
+inner join (select distinct Code ItemCode,Description ItemName from tblItem) I on I.ItemCode=S.ItemCode  
+WHERE 
+  NOT (
+    ISNULL(S.CurrentMonthSales, 0) = 0 AND 
+    ISNULL(S.LastMonthSales, 0) = 0 AND 
+    ISNULL(S.Growth, 0) = 0 AND 
+    ISNULL(W.CurrentWeekSales, 0) = 0
+  )
+Order by 1

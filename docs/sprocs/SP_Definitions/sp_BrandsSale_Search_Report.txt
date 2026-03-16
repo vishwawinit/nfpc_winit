@@ -1,0 +1,211 @@
+-- ============================================================
+-- Stored Procedure: sp_BrandsSale_Search_Report
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:03:08
+-- Definition Length: 16384 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   Split
+--   tblSalesOrganization
+--   Vw_SalesUserHierarchy
+
+-- ============================================================
+
+CREATE PROCEDURE [dbo].[sp_BrandsSale_Search_Report]                                
+@sortExpression  VARCHAR(100)='VALUE  DESC',                                                                                                               
+@maximumRows INT=50,                                                                                                               
+@startRowIndex INT=0,                                                                                                      
+@searchString VARCHAR(MAX)='TH.TrxType IN (1) AND TH.TrxStatus=200 AND  DATEDIFF(DD,TrxDate,''2025-01-01'')<=0 AND DATEDIFF(DD,TrxDate,''2025-02-03'') >= 0',                                                            
+@UserCode VARCHAR(50) = 'admin',                                                                                  
+@SalesTeam Varchar(MAX)='',              
+@StartDate VARCHAR(MAX) = 'Jan 01,2025',              
+@EndDate VARCHAR(MAX) = 'Jan 30,2025',              
+@SalemanCodes VARCHAR(50) = '',              
+@SalesOrgCode VARCHAR(50) = '',              
+@SalesOrgCodes VARCHAR(MAX)='',              
+@RSMs VARCHAR(MAX)='',              
+@SalesManager VARCHAR(MAX)='',              
+@Supervisor VARCHAR(MAX)='',              
+@SalesExecutive VARCHAR(MAX)='',              
+@SalesMan VARCHAR(MAX)='102607,102626',              
+@Route VARCHAR(MAX)='',              
+@Category VARCHAR(MAX)='',              
+@Brand VARCHAR(MAX)='',              
+@SubBrand VARCHAR(MAX)='',              
+@Channel VARCHAR(MAX)='',              
+@SubChannel VARCHAR(MAX)='',        
+@ServiceBy Varchar(max)=''  ,      
+@SubSubChannel Varchar(max)=''      
+                   
+ as          
+Begin          
+            
+          
+SET @SalemanCodes = REPLACE(@SalemanCodes, '''', '')          
+             
+select S.Code UserCode INTO #UserHierarchy                   
+from Vw_SalesUserHierarchy    S                  
+where (ISNULL(@SalesMan,'')='' OR S.Code in (select Items from dbo.Split(@SalesMan,',')))                  
+and  (ISNULL(@Supervisor,'')='' OR S.Supervisor in (select Items from dbo.Split(@Supervisor,',')))                  
+and  (ISNULL(@RSMs,'')='' OR S.ASMCode in (select Items from dbo.Split(@RSMs,',')))                  
+and  (ISNULL(@SalesExecutive,'')='' OR S.SalesExecutive in (select Items from dbo.Split(@SalesExecutive,',')))                  
+              
+select Code,ParentSalesOrg INTO #SalesOrgData from tblSalesOrganization                
+            
+select * INTO #SalesOrganization from tblSalesORganization                  
+                      
+                                                                          
+SET @startRowIndex = @startRowIndex + 1                                                                                                          
+IF LEN(@sortExpression) = 0                                                                                                              
+SET @sortExpression = 'Code DESC'                                                                                                              
+                                                                          
+IF LEN(@searchString) = 0                                                                                                                        
+SET @searchString = ' 1=1'                                                              
+                       
+EXEC(                                                                                                              
+'SELECT *                                                                                                                     
+FROM                                                                  
+(SELECT ROW_NUMBER() OVER(ORDER BY ' + @sortExpression + ') as RowNum,0 as OrderCount,* FROM                                                            
+(                      
+select B.[Code] ,B.[Description],'''' UserCode,'''' UserName,SUM(ER.TotalSales) VALUE                       
+from tblRouteSalesSummaryByItemCustomer ER                      
+inner join #UserHierarchy  UH on UH.UserCode=ER.UserCode                
+Inner join tblRoute R on R.Code=ER.RouteCode                
+Inner join #SalesOrgData SR on SR.Code=R.SalesOrgCode               
+inner join tblItem I on I.Code=ER.ItemCode and I.SalesOrgCode=SR.ParentSalesOrg               
+Inner join tblCustomerDetail CD on CD.CustomerCode=ER.CustomerCode and CD.SalesOrgCode=R.SalesOrgCode                                
+Inner join tblItemGroup B on B.Code=I.GroupLevel2 and B.ItemGroupLevelId=1                      
+inner join tblUser U on U.Code=ER.UserCode                      
+where ER.[Date]>='''+@StartDate+'''  and ER.[Date]<='''+@EndDate+'''                      
+AND (ER.UserCode IN (SELECT Items FROM dbo.Split('''+@SalemanCodes+''','','')) OR '''+@SalemanCodes+''' = '''' )                                        
+  AND (R.SalesOrgCode IN (SELECT Items FROM dbo.Split('''+@SalesOrgCode+''','','')) OR '''+@SalesOrgCode+''' = '''' )          
+AND (ISNULL('''+@Route+''', '''') = '''' OR ER.RouteCode IN (SELECT Items FROM dbo.Split('''+@Route+''', '','')))                
+AND (ISNULL('''+@Category+''', '''') = '''' OR I.GroupLevel4 IN (SELECT Items FROM dbo.Split('''+@Category+''', '','')))                
+AND (ISNULL('''+@Brand+''', '''') = '''' OR I.GroupLevel2 IN (SELECT Items FROM dbo.Split('''+@Brand+''', '','')))                
+AND (ISNULL('''+@SubBrand+''', '''') = '''' OR I.GroupLevel3 IN (SELECT Items FROM dbo.Split('''+@SubBrand+''', '','')))                
+AND (ISNULL('''+@Channel+''', '''') = '''' OR CD.ChannelCode IN (SELECT Items FROM dbo.Split('''+@Channel+''', '','')))                
+AND (ISNULL('''+@SubChannel+''', '''') = '''' OR CD.SubChannelCode IN (SELECT Items FROM dbo.Split('''+@SubChannel+''', '','')))          
+group by B.[Code] ,B.[Description]            
+Having SUM(ER.TotalSales) <> 0        
+) AS T                                                             
+) AS Sale                                                                                                                 
+WHERE (' + @maximumRows + ' = 0) OR (RowNum BETWEEN ' + @startRowIndex +                                                                                                                       
+' AND (' + @startRowIndex + ' + '                                                                                                                       
++ @maximumRows + ') - 1)')                         
+                      
+EXEC(                                                                                                            
+'SELECT SUM(VALUE)  VALUE,Count(1) TotalRecordCount                                                 
+FROM                                                                                        
+(SELECT ROW_NUMBER() OVER(ORDER BY ' + @sortExpression + ') as RowNum,0 as OrderCount,* FROM                                                            
+(                      
+select B.[Code] ,B.[Description],'''' UserCode,'''' UserName,SUM(ER.TotalSales) VALUE                       
+from tblRouteSalesSummaryByItemCustomer ER            
+inner join #UserHierarchy  UH on UH.UserCode=ER.UserCode                
+Inner join tblRoute R on R.Code=ER.RouteCode                
+Inner join #SalesOrgData SR on SR.Code=R.SalesOrgCode               
+inner join tblItem I on I.Code=ER.ItemCode and I.SalesOrgCode=SR.ParentSalesOrg               
+Inner join tblCustomerDetail CD on CD.CustomerCode=ER.CustomerCode and CD.SalesOrgCode=R.SalesOrgCode                                
+          
+Inner join tblItemGroup B on B.Code=I.GroupLevel2 and B.ItemGroupLevelId=1                      
+inner join tblUser U on U.Code=ER.UserCode                      
+where ER.[Date]>='''+@StartDate+'''  and ER.[Date]<='''+@EndDate+'''AND (ER.UserCode IN (SELECT Items FROM dbo.Split('''+@SalemanCodes+''','','')) OR '''+@SalemanCodes+''' = '''' )                                        
+  AND (R.SalesOrgCode IN (SELECT Items FROM dbo.Split('''+@SalesOrgCode+''','','')) OR '''+@SalesOrgCode+''' = '''' )           
+  AND (ISNULL('''+@Route+''', '''') = '''' OR ER.RouteCode IN (SELECT Items FROM dbo.Split('''+@Route+''', '','')))                
+AND (ISNULL('''+@Category+''', '''') = '''' OR I.GroupLevel4 IN (SELECT Items FROM dbo.Split('''+@Category+''', '','')))                
+AND (ISNULL('''+@Brand+''', '''') = '''' OR I.GroupLevel2 IN (SELECT Items FROM dbo.Split('''+@Brand+''', '','')))                
+AND (ISNULL('''+@SubBrand+''', '''') = '''' OR I.GroupLevel3 IN (SELECT Items FROM dbo.Split('''+@SubBrand+''', '','')))                
+AND (ISNULL('''+@Channel+''', '''') = '''' OR CD.ChannelCode IN (SELECT Items FROM dbo.Split('''+@Channel+''', '','')))                
+AND (ISNULL('''+@SubChannel+''', '''') = '''' OR CD.SubChannelCode IN (SELECT Items FROM dbo.Split('''+@SubChannel+''', '','')))          
+                           
+group by B.[Code] ,B.[Description]             
+Having SUM(ER.TotalSales) <> 0        
+        
+) AS T                                                             
+) AS Sale                                                                                                                 
+')                        
+                      
+SELECT '' BrandCode,'' UserCode, 0 TotalTarget              
+          
+            
+          
+                                          
+             /*                                                          
+DECLARE @ConditionQuery VARCHAR(MAX),@QUERYALL VARCHAR(MAX)                                                             
+                                                            
+IF(@SalesTeam <> '')                                                                                
+SET @ConditionQuery = 'select Distinct UIG.UserCode from dbo.udf_GetAllChildUsers('''+@UserCode+''',''All'') CU                                                                                     
+Inner Join tblUserItemGroup UIG ON CU.UserCode=UIG.UserCode                                                                 
+Where UIG.SalesTeamCode in(SELECT Items FROM Split('''+@SalesTeam+''', '',''))'                                                                                
+ELSE                                                                                 
+SET @ConditionQuery = 'select Distinct UserCode from dbo.udf_GetAllChildUsers('''+@UserCode+''',''All'')'                                                             
+                                          
+                                          
+  IF LEN(@StartDate) > 0 AND LEN(@EndDate) > 0                                          
+DECLARE @start DATE = @StartDate                                        
+DECLARE @end DATE = @EndDate                                        
+CREATE TABLE #Month(MonthDate VARCHAR(50),YearDate VARCHAR(50))                                          
+;with months (date)                                        
+AS                                        
+(                                        
+    SELECT @start                                        
+    UNION ALL                                        
+    SELECT DATEADD(month,1,date)                                        
+    from months                                        
+    where DATEADD(month,1,date)<=@end                                        
+)                                        
+INSERT INTO #Month                                        
+select [MonthNumber]  = DATEPART(mm ,Date)                                        
+       ,[MonthYear]    = DATEPART(yy ,Date)  from monthsEXEC(                                                                                                              
+'SELECT *                 
+FROM                                                                                                                      
+(SELECT ROW_NUMBER() OVER(ORDER BY ' + @sortExpression + ') as RowNum,0 as OrderCount,* FROM                           
+(SELECT DISTINCT Code,Description,UserCode,UserName,SUM(VALUE) AS VALUE                                                        
+FROM(SELECT  IG.Code,IG.Description,U.Code UserCode,U.Description UserName,                                               
+(ISNULL(TD.QuantityLevel1,0)*ROUND(TD.PriceUsedLevel1,2))-ISNULL(TD.TotalDiscountAmount,0) AS VALUE                                                    
+FROM tblTrxHeader TH WITH (NOLOCK)                                                             
+INNER JOIN tblTrxDetail TD WITH (NOLOCK) ON TD.TrxCode=TH.TrxCode AND TH.TrxType=1 AND TH.TrxStatus=200                                                              
+INNER JOIN tblItem I WITH (NOLOCK) ON TD.ItemCode=I.Code --AND TH.OrgCode=I.SalesOrgCode                                                             
+INNER JOIN tblitemgroup IG WITH (NOLOCK) ON IG.Code=I.GroupLevel2                                                  
+ --AND IG.ItemGroupLevelId=2                                                   
+INNER JOIN tblUser U WITH (NOLOCK) ON TH.UserCode=U.Code  AND U.Code IN ('+@ConditionQuery+')                                                        
+WHERE ('+@searchString+')) AS T                                                             
+GROUP BY Code,Description,UserCode,UserName)AS BrandWise) AS Sale                                                                                                                 
+WHERE (' + @maximumRows + ' = 0) OR (RowNum BETWEEN ' + @startRowIndex +                                                                                                                       
+' AND (' + @startRowIndex + ' + '                                                                                                                       
++ @maximumRows + ') - 1)')                                          
+                                          
+                                         
+                                             
+                                              
+                                              
+EXEC(                                                                                                              
+'(SELECT  SUM(VALUE) AS VALUE                                         
+FROM(SELECT                                                              
+(ISNULL(TD.QuantityLevel1,0)*ROUND(TD.PriceUsedLevel1,2))-ISNULL(TD.TotalDiscountAmount,0) AS VALUE                                                    
+FROM tblTrxHeader TH WITH (NOLOCK)                                                             
+INNER JOIN tblTrxDetail TD WITH (NOLOCK) ON TD.TrxCode=TH.TrxCode AND TH.TrxType=1 AND TH.TrxStatus=200                                                              
+INNER JOIN tblItem I WITH (NOLOCK) ON TD.ItemCode=I.Code --AND TH.OrgCode=I.SalesOrgCode                                                             
+INNER JOIN tblitemgroup IG WITH (NOLOCK) ON IG.Code=I.GroupLevel2                                                  
+--AND IG.ItemGroupLevelId=2                                                   
+INNER JOIN tblUser U WITH (NOLOCK) ON TH.UserCode=U.Code  AND U.Code IN ('+@ConditionQuery+')                                                          
+WHERE ('+@searchString+')) AS T                              
+)')                                         
+                                        
+EXEC('(SELECT BrandCode,SalesmanCode UserCode, SUM(Amount) AS TotalTarget FROM  tblCurrentTarget                                      
+  WHERE Month IN(SELECT MonthDate FROM #Month)  AND Year IN (SELECT DISTINCT YearDate FROM #Month)                                       
+AND (SalesmanCode IN (SELECT Items FROM dbo.Split('''+@SalemanCodes+''','','')) OR '''+@SalemanCodes+''' = '''' )                                        
+  AND (SalesOrganizationCode IN (SELECT Items FROM dbo.Split('''+@SalesOrgCode+''','','')) OR '''+@SalesOrgCode+''' = '''' )            
+  GROUP BY BrandCode,SalesmanCode)')                                    
+                                  
+  --drop table #Month                       
+  */            
+            
+            
+           
+Drop table #SalesORganization            
+Drop table #SalesOrgData            
+Drop table #UserHierarchy            
+            
+End

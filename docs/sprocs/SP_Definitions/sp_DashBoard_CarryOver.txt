@@ -1,0 +1,290 @@
+-- ============================================================
+-- Stored Procedure: sp_DashBoard_CarryOver
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:52
+-- Definition Length: 20199 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   Split
+--   tblItem
+--   tblItemGroup
+--   tblMovementDetail
+--   tblMovementHeader
+--   tblPaymentHeader
+--   tblPaymentInvoice
+--   tblRecommendedOrder
+--   tblRoute
+--   tblTrxDetail
+--   tblTrxHeader
+--   tblUser
+--   udf_GetAllChildUsers
+
+-- ============================================================
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+  
+    
+      
+        
+          
+            
+              
+                
+CREATE PROCEDURE sp_DashBoard_CarryOver                      
+--Declare                         
+@Supervisor Varchar(Max)='',                                              
+                                              
+@Route Varchar(Max)='11018',                                            
+                                                                                                                                                    
+@UserCode VARCHAR(50) = 'admin',                              
+@salesOrganization VARCHAR(1000)='',                      
+@Salesmans VARCHAR(MAX)='',                      
+@Depot VARCHAR(MAX)='',                      
+@StartDate DATETIME='04/Feb/2017' ,                      
+@EndDate DateTime='06/Feb/2017'                      
+,@CurrencyCode VARCHAR(100)='SAR'                                   
+AS                      
+                               
+CREATE TABLE #User9(UserCode VARCHAR(50))                                                   
+                                
+INSERT INTO #User9(UserCode)                                
+SELECT Distinct UserCode                                
+FROM dbo.udf_GetAllChildUsers(@UserCode,'All')   U              
+INNER JOIN tblUser UU With(NoLock) ON U.UserCode =UU.Code              
+INNER JOIN tblRoute R  With(NoLock) ON UU.RouteCode=R.Code AND (IsNull(@Depot,'')='' OR R.AreaCode in (                  
+ select Items from dbo.Split(@Depot,',')))              
+  AND (R.Code IN (SELECT Items FROM dbo.Split(@Route,',')) OR ISNULL(@Route,'')='')              
+where (IsNull(@Salesmans,'')='' OR UserCode In (Select Items From dbo.Split(@Salesmans,',')))                 
+                 
+              
+              
+Declare @End_Date DATETIME =DateAdd(D,1,@EndDate)              
+                      
+select TrxCode  ,CASE WHEN TH.TrxType=5 then Convert(Date,TH.FinalizedDate)  WHEN TH.TrxType=4                           
+then Convert(Date,TH.CollectionDate) else Convert(Date,TH.TRIPDATE ) end AS TrxDate,TrxType ,TH.ClientCode ,OrgCode,RouteCode                    
+into #Trx                      
+from tblTrxHeader TH With(NoLock)                
+INNER JOIN #User9 U ON TH.UserCode=U.UserCode                              
+where TH.TrxType IN (1,12,5,4) AND TH.TRXStatus=200                                
+AND ((TH.TrxType IN (1,12) AND TH.TRIPDATE>=@StartDate AND TRIPDATE <@End_Date)                                    
+ OR (TH.TrxType IN (5) AND TH.FinalizedDate >=@StartDate AND FinalizedDate <@End_Date)                                                
+ OR (TH.TrxType IN (4) AND TH.CollectionDate>=@StartDate AND CollectionDate <@End_Date  )   )                                  
+--AND (TH.RouteCode IN (SELECT Items FROM dbo.Split(@Route,',')) OR ISNULL(@Route,'')='')                          
+                      
+                                
+--Returns                                       
+Select IsNull(SUM(IsNull(T.SalesAmount,0)),0) SalesAmount,ABS(IsNull(SUM(IsNull(T.ReturnAmount,0)),0) ) ReturnAmount                                            
+From(                                      
+Select                                               
+CASE WHEN TH.TrxType=4 THEN -1 ELSE 1 END *                                  
+ROUND(((( ISNULL(TD.QuantityLevel2,0) * CASE WHEN TH.TrxType=12 THEN  ISNULL(TD.PriceUsedLevel3,0) ELSE ISNULL(TD.PriceUsedLevel2,0) END ) +                                  
+ (ISNULL(TD.QuantityLevel3,0) * CASE WHEN TH.TrxType=12 THEN  ISNULL(TD.PriceUsedLevel2,0) ELSE ISNULL(TD.PriceUsedLevel3,0) END ))                                          
++((ISNULL(TD.FOC_CS_PRICE,0) * ISNULL(TD.QuantityLevel2,0)) + (ISNULL(TD.FOC_PC_PRICE,0) * ISNULL(TD.QuantityLevel3,0))))                                       
+,0) AS  SalesAmount ,                                                    
+Case When (TD.ItemType='R' OR TH.TrxType=4 ) Then (TD.PriceUsedLevel1 * TD.QuantityLevel1) ELSE 0 END AS ReturnAmount       
+from #Trx TH With(NoLock)                        
+Inner Join tblTrxDetail TD With(NoLock) ON                       
+TH.TrxCode=TD.TrxCode              
+                                      
+Inner Join tblItem I With(NoLock) ON I.Code=TD.ItemCode AND I.SalesOrgCode=TH.OrgCode                       
+Inner JOIN tblItemGroup CA WITH(NOLOCK) ON CA.Code=I.GroupLevel3 AND CA.ItemGroupLevelid=2                
+                                    
+) AS T                                    
+                                        
+--Select 3036934.36 as SalesAmount,-1078.03 as ReturnAmount                               
+                                            
+--Collection                                            
+                                            
+Select ISNULL(Sum(ISNULL(PH.Amount,0)),0) CollectionAmount                                            
+from tblTrxHeader(NOLOCK) TH                    
+INNER JOIN #User9 U               
+ON TH.Usercode=U.UserCode                          
+Inner Join tblPaymentInvoice PAI With(NoLock) ON PAI.Invoice_Number=TH.TrxCode --AND TH.TrxType=1 AND TH.TRXStatus=200                                            
+Inner Join tblPaymentHeader PH WITH(NoLock) ON PH.Receipt_Number=PAI.Receipt_Number AND PH.Status IN(1,2,3)                
+AND PH.ReceiptDate>=@StartDate AND PH.ReceiptDate<@End_Date                                             
+                                          
+                                          
+                                        
+--Select 315.5 as CollectionAmount                                              
+--Adherent                                              
+SELECT                                                                          
+ IsNull(SUM(CASE                                                                                   
+ WHEN OrderedQuantity >= RecommendedQuantity THEN 1                                                                                  
+ ELSE 0 END),0) AS Adherent,                                                   
+ IsNull(SUM(CASE                                                              
+ WHEN RecommendedQuantity > OrderedQuantity THEN 1                                                                          
+ ELSE 0 END),0) AS NonAdherent                        
+ FROM                     
+ (                                            
+ Select TD.ItemCode,                                            
+ IsNull(TD.QuantityLevel1,0) OrderedQuantity,                                            
+ ISNULL((Select Quantity From tblRecommendedOrder RO                                             
+ Where RO.ItemCode = TD.ItemCode AND RO.ClientCode = TH.ClientCode AND RO.SalesOrgCode = TH.OrgCode),0) as RecommendedQuantity                                            
+ from                                            
+ #Trx TH                                            
+ Inner Join tblTrxDetail TD With(NoLock) ON TH.TrxCode = TD.TrxCode AND TH.TrxType IN (1,5)                                       
+                                     
+ /* INNER JOIN tblCustomer C WITH(NOLOCK) ON C.Code = TH.ClientCode  */                                          
+ Inner Join tblItem I With(NoLock) ON I.Code=TD.ItemCode  AND I.SalesOrgCode=TH.OrgCode                                                                 
+                                            
+ Inner JOIN tblItemGroup CA WITH(NOLOCK) ON CA.Code=I.GroupLevel3 AND CA.ItemGroupLevelid=2                                              
+                                            
+ ) as T-- Sales & Movement                                            
+Select IsNull(SUM(T.Sales),0) as Sales,IsNull(SUM(T.Movement),0) as Movement From                                      
+(                                            
+ select 0 AS Sales,IsNull(SUM(MD.ShippedQuantity),0) AS Movement                                            
+ from tblMovementHeader MH WITH(NOLOCK)                          
+ INNER JOIN tblMovementDetail MD WITH(NOLOCK) ON MH.MovementCode = MD.MovementCode AND TransactionType='GatePass'                                             
+AND DateDiff(D,MovementDate,@StartDate)<=0                       
+AND DateDiff(D,MovementDate,@ENDDATE)>=0                            
+AND ISNULL(MH.MovementStatus,0) = 100                                               
+                         
+                              
+-- AND ISNULL(U.IsActive,1)=1          
+INNER JOIN #User9 U9 ON MH.UserCode=U9.UserCode                                    
+ Inner Join tblItem I With(NoLock) ON I.Code=MD.ItemCode AND I.SalesOrgCode=MH.OrgCode                                                          
+ Inner JOIN tblItemGroup CA WITH(NOLOCK) ON CA.Code=I.GroupLevel3 AND CA.ItemGroupLevelid=2                                      
+                                            
+ Union                                            
+                                             
+ Select                                       
+ SUM(CASE WHEn TD.ItemType='R' OR TH.TrxType=4 Then (-1) * TD.QuantityBU ELSE QuantityBU END) Sales                                       
+ ,0 AS Movement                                      
+ from #Trx TH With(NoLock)                   
+ Inner Join tblTrxDetail TD With(NoLock) ON TH.TrxCode=TD.TrxCode                                      
+ Inner Join tblItem I With(NoLock) ON I.Code=TD.ItemCode AND I.SalesOrgCode=TH.OrgCode                                                         
+ Inner JOIN tblItemGroup CA WITH(NOLOCK) ON CA.Code=I.GroupLevel3 AND CA.ItemGroupLevelid=2                                
+) AS T                                      
+                    
+                    
+                    
+                    
+                    
+                    
+-------MTD DETAILS                    
+                    
+    
+select TrxCode  ,CASE WHEN TH.TrxType=5 then Convert(Date,TH.FinalizedDate)  WHEN TH.TrxType=4                           
+then Convert(Date,TH.CollectionDate) else Convert(Date,TH.TRIPDATE ) end AS TrxDate,TrxType ,TH.ClientCode ,OrgCode,RouteCode                    
+into #MTDTrx                      
+from tblTrxHeader TH With(NoLock)                
+INNER JOIN #User9 U ON TH.UserCode=U.UserCode                              
+where TH.TrxType IN (1,12,5,4) AND TH.TRXStatus=200                                
+AND ((TH.TrxType IN (1,12) AND DATEDIFF(MM,TRIPDATE,GetDate())=0) /*TH.TRIPDATE>=@StartDate AND TRIPDATE <@End_Date)*/                               
+ OR (TH.TrxType IN (5) AND DATEDIFF(MM,FinalizedDate,GetDate())=0)/*TH.FinalizedDate >=@StartDate AND FinalizedDate <@End_Date)*/                                                
+ OR (TH.TrxType IN (4) AND DATEDIFF(MM,CollectionDate,GetDate())=0)/*TH.CollectionDate>=@StartDate AND CollectionDate <@End_Date  ) */   )                                  
+                    
+                                
+--Returns                                       
+Select IsNull(SUM(IsNull(T.SalesAmount,0)),0) SalesAmount,ABS(IsNull(SUM(IsNull(T.ReturnAmount,0)),0) ) ReturnAmount                                            
+From(                                      
+Select                                       
+CASE WHEN TH.TrxType=4 THEN -1 ELSE 1 END *                                  
+ROUND(((( ISNULL(TD.QuantityLevel2,0) * CASE WHEN TH.TrxType=12 THEN  ISNULL(TD.PriceUsedLevel3,0) ELSE ISNULL(TD.PriceUsedLevel2,0) END ) +(ISNULL(TD.QuantityLevel3,0) * CASE WHEN TH.TrxType=12 THEN  ISNULL(TD.PriceUsedLevel2,0) ELSE ISNULL(TD.PriceUsedLevel3,0) END ))                                          
++((ISNULL(TD.FOC_CS_PRICE,0) * ISNULL(TD.QuantityLevel2,0)) + (ISNULL(TD.FOC_PC_PRICE,0) * ISNULL(TD.QuantityLevel3,0))))                                          
+,0) AS  SalesAmount,                                            
+Case When TD.ItemType='R' OR TH.TrxType=4 Then (TD.PriceUsedLevel1 * TD.QuantityBU) ELSE 0 END AS ReturnAmount                                       
+from #MTDTrx TH With(NoLock)                
+--AND ISNULL(U.IsActive,1)=1                     
+Inner Join tblTrxDetail TD With(NoLock) ON TH.TrxCode=TD.TrxCode    AND  DateDiff(MM,TH.TrxDate,GETDATE())=0                                      
+Inner Join tblItem I With(NoLock) ON I.Code=TD.ItemCode  AND I.SalesOrgCode=TH.OrgCode                                                        
+Inner JOIN tblItemGroup CA WITH(NOLOCK) ON CA.Code=I.GroupLevel3 AND CA.ItemGroupLevelid=2                                      
+) AS T                                         
+                                        
+--Select 3036934.36 as SalesAmount,-1078.03 as ReturnAmount                                            
+                                            
+--Collection                                            
+                                            
+Select ISNULL(Sum(ISNULL(PH.Amount,0)),0) CollectionAmount                                            
+from tblTrxHeader TH With(NoLock)               
+INNER JOIN #User9 U ON TH.UserCode=U.UserCode              
+Inner Join tblPaymentInvoice PAI With(NoLock) ON PAI.Invoice_Number=TH.TrxCode                                                         
+Inner Join tblPaymentHeader PH WITH(NoLock) ON PH.Receipt_Number=PAI.Receipt_Number AND PH.Status IN(1,2,3)               
+ AND DateDiff(MM,PH.ReceiptDate,GETDATE())=0                                                
+                                          
+                                          
+                                        
+--Select 315.5 as CollectionAmount                                              
+--Adherent                  
+SELECT                                                                          
+ IsNull(SUM(CASE                                                                                   
+ WHEN OrderedQuantity >= RecommendedQuantity THEN 1         
+ ELSE 0 END),0) AS Adherent,                                                   
+ IsNull(SUM(CASE                                  
+ WHEN RecommendedQuantity > OrderedQuantity THEN 1                                                                                  
+ ELSE 0 END),0) AS NonAdherent                                                          
+ FROM                    
+ (                                       
+ Select TD.ItemCode,                                            
+ IsNull(TD.QuantityLevel1,0) OrderedQuantity,                                            
+ ISNULL((Select Quantity From tblRecommendedOrder RO                                             
+ Where RO.ItemCode = TD.ItemCode AND RO.ClientCode = TH.ClientCode AND RO.SalesOrgCode = TH.OrgCode),0) as RecommendedQuantity                                
+ from                                            
+ #MTDTrx TH                                            
+ Inner Join tblTrxDetail TD ON TH.TrxCode = TD.TrxCode AND TH.TrxType IN (1,5) AND DateDiff(MM,TH.TrxDate,GETDATE())=0                                          
+                                     
+ /* INNER JOIN tblCustomer C WITH(NOLOCK) ON C.Code = TH.ClientCode      */           
+                                       
+ Inner Join tblItem I With(NoLock) ON I.Code=TD.ItemCode  AND I.SalesOrgCode=TH.OrgCode                                                                
+ --Inner Join tblUserLevelHeirarchy ULH WITH(NOLOCK) On U.Code = ULH.UserCode                                             
+ --AND (ISNULL(@Supervisor,'')='' OR ULH.ReportsTo IN(Select Items from dbo.Split(@Supervisor,',')))                                              
+ Inner JOIN tblItemGroup CA WITH(NOLOCK) ON CA.Code=I.GroupLevel3 AND CA.ItemGroupLevelid=2                                              
+ --AND (ISNULL(@CategoryCode,'')='' OR CA.Code IN(Select Items from dbo.Split(@CategoryCode,',')))                                            
+ ) as T                                            
+                                             
+ -- Sales & Movement                                            
+Select IsNull(SUM(T.Sales),0) as Sales,IsNull(SUM(T.Movement),0) as Movement From                                      
+(                                            
+ select 0 AS Sales,IsNull(SUM(MD.ShippedQuantity),0) AS Movement                                            
+ from tblMovementHeader MH WITH(NOLOCK)                                            
+ INNER JOIN tblMovementDetail MD WITH(NOLOCK) ON MH.MovementCode = MD.MovementCode AND TransactionType='GatePass'                                             
+AND DateDiff(MM,MovementDate,GETDATE())=0                       
+AND ISNULL(MH.MovementStatus,0) = 100                                               
+               
+-- AND ISNULL(U.IsActive,1)=1                                           
+INNER JOIN #User9 U9 ON MH.UserCode=U9.UserCode                                   
+ Inner Join tblItem I With(NoLock) ON I.Code=MD.ItemCode AND I.SalesOrgCode=MH.OrgCode                                                          
+ Inner JOIN tblItemGroup CA WITH(NOLOCK) ON CA.Code=I.GroupLevel3 AND CA.ItemGroupLevelid=2                                      
+                                            
+ Union                                            
+                                             
+ Select                                       
+ SUM(CASE WHEn TD.ItemType='R' OR TH.TrxType =4 Then (-1) * TD.QuantityLevel1 ELSE QuantityLevel1 END) Sales                                       
+ ,0 AS Movement                                      
+ from #MTDTrx TH With(NoLock)                                      
+      -- AND ISNULL(U.IsActive,1)=1                 
+ Inner Join tblTrxDetail TD With(NoLock) ON TH.TrxCode=TD.TrxCode /*AND TH.TrxType IN (1,4)*/               
+ AND DateDiff(MM,TH.TrxDate,GETDATE())=0                                     
+ Inner Join tblItem I With(NoLock) ON I.Code=TD.ItemCode AND I.SalesOrgCode=TH.OrgCode                                                         
+ Inner JOIN tblItemGroup CA WITH(NOLOCK) ON CA.Code=I.GroupLevel3 AND CA.ItemGroupLevelid=2                                      
+) AS T                                      
+                    
+                
+Select SUM(SuggestedOrder)SuggestedOrder,Sum(SuggestedOrderMTD)SuggestedOrderMTD                
+from(                    
+                  
+  Select                                       
+ 0 As SuggestedOrder,CASE WHEN SUM(SuggestedBU)!=0 THEN(SUM(SuggestedBU)-SUM(QuantityBU)) *100/SUM(SuggestedBU)  ELSE 0 END                
+ AS SuggestedOrderMTD                                   
+ from #MTDTrx TH With(NoLock)                       
+                      
+                                              
+ Inner Join tblTrxDetail TD With(NoLock) ON TH.TrxCode=TD.TrxCode    AND TH.TrxType IN (1,5) AND DateDiff(MM,TH.TrxDate,GETDATE())=0                                        
+ Inner Join tblItem I With(NoLock) ON I.Code=TD.ItemCode  AND I.SalesOrgCode=TH.OrgCode                                                        
+ Inner JOIN tblItemGroup CA WITH(NOLOCK) ON CA.Code=I.GroupLevel3 AND CA.ItemGroupLevelid=2                                      
+  UNION                
+  select CASE WHEN SUM(SuggestedBU)!=0 THEN (SUM(SuggestedBU)-SUM(QuantityBU)) *100/SUM(SuggestedBU)ELSE 0 END As SuggestedOrder,0 
+ AS SuggestedOrderMTDfrom #Trx TH With(NoLock)               
+ Inner Join tblTrxDetail TD With(NoLock) ON TH.TrxCode=TD.TrxCode  AND TH.TrxType IN (1,5)                                        
+ Inner Join tblItem I With(NoLock) ON I.Code=TD.ItemCode  AND I.SalesOrgCode=TH.OrgCode                                                        
+ Inner JOIN tblItemGroup CA WITH(NOLOCK) ON CA.Code=I.GroupLevel3 AND CA.ItemGroupLevelid=2                 
+  ) T                
+          
+                  
+Drop table #User9                 
+                
+ Drop table #Trx     
+ Drop table #MTDTrx

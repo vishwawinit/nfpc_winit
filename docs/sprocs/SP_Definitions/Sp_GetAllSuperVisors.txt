@@ -1,0 +1,28 @@
+-- ============================================================
+-- Stored Procedure: Sp_GetAllSuperVisors
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:44
+-- Definition Length: 504 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   tblRole
+--   tblUser
+--   tblUserDetails
+--   tblUserRole
+
+-- ============================================================
+
+CREATE Proc Sp_GetAllSuperVisors    
+ @UserCode Varchar(50)='admin'    
+    
+ as begin    
+   
+Select distinct Sup.Code SuperVisorCode,Sup.Description as SuperVisorName From tblUser U Inner join tblUserDetails UD On UD.USerCode=U.Code  
+Inner join tblUserRole UR On UR.UserCode=UD.UserCode  
+Inner join tblRole R On R.COde =UR.ROleCOde and (R.Name  IN ( 'Sales Supervisor Role','Sales Supervisor Role.'))     
+Inner join (Select Code,Description from tblUser) Sup on Sup.Code=UD.ReportsTO  
+    
+    
+End

@@ -1,0 +1,118 @@
+-- ============================================================
+-- Stored Procedure: sp_DashboardSales_SalesPercentage
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:56
+-- Definition Length: 5267 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   Sp_SalesUserHierarchy
+--   Split
+--   tblCustomerDetail
+--   tblItem
+--   tblRoute
+--   tblRouteSalesCollectionSummary
+--   tblRouteSalesSummaryByItemCustomer
+--   tblSalesOrganization
+
+-- ============================================================
+
+--/*EXEC sp_DashboardSales @Route='11013',@iMonth=8*/                                        
+                                                      
+CREATE PROCEDURE sp_DashboardSales_SalesPercentage                                                   
+--Declare                                                  
+@Year INT=2025,                                              
+@iMonth INT=1,                                      
+@Day INT=1,                                               
+@SalesOrg Varchar(Max)='' ,           
+@HOS Varchar(Max)='' ,           
+@ASM Varchar(Max)='' ,           
+@Supervisor Varchar(Max)='' ,           
+@SalesExecutive Varchar(Max)='' ,           
+@Salesman Varchar(Max)='' ,           
+@Route Varchar(Max)='' ,           
+@Category Varchar(Max)='' ,           
+@Brand Varchar(Max)='' ,           
+@SubBrand Varchar(Max)='' ,           
+@GrandChannel Varchar(Max)='' ,           
+@SubChannel Varchar(Max)='' ,         
+/*        
+@CategoryCode Varchar(Max)='' ,           
+@CountryCode Varchar(Max)='' ,           
+@DateFilter  VArchar(50)='',        
+@UnitorSAR  Varchar(50)='',        
+@Usercode  Varchar(50)='',        
+*/        
+        
+@ServerBy Varchar(Max)='',
+@SubSubChannel VARCHAR(MAX) = ''
+        
+AS              
+SET @SalesOrg = REPLACE(@SalesOrg,'''','') ;       
+SET @HOS = REPLACE(@HOS,'''','') ;       
+SET @ASM = REPLACE(@ASM,'''','') ;       
+SET @Supervisor = REPLACE(@Supervisor,'''','') ;       
+SET @SalesExecutive = REPLACE(@SalesExecutive,'''','') ;       
+SET @Salesman = REPLACE(@Salesman,'''','') ;       
+SET @Route = REPLACE(@Route,'''','') ;       
+SET @Category = REPLACE(@Category,'''','') ;       
+SET @Brand = REPLACE(@Brand,'''','') ;       
+SET @SubBrand = REPLACE(@SubBrand,'''','') ;       
+SET @GrandChannel = REPLACE(@GrandChannel,'''','') ;       
+SET @SubChannel = REPLACE(@SubChannel,'''','') ;       
+SET @ServerBy = REPLACE(@ServerBy,'''','') ;  
+SET @SubSubChannel = REPLACE(@SubSubChannel,'''','') ;
+          
+select S.Code UserCode INTO #UserHierarchy           
+from Sp_SalesUserHierarchy    S          
+where (ISNULL(@Salesman,'')='' OR S.Code in (select Items from dbo.Split(@Salesman,',')))          
+and  (ISNULL(@Supervisor,'')='' OR S.Supervisor in (select Items from dbo.Split(@Supervisor,',')))          
+and  (ISNULL(@ASM,'')='' OR S.ASMCode in (select Items from dbo.Split(@ASM,',')))        
+and  (ISNULL(@SalesExecutive,'')='' OR S.SalesExecutive in (select Items from dbo.Split(@SalesExecutive,',')))        
+and  (ISNULL(@HOS,'')='' OR S.HeadOfSales in (select Items from dbo.Split(@HOS,',')))          
+          
+          
+select Code,ParentSalesOrg INTO #SalesOrgData from tblSalesOrganization                      
+          
+  
+--Sales and Return              
+select SalesAmount-ReturnAmount SalesAmount, ReturnAmount from (              
+Select round(SUM(ISNULL(TotalSales,0)),0) SalesAmount,round(SUM(ISNULL(TotalGRSales,0)+ISNULL(TotalDamageSales,0)+ISNULL(TotalExpirySales,0)),0)  ReturnAmount                
+from tblRouteSalesSummaryByItemCustomer ER           
+inner join #UserHierarchy  U on U.UserCode=ER.UserCode          
+Inner join tblRoute R on R.Code=ER.RouteCode          
+Inner join #SalesOrgData S on S.Code=R.SalesOrgCode          
+Inner join tblItem I on I.Code=ER.ItemCode /*and I.SalesOrgCode=S.ParentSalesOrg*/    
+Inner join tblCustomerDetail CD on CD.CustomerCode=ER.CustomerCode /*and CD.SalesOrgCode=R.SalesOrgCode   */          
+where MONTH([Date])=@iMonth and YEAR([Date])=@Year            
+and (ISNULL(@SalesOrg,'')='' OR S.Code in (select Items from dbo.Split(@SalesOrg,',') ))          
+and (ISNULL(@Route,'')='' OR ER.RouteCode in (select Items from dbo.Split(@Route,',') ))          
+and (ISNULL(@Category,'')='' OR I.GroupLevel4 in (select Items from dbo.Split(@Category,',') ))          
+and (ISNULL(@Brand,'')='' OR I.GroupLevel2 in (select Items from dbo.Split(@Brand,',') ))          
+and (ISNULL(@SubBrand,'')='' OR I.GroupLevel3 in (select Items from dbo.Split(@SubBrand,',') ))          
+and (ISNULL(@GrandChannel,'')='' OR CD.ChannelCode in (select Items from dbo.Split(@GrandChannel,',') ))          
+and (ISNULL(@SubChannel,'')='' OR CD.SubChannelCode in (select Items from dbo.Split(@SubChannel,',') ))  
+and (ISNULL(@SubSubChannel,'')='' OR CD.SubSubChannelCode in (select Items from dbo.Split(@SubSubChannel,',') )) 
+) as T              
+              
+              
+--COllection              
+select SUM(ISNULL(TotalCollection,0)) CollectionAmount                
+from tblRouteSalesCollectionSummary ER           
+inner join #UserHierarchy  U on U.UserCode=ER.UserCode          
+Inner join tblRoute R on R.Code=ER.RouteCode          
+Inner join #SalesOrgData S on S.Code=R.SalesOrgCode          
+where MONTH([Date])=@iMonth and YEAR([Date])=@Year           
+and (ISNULL(@SalesOrg,'')='' OR S.Code in (select Items from dbo.Split(@SalesOrg,',') ))          
+and (ISNULL(@Route,'')='' OR ER.RouteCode in (select Items from dbo.Split(@Route,',') ))          
+              
+select 0 Adherent,0 NonAdherent              
+              
+              
+select -1 Sales,-1 Movement              
+              
+select -2 SuggestedOrderMTD              
+              
+DROP TABLE #UserHierarchy  
+DROP TABLE #SalesOrgData

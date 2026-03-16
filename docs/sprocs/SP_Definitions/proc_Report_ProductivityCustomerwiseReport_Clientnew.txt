@@ -1,0 +1,63 @@
+-- ============================================================
+-- Stored Procedure: proc_Report_ProductivityCustomerwiseReport_Clientnew
+-- Database: NFPCsfaV3_300125
+-- Server: 10.20.53.175
+-- Extracted: 2026-03-12 10:02:37
+-- Definition Length: 3090 chars
+-- ============================================================
+
+-- Referenced Objects:
+--   tblCustomer
+--   tblCustomerDetail
+--   tblCustomerVisit
+--   tblDailyJourneyPlan
+--   tblTrxHeader
+--   ufnSplit
+
+-- ============================================================
+
+CREATE PROC [dbo].[proc_Report_ProductivityCustomerwiseReport_Clientnew]                                                               
+                                                              
+@searchString VARCHAR(max) = ' 1 = 1 ',                                                                                
+@Type VARCHAR(10) = 'daily',                                                            
+@Startdate VARCHAR(50) = '2015-02-01',                                                          
+@EndDate VARCHAR(50) = '2015-02-17',                        
+@SessionUserCode VARCHAR(50) = 'admin' ,                      
+@UserCode Varchar(50)='96214',        
+@ChannelCodes VARCHAR(max) = '',          
+@SalesTeamCodes VARCHAR(max)=''                                                                               
+AS                                                                           
+                          
+                          
+                                                    
+IF @StartDate = ''                                                              
+SET @StartDate = CAST(GETDATE() AS VARCHAR)                                       
+                                                    
+IF @EndDate = ''                                                              
+SET @EndDate = CAST(GETDATE() AS VARCHAR)                                                                             
+                                                    
+                       
+                                                                                                                                              
+SET @searchString = ' 1 = 1 '          
+         
+                       
+SElECT DISTINCT V.UserCode, V.ClientCode CUSTOMERCODE,C.Description CUSTOMERNAME, COUNT(V.[Date]) ActualCalls,      
+COUNT(TH.ClientCode) ProductivityCalls      
+FROM tblCustomerVisit V               
+INNER JOIN tblCustomer C ON C.Code = V.ClientCode AND V.UserCode = @UserCode                    
+INNER JOIN tblCustomerDetail CD On C.Code =CD.CustomerCode       
+ AND (@ChannelCodes = '' OR CD.ChannelCode IN(SELECT Item FROM ufnSplit(@ChannelCodes, ',')))                     
+LEFT OUTER JOIN tblTrxHeader TH ON TH.UserCode = V.UserCode AND TH.VisitCode = V.VisitCode                      
+ AND V.ClientCode = TH.ClientCode      
+ AND TH.OrgCode = CD.SalesOrgCode           
+ AND TH.TrxType IN (1,5) AND TH.TrxStatus IN (100,200,3)                
+ AND DATEDIFF(d, TH.TrxDate, V.Date) = 0      
+LEFT OUTER JOIN tblDailyJourneyPlan DP ON DP.UserCode = V.UserCode AND DP.CustomerCode = V.ClientCode       
+ AND CONVERT(DATE,DP.JourneyDate) = CONVERT(DATE,V.Date)       
+WHERE (DATEDIFF(dd,@StartDate,V.[Date]) >= 0 AND DATEDIFF(dd,@EndDate,V.[Date]) <= 0)                     
+GROUP BY V.UserCode, V.ClientCode,C.Description                                                      
+               
+                           
+                                    
+                                    
+-----------------------------------------------------------------------------
