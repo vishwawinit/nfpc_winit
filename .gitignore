@@ -12,3 +12,4 @@ playwright-report/
 .DS_Store
 etl/logs/
 frontend/dist/
+.claude/settings.local.json
