@@ -71,11 +71,53 @@ def main():
     rows = mc.fetchall()
     test_load(pc, pg, 'dim_route', ['code','name','sales_org_code','route_type','area_code','sub_area_code','route_cat_code','salesman_code','wh_code','is_active'], rows)
 
-    # dim_user
+    # dim_user (flat join)
     pc.execute("DELETE FROM dim_user")
-    mc.execute("SELECT Code, Description, SalesOrgCode, RouteCode, DepotCode, ReportsTo, UserType, IsActive FROM tblUser")
+    mc.execute("""
+        SELECT
+            u.Code, u.Description, u.Email, u.Username, u.MobileNo,
+            COALESCE(u.SalesOrgCode, ud.SalesOrgCode), u.RouteCode,
+            COALESCE(rt.AreaCode, ul.RegionCode),
+            COALESCE(rg.Description, ul.RegionCode),
+            COALESCE(sup.Code, ud.ReportsTo), sup.Description,
+            u.UserType, u.UserSubType, u.Department, u.SalesGroup,
+            u.EmpCode, u.EmpFileNo,
+            COALESCE(ur2.RoleCode, u.RoleCode), rl.Name,
+            u.LocationCode, u.VanCode,
+            ul.CountryCode, ul.RegionCode,
+            ud.SalesOrgCode, ud.ReportsTo,
+            u.IsActive
+        FROM tblUser u
+        LEFT JOIN (
+            SELECT UserCode, RoleCode,
+                   ROW_NUMBER() OVER (PARTITION BY UserCode ORDER BY CreatedOn DESC) AS rn
+            FROM tblUserRole
+        ) ur2 ON ur2.UserCode = u.Code AND ur2.rn = 1
+        LEFT JOIN tblRole rl ON rl.Code = COALESCE(ur2.RoleCode, u.RoleCode)
+        LEFT JOIN tblRoute rt ON rt.Code = u.RouteCode
+        LEFT JOIN tblRegion rg ON rg.Code = rt.AreaCode
+        LEFT JOIN (
+            SELECT UserCode, SalesOrgCode, ReportsTo,
+                   ROW_NUMBER() OVER (PARTITION BY UserCode ORDER BY UserDetailsID DESC) AS rn
+            FROM tblUserDetails
+        ) ud ON ud.UserCode = u.Code AND ud.rn = 1
+        LEFT JOIN tblUser sup ON sup.Code = ud.ReportsTo COLLATE SQL_Latin1_General_CP1_CI_AS
+        LEFT JOIN (
+            SELECT UserCode, CountryCode, RegionCode, Site,
+                   ROW_NUMBER() OVER (PARTITION BY UserCode ORDER BY UserLocationId DESC) AS rn
+            FROM tblUserLocations
+        ) ul ON ul.UserCode = u.Code AND ul.rn = 1
+    """)
     rows = mc.fetchall()
-    test_load(pc, pg, 'dim_user', ['code','name','sales_org_code','route_code','depot_code','reports_to','user_type','is_active'], rows)
+    test_load(pc, pg, 'dim_user', [
+        'code','name','email','username','mobile_no',
+        'sales_org_code','route_code','depot_code','depot_name',
+        'reports_to','reports_to_name','user_type','user_sub_type',
+        'department','sales_group','emp_code','emp_file_no',
+        'role_code','role_name','location_code','van_code',
+        'country_code','region_code','ud_sales_org_code','ud_reports_to',
+        'is_active'
+    ], rows)
 
     # dim_channel
     pc.execute("DELETE FROM dim_channel")

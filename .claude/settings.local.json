@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "WebSearch"
+      "WebSearch",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(find /Users/mac/Downloads/nfpc-reports-main -type d -name *etl* -o -type d -name *migrat* -o -type d -name *sync* -o -type d -name *scripts* -o -type d -name *db*)",
+      "Bash(curl -s \"http://localhost:8000/api/sales-performance?date_from=2026-03-03&date_to=2026-03-03\")",
+      "Bash(npx vite:*)"
     ]
   }
 }
