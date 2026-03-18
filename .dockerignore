@@ -4,6 +4,6 @@
 etl/
 docs/
 frontend/node_modules/
-frontend/src/
+frontend/dist/
 __pycache__
 vpn-auth.txt
