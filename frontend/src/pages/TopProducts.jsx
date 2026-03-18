@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { fetchTopProducts } from '../api';
 import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
@@ -28,18 +28,26 @@ function GrowthBadge({ value }) {
 export default function TopProducts() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ month: 3, year: 2026 });
+  const [refreshing, setRefreshing] = useState(false);
+  const hasData = useRef(false);
+  const [filters, setFilters] = useState(() => {
+    const now = new Date();
+    return { month: now.getMonth() + 1, year: now.getFullYear() };
+  });
   const [view, setView] = useState('value'); // 'value' | 'units'
 
   useEffect(() => {
-    setLoading(true);
+    let cancelled = false;
+    if (!hasData.current) setLoading(true);
+    else setRefreshing(true);
     fetchTopProducts(filters)
-      .then(res => setData(res.data || res))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+      .then(res => { if (!cancelled) { setData(res.data || res); hasData.current = true; } })
+      .catch(err => { if (!cancelled) console.error(err); })
+      .finally(() => { if (!cancelled) { setLoading(false); setRefreshing(false); } });
+    return () => { cancelled = true; };
   }, [filters]);
 
-  if (loading) return <Loading />;
+  
   if (!data || data.length === 0)
     return (
       <div className="space-y-6">
@@ -48,7 +56,7 @@ export default function TopProducts() {
           <p className="text-sm text-gray-500 mt-1">Best selling products ranked by revenue and volume</p>
         </div>
         <FilterPanel filters={filters} onChange={setFilters}
-          showFields={['sales_org', 'user_code', 'month', 'year']} />
+          showFields={['month', 'year', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'category', 'brand']} />
         <div className="text-center py-16 text-gray-400">No data available</div>
       </div>
     );
@@ -94,7 +102,7 @@ export default function TopProducts() {
       </div>
 
       <FilterPanel filters={filters} onChange={setFilters}
-        showFields={['sales_org', 'user_code', 'month', 'year']} />
+        showFields={['month', 'year', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'category', 'brand']} />
 
       {/* KPI Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

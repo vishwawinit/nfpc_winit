@@ -1,4 +1,15 @@
-"""Dashboard report endpoint."""
+"""Dashboard report endpoint - aligned with MSSQL stored procedures.
+
+Source SPs:
+  - sp_tblOrder_Total_SalesAndCollection_Dashboard_Reports_ByItem (total sales/collection)
+  - sp_tblOrder_Weekly_Dashboard_Reports_V1_NEw_OPTS_ByItem_V1 (daily sales trend)
+  - sp_tblPaymentHeader_Weekly_Dashboard_Reports_V1_New_OPTS (daily collection trend)
+  - SP_CoverageReport_ForDashboard_Reports_V1_NEW_OPTS (coverage/call metrics)
+  - SP_StrikeRate_ForDashboard_Reports (strike rate)
+  - sp_GetSalesmanWiseCollection_Dashboard_Reports_By_Item (route-wise sales+collection)
+  - SP_GetDashboardRouteDetails_Dashboard_Reports_V1_New_OPTS (route-wise coverage)
+  - SP_tblCommonTarget_SELECT_TARGET_FOR_DASHBOARD_ByItem (targets)
+"""
 from fastapi import APIRouter, Query
 from typing import Optional
 from datetime import date
@@ -14,20 +25,22 @@ def _filter_keys(filters: dict, allowed_keys: set) -> dict:
 
 
 # Column availability per table
-# rpt_sales_detail has: date_from/to, sales_org, route, user_code, channel, brand, category, item
-SALES_DETAIL_KEYS = {'date_from', 'date_to', 'sales_org', 'route', 'user_code', 'channel', 'brand', 'category', 'item'}
-# rpt_collections has: date_from/to, sales_org, route, user_code (NO channel, brand, category)
-COLLECTIONS_KEYS = {'date_from', 'date_to', 'sales_org', 'route', 'user_code'}
-# rpt_targets has: date_from/to, sales_org, route, user_code (as salesman_code) (NO channel, brand)
-TARGETS_KEYS = {'date_from', 'date_to', 'sales_org', 'route', 'user_code'}
-# rpt_coverage_summary has: date_from/to, sales_org, route, user_code (NO channel, brand)
-COVERAGE_KEYS = {'date_from', 'date_to', 'sales_org', 'route', 'user_code'}
-# rpt_route_sales_collection has: date_from/to, sales_org, route, user_code (NO channel, brand)
+# rpt_route_sales_summary_by_item: date, sales_org, route, user_code, item, category, brand
+ROUTE_SALES_ITEM_KEYS = {'date_from', 'date_to', 'sales_org', 'route', 'user_code', 'item', 'category', 'brand'}
+# rpt_route_sales_collection: date, sales_org, route, user_code
 ROUTE_SC_KEYS = {'date_from', 'date_to', 'sales_org', 'route', 'user_code'}
-# rpt_customer_visits has: date_from/to, sales_org, route, user_code (NO channel, brand)
+# rpt_coverage_summary: date, sales_org, route, user_code
+COVERAGE_KEYS = {'date_from', 'date_to', 'sales_org', 'route', 'user_code'}
+# rpt_sales_detail: all filter keys
+SALES_DETAIL_KEYS = {'date_from', 'date_to', 'sales_org', 'route', 'user_code', 'channel', 'brand', 'category', 'item'}
+# rpt_customer_visits: date, sales_org, route, user_code
 VISITS_KEYS = {'date_from', 'date_to', 'sales_org', 'route', 'user_code'}
-# rpt_journey_plan has: date_from/to, sales_org, route, user_code
+# rpt_journey_plan: date, sales_org, route, user_code
 JOURNEY_KEYS = {'date_from', 'date_to', 'sales_org', 'route', 'user_code'}
+# rpt_invoice_totals: trx_date, sales_org, route, user_code
+INVOICE_TOTALS_KEYS = {'date_from', 'date_to', 'sales_org', 'route', 'user_code'}
+# rpt_route_sales_by_item_customer: date, route, user_code (no sales_org)
+RSIC_KEYS = {'date_from', 'date_to', 'route', 'user_code'}
 
 
 @router.get("/dashboard")
@@ -60,7 +73,6 @@ def get_dashboard(
         if resolved and not filters.get('user_code'):
             filters['user_code'] = resolved
         elif resolved and filters.get('user_code'):
-            # Intersect with existing user_code filter
             existing = set(filters['user_code'].split(','))
             resolved_set = set(resolved.split(','))
             intersected = existing & resolved_set
@@ -68,146 +80,317 @@ def get_dashboard(
                 return _empty_response()
             filters['user_code'] = ','.join(intersected)
 
-    # --- Total Sales (trx_type=1 sales, minus trx_type=4 returns) ---
-    f_sales = _filter_keys(filters, SALES_DETAIL_KEYS)
-    sw, sp = build_where(f_sales, date_col='trx_date')
-    total_sales_row = query_one(
-        f"SELECT COALESCE(SUM(CASE WHEN trx_type = 1 THEN net_amount "
-        f"  WHEN trx_type = 4 THEN -net_amount ELSE 0 END),0) AS total_sales "
-        f"FROM rpt_sales_detail WHERE trx_type IN (1,4) AND {sw}", sp
+    # =========================================================
+    # TOTAL SALES — primary: rpt_route_sales_summary_by_item
+    # Fallback: rpt_invoice_totals (correct net formula)
+    # =========================================================
+    f_rssi = _filter_keys(filters, ROUTE_SALES_ITEM_KEYS)
+    sw, sp = build_where(f_rssi, date_col='date')
+    sales_row = query_one(
+        f"SELECT COALESCE(SUM(total_sales),0) AS total_sales, "
+        f"  COALESCE(SUM(total_sales_with_tax),0) AS total_sales_with_tax, "
+        f"  COALESCE(SUM(total_wastage),0) AS total_wastage, "
+        f"  COALESCE(SUM(target_amount),0) AS target_from_summary "
+        f"FROM rpt_route_sales_summary_by_item WHERE {sw}", sp
     )
-    total_sales = float(total_sales_row["total_sales"]) if total_sales_row else 0
+    total_sales = float(sales_row["total_sales"]) if sales_row else 0
+    total_sales_with_tax = float(sales_row["total_sales_with_tax"]) if sales_row else 0
+    total_wastage = float(sales_row["total_wastage"]) if sales_row else 0
 
-    # --- Total Collection ---
-    f_coll = _filter_keys(filters, COLLECTIONS_KEYS)
-    cw, cp = build_where(f_coll, date_col='receipt_date')
-    total_coll_row = query_one(
-        f"SELECT COALESCE(SUM(amount),0) AS total_collection "
-        f"FROM rpt_collections WHERE {cw}", cp
+    # Fallback 1: rpt_invoice_totals
+    if total_sales == 0:
+        f_it = _filter_keys(filters, INVOICE_TOTALS_KEYS)
+        itw, itp = build_where(f_it, date_col='trx_date')
+        it_row = query_one(
+            f"SELECT COALESCE(SUM(total_sales),0) AS total_sales, "
+            f"  COALESCE(SUM(total_returns),0) AS total_returns "
+            f"FROM rpt_invoice_totals WHERE {itw}", itp
+        )
+        if it_row:
+            it_sales = float(it_row["total_sales"])
+            it_returns = float(it_row["total_returns"])
+            total_sales = max(0.0, it_sales - it_returns)
+
+    # Fallback 2: rpt_route_sales_by_item_customer (has latest data, no sales_org col)
+    if total_sales == 0:
+        f_rsic = _filter_keys(filters, RSIC_KEYS)
+        rsicw, rsicp = build_where(f_rsic, date_col='date')
+        rsic_row = query_one(
+            f"SELECT COALESCE(SUM(total_sales),0) AS total_sales "
+            f"FROM rpt_route_sales_by_item_customer WHERE {rsicw}", rsicp
+        )
+        if rsic_row:
+            total_sales = float(rsic_row["total_sales"])
+
+    # =========================================================
+    # TOTAL COLLECTION — primary: rpt_route_sales_collection
+    # Fallback: rpt_collections
+    # =========================================================
+    f_rsc = _filter_keys(filters, ROUTE_SC_KEYS)
+    cw, cp = build_where(f_rsc, date_col='date')
+    coll_row = query_one(
+        f"SELECT COALESCE(SUM(total_collection),0) AS total_collection "
+        f"FROM rpt_route_sales_collection WHERE {cw}", cp
     )
-    total_collection = float(total_coll_row["total_collection"]) if total_coll_row else 0
+    total_collection = float(coll_row["total_collection"]) if coll_row else 0
 
-    # --- Total Target for the period ---
-    f_target = _filter_keys(filters, TARGETS_KEYS)
-    tw, tp = build_where(f_target, date_col='start_date')
-    # Targets use salesman_code not user_code - adjust filter
-    tw_target = tw.replace('user_code', 'salesman_code')
-    target_row = query_one(
-        f"SELECT COALESCE(SUM(amount),0) AS total_target "
-        f"FROM rpt_targets WHERE is_active = true AND {tw_target}", tp
-    )
-    total_target = float(target_row["total_target"]) if target_row else 0
+    # Fallback: use rpt_collections when summary table has no data
+    if total_collection == 0:
+        f_coll_fb = _filter_keys(filters, ROUTE_SC_KEYS)
+        cfw, cfp = build_where(f_coll_fb, date_col='receipt_date')
+        coll_fb = query_one(
+            f"SELECT COALESCE(SUM(amount),0) AS total_collection "
+            f"FROM rpt_collections WHERE {cfw}", cfp
+        )
+        total_collection = float(coll_fb["total_collection"]) if coll_fb else 0
 
-    # --- Daily sales breakdown (net of returns) ---
-    f_sales2 = _filter_keys(filters, SALES_DETAIL_KEYS)
-    sw2, sp2 = build_where(f_sales2, date_col='trx_date')
+    # =========================================================
+    # TOTAL TARGET
+    # =========================================================
+    total_target = float(sales_row["target_from_summary"]) if sales_row else 0
+
+    # Fallback: use rpt_targets when summary has no target data
+    if total_target == 0:
+        f_tgt = _filter_keys(filters, ROUTE_SC_KEYS)
+        tgt_row = query_one(
+            "SELECT COALESCE(SUM(amount),0) AS target "
+            "FROM rpt_targets WHERE is_active = true "
+            "AND start_date <= %s AND end_date >= %s",
+            [filters.get('date_to') or '2026-12-31', filters.get('date_from') or '2026-01-01']
+        )
+        total_target = float(tgt_row["target"]) if tgt_row else 0
+
+    # =========================================================
+    # DAILY SALES TREND — primary: rpt_route_sales_summary_by_item
+    # Fallback: rpt_invoice_totals
+    # =========================================================
+    f_rssi2 = _filter_keys(filters, ROUTE_SALES_ITEM_KEYS)
+    sw2, sp2 = build_where(f_rssi2, date_col='date')
     daily_sales = query(
-        f"SELECT trx_date AS date, COALESCE(SUM(CASE WHEN trx_type = 1 THEN net_amount "
-        f"  WHEN trx_type = 4 THEN -net_amount ELSE 0 END),0) AS sales "
-        f"FROM rpt_sales_detail WHERE trx_type IN (1,4) AND {sw2} "
-        f"GROUP BY trx_date ORDER BY trx_date", sp2
+        f"SELECT date, COALESCE(SUM(total_sales), 0) AS sales "
+        f"FROM rpt_route_sales_summary_by_item WHERE {sw2} "
+        f"GROUP BY date ORDER BY date", sp2
     )
 
-    # --- Daily collection breakdown ---
-    f_coll2 = _filter_keys(filters, COLLECTIONS_KEYS)
-    cw2, cp2 = build_where(f_coll2, date_col='receipt_date')
+    # Fallback 1: rpt_invoice_totals for daily trend
+    if not daily_sales:
+        f_it2 = _filter_keys(filters, INVOICE_TOTALS_KEYS)
+        itw2, itp2 = build_where(f_it2, date_col='trx_date')
+        daily_sales = query(
+            f"SELECT trx_date AS date, "
+            f"  COALESCE(SUM(total_sales) - SUM(total_returns), 0) AS sales "
+            f"FROM rpt_invoice_totals WHERE {itw2} "
+            f"GROUP BY trx_date ORDER BY trx_date", itp2
+        )
+
+    # Fallback 2: rpt_route_sales_by_item_customer for daily trend
+    if not daily_sales:
+        f_rsic2 = _filter_keys(filters, RSIC_KEYS)
+        rsicw2, rsicp2 = build_where(f_rsic2, date_col='date')
+        daily_sales = query(
+            f"SELECT date, COALESCE(SUM(total_sales), 0) AS sales "
+            f"FROM rpt_route_sales_by_item_customer WHERE {rsicw2} "
+            f"GROUP BY date ORDER BY date", rsicp2
+        )
+
+    # =========================================================
+    # DAILY COLLECTION TREND — primary: rpt_route_sales_collection
+    # Fallback: rpt_collections
+    # =========================================================
+    f_rsc2 = _filter_keys(filters, ROUTE_SC_KEYS)
+    cw2, cp2 = build_where(f_rsc2, date_col='date')
     daily_collection = query(
-        f"SELECT receipt_date AS date, COALESCE(SUM(amount),0) AS collection "
-        f"FROM rpt_collections WHERE {cw2} "
-        f"GROUP BY receipt_date ORDER BY receipt_date", cp2
+        f"SELECT date, COALESCE(SUM(total_collection), 0) AS collection "
+        f"FROM rpt_route_sales_collection WHERE {cw2} "
+        f"GROUP BY date ORDER BY date", cp2
     )
 
-    # --- Week-wise sales & collection ---
-    f_sales3 = _filter_keys(filters, SALES_DETAIL_KEYS)
-    sw3, sp3 = build_where(f_sales3, date_col='trx_date')
+    # Fallback: use rpt_collections for daily collection trend
+    if not daily_collection:
+        f_coll2 = _filter_keys(filters, ROUTE_SC_KEYS)
+        cfw2, cfp2 = build_where(f_coll2, date_col='receipt_date')
+        daily_collection = query(
+            f"SELECT receipt_date AS date, COALESCE(SUM(amount), 0) AS collection "
+            f"FROM rpt_collections WHERE {cfw2} "
+            f"GROUP BY receipt_date ORDER BY receipt_date", cfp2
+        )
+
+    # =========================================================
+    # WEEK-WISE SALES & COLLECTION
+    # =========================================================
+    f_rssi3 = _filter_keys(filters, ROUTE_SALES_ITEM_KEYS)
+    sw3, sp3 = build_where(f_rssi3, date_col='date')
     weekly_sales = query(
-        f"SELECT DATE_TRUNC('week', trx_date)::date AS week_start, "
-        f"  'W' || EXTRACT(WEEK FROM trx_date)::int AS week_label, "
-        f"  COALESCE(SUM(CASE WHEN trx_type = 1 THEN net_amount "
-        f"    WHEN trx_type = 4 THEN -net_amount ELSE 0 END),0) AS sales "
-        f"FROM rpt_sales_detail WHERE trx_type IN (1,4) AND {sw3} "
-        f"GROUP BY DATE_TRUNC('week', trx_date), EXTRACT(WEEK FROM trx_date) "
+        f"SELECT DATE_TRUNC('week', date)::date AS week_start, "
+        f"  'W' || EXTRACT(WEEK FROM date)::int AS week_label, "
+        f"  COALESCE(SUM(total_sales), 0) AS sales "
+        f"FROM rpt_route_sales_summary_by_item WHERE {sw3} "
+        f"GROUP BY DATE_TRUNC('week', date), EXTRACT(WEEK FROM date) "
         f"ORDER BY week_start", sp3
     )
-    f_coll3 = _filter_keys(filters, COLLECTIONS_KEYS)
-    cw3, cp3 = build_where(f_coll3, date_col='receipt_date')
+
+    # Fallback 1: weekly sales from rpt_invoice_totals
+    if not weekly_sales:
+        f_it3 = _filter_keys(filters, INVOICE_TOTALS_KEYS)
+        itw3, itp3 = build_where(f_it3, date_col='trx_date')
+        weekly_sales = query(
+            f"SELECT DATE_TRUNC('week', trx_date)::date AS week_start, "
+            f"  'W' || EXTRACT(WEEK FROM trx_date)::int AS week_label, "
+            f"  COALESCE(SUM(total_sales) - SUM(total_returns), 0) AS sales "
+            f"FROM rpt_invoice_totals WHERE {itw3} "
+            f"GROUP BY DATE_TRUNC('week', trx_date), EXTRACT(WEEK FROM trx_date) "
+            f"ORDER BY week_start", itp3
+        )
+
+    # Fallback 2: weekly sales from rpt_route_sales_by_item_customer
+    if not weekly_sales:
+        f_rsic3 = _filter_keys(filters, RSIC_KEYS)
+        rsicw3, rsicp3 = build_where(f_rsic3, date_col='date')
+        weekly_sales = query(
+            f"SELECT DATE_TRUNC('week', date)::date AS week_start, "
+            f"  'W' || EXTRACT(WEEK FROM date)::int AS week_label, "
+            f"  COALESCE(SUM(total_sales), 0) AS sales "
+            f"FROM rpt_route_sales_by_item_customer WHERE {rsicw3} "
+            f"GROUP BY DATE_TRUNC('week', date), EXTRACT(WEEK FROM date) "
+            f"ORDER BY week_start", rsicp3
+        )
+
+    f_rsc3 = _filter_keys(filters, ROUTE_SC_KEYS)
+    cw3, cp3 = build_where(f_rsc3, date_col='date')
     weekly_collection = query(
-        f"SELECT DATE_TRUNC('week', receipt_date)::date AS week_start, "
-        f"  'W' || EXTRACT(WEEK FROM receipt_date)::int AS week_label, "
-        f"  COALESCE(SUM(amount),0) AS collection "
-        f"FROM rpt_collections WHERE {cw3} "
-        f"GROUP BY DATE_TRUNC('week', receipt_date), EXTRACT(WEEK FROM receipt_date) "
+        f"SELECT DATE_TRUNC('week', date)::date AS week_start, "
+        f"  'W' || EXTRACT(WEEK FROM date)::int AS week_label, "
+        f"  COALESCE(SUM(total_collection), 0) AS collection "
+        f"FROM rpt_route_sales_collection WHERE {cw3} "
+        f"GROUP BY DATE_TRUNC('week', date), EXTRACT(WEEK FROM date) "
         f"ORDER BY week_start", cp3
     )
 
-    # --- Call metrics from coverage summary ---
+    # Fallback: weekly collection from rpt_collections
+    if not weekly_collection:
+        f_coll3 = _filter_keys(filters, ROUTE_SC_KEYS)
+        cfw3, cfp3 = build_where(f_coll3, date_col='receipt_date')
+        weekly_collection = query(
+            f"SELECT DATE_TRUNC('week', receipt_date)::date AS week_start, "
+            f"  'W' || EXTRACT(WEEK FROM receipt_date)::int AS week_label, "
+            f"  COALESCE(SUM(amount), 0) AS collection "
+            f"FROM rpt_collections WHERE {cfw3} "
+            f"GROUP BY DATE_TRUNC('week', receipt_date), EXTRACT(WEEK FROM receipt_date) "
+            f"ORDER BY week_start", cfp3
+        )
+
+    # =========================================================
+    # CALL METRICS — exact replica of usp_Populate_RouteCoverageReportSummary_Data
+    #
+    # Step 1: ScheduledCalls = COUNT of journey plan entries (PlannedCustomers)
+    # Step 2: TotalActualCalls = COUNT of DISTINCT (date, client, route) visits
+    # Step 3: ActualCalls = COUNT of journey plan entries that have a matching visit
+    #         (LEFT JOIN journey_plan → visits, count where visit exists)
+    # Step 4: SellingCalls = COUNT of DISTINCT (date, client, route) from
+    #         transactions that have a matching visit (#Transactions)
+    # Step 5: PlannedSellingCalls = COUNT of #Transactions that also match
+    #         a journey plan entry
+    # =========================================================
+
+    # Primary: use rpt_coverage_summary (pre-computed, matches MSSQL tblRouteCoverageSummary)
     f_cov = _filter_keys(filters, COVERAGE_KEYS)
-    vw, vp = build_where(f_cov, date_col='visit_date')
-    call_row = query_one(
-        f"SELECT "
-        f"  COALESCE(SUM(scheduled_calls),0) AS scheduled_calls, "
-        f"  COALESCE(SUM(total_actual_calls),0) AS actual_calls, "
-        f"  COALESCE(SUM(planned_calls),0) AS planned_calls, "
-        f"  COALESCE(SUM(unplanned_calls),0) AS unplanned_calls, "
-        f"  COALESCE(SUM(selling_calls),0) AS selling_calls, "
-        f"  COALESCE(SUM(planned_selling_calls),0) AS planned_selling_calls "
-        f"FROM rpt_coverage_summary WHERE {vw}", vp
+    covw, covp = build_where(f_cov, date_col='visit_date')
+    cov_row = query_one(
+        f"SELECT COALESCE(SUM(scheduled_calls),0) AS scheduled, "
+        f"  COALESCE(SUM(total_actual_calls),0) AS total_actual, "
+        f"  COALESCE(SUM(planned_calls),0) AS actual_calls, "
+        f"  COALESCE(SUM(selling_calls),0) AS selling, "
+        f"  COALESCE(SUM(planned_selling_calls),0) AS planned_selling "
+        f"FROM rpt_coverage_summary WHERE {covw}", covp
     )
-    scheduled = int(call_row["scheduled_calls"]) if call_row else 0
-    actual = int(call_row["actual_calls"]) if call_row else 0
-    planned = int(call_row["planned_calls"]) if call_row else 0
-    unplanned = int(call_row["unplanned_calls"]) if call_row else 0
-    selling = int(call_row["selling_calls"]) if call_row else 0
-    planned_selling = int(call_row["planned_selling_calls"]) if call_row else 0
+    scheduled = int(cov_row["scheduled"]) if cov_row else 0
+    total_actual = int(cov_row["total_actual"]) if cov_row else 0
+    actual_calls = int(cov_row["actual_calls"]) if cov_row else 0
+    selling = int(cov_row["selling"]) if cov_row else 0
+    planned_selling = int(cov_row["planned_selling"]) if cov_row else 0
 
-    # Fallback: compute from raw visits when coverage_summary has no data
-    if actual == 0:
-        f_vis = _filter_keys(filters, VISITS_KEYS)
-        vw_cv, vp_cv = build_where(f_vis, date_col='date')
-        fallback = query_one(
-            f"SELECT COUNT(*) AS actual_calls "
-            f"FROM rpt_customer_visits WHERE {vw_cv}", vp_cv
-        )
-        actual = int(fallback["actual_calls"]) if fallback else 0
-
-        # Planned from visits
-        vw_pl, vp_pl = build_where(f_vis, date_col='date')
-        planned_row = query_one(
-            f"SELECT COUNT(*) AS planned_calls "
-            f"FROM rpt_customer_visits WHERE is_planned = true AND {vw_pl}", vp_pl
-        )
-        planned = int(planned_row["planned_calls"]) if planned_row else 0
-        unplanned = max(0, actual - planned)
-
-        # Scheduled from journey plan
+    # Fallback: compute from raw tables when rpt_coverage_summary has no data
+    if scheduled == 0 and total_actual == 0:
         f_jp = _filter_keys(filters, JOURNEY_KEYS)
         vw_jp, vp_jp = build_where(f_jp, date_col='date')
-        jp_row = query_one(
-            f"SELECT COUNT(*) AS scheduled "
-            f"FROM rpt_journey_plan WHERE {vw_jp}", vp_jp
+        f_vis = _filter_keys(filters, VISITS_KEYS)
+        vw_cv, vp_cv = build_where(f_vis, date_col='date')
+        f_sd = _filter_keys(filters, SALES_DETAIL_KEYS)
+        sdw, sdp = build_where(f_sd, date_col='trx_date', prefix='sd')
+
+        call_row = query_one(
+            f"WITH "
+            f"visits AS ( "
+            f"  SELECT DISTINCT date, customer_code, route_code "
+            f"  FROM rpt_customer_visits WHERE {vw_cv} "
+            f"), "
+            f"plan AS ( "
+            f"  SELECT date, customer_code, route_code "
+            f"  FROM rpt_journey_plan WHERE {vw_jp} "
+            f"), "
+            f"selling AS ( "
+            f"  SELECT DISTINCT sd.trx_date AS date, sd.customer_code, sd.route_code "
+            f"  FROM rpt_sales_detail sd "
+            f"  WHERE sd.trx_type = 1 AND {sdw} "
+            f"    AND EXISTS (SELECT 1 FROM visits v "
+            f"      WHERE v.route_code = sd.route_code AND v.date = sd.trx_date "
+            f"        AND v.customer_code = sd.customer_code) "
+            f") "
+            f"SELECT "
+            f"  (SELECT COUNT(*) FROM plan) AS scheduled, "
+            f"  (SELECT COUNT(*) FROM visits) AS total_actual, "
+            f"  (SELECT COUNT(*) FROM plan p WHERE EXISTS ( "
+            f"    SELECT 1 FROM visits v WHERE v.route_code = p.route_code "
+            f"      AND v.date = p.date AND v.customer_code = p.customer_code)) AS actual_calls, "
+            f"  (SELECT COUNT(*) FROM selling) AS selling, "
+            f"  (SELECT COUNT(*) FROM selling sv WHERE EXISTS ( "
+            f"    SELECT 1 FROM plan p WHERE p.route_code = sv.route_code "
+            f"      AND p.date = sv.date AND p.customer_code = sv.customer_code)) AS planned_selling",
+            vp_cv + vp_jp + sdp
         )
-        scheduled = int(jp_row["scheduled"]) if jp_row else 0
+        scheduled = int(call_row["scheduled"]) if call_row else 0
+        total_actual = int(call_row["total_actual"]) if call_row else 0
+        actual_calls = int(call_row["actual_calls"]) if call_row else 0
+        selling = int(call_row["selling"]) if call_row else 0
+        planned_selling = int(call_row["planned_selling"]) if call_row else 0
 
-        # Selling calls = customers visited who also have a sale
-        f_sell = _filter_keys(filters, SALES_DETAIL_KEYS)
-        sw_sell, sp_sell = build_where(f_sell, date_col='trx_date')
-        sell_row = query_one(
-            f"SELECT COUNT(DISTINCT customer_code) AS selling "
-            f"FROM rpt_sales_detail WHERE trx_type = 1 AND {sw_sell}", sp_sell
-        )
-        selling = int(sell_row["selling"]) if sell_row else 0
+    planned = actual_calls
+    unplanned = max(0, scheduled - actual_calls)
 
-    # Strike rate: based on scheduled visits (selling / scheduled * 100)
-    # Coverage: actual / scheduled, capped at 100%
-    strike_rate = round(selling / scheduled * 100, 2) if scheduled else 0
-    coverage_pct = min(100.0, round(actual / scheduled * 100, 2)) if scheduled else 0
+    # =========================================================
+    # STRIKE RATE — matches SP_StrikeRate_ForDashboard_Reports
+    # MSSQL: groups tblTrxHeader by route+date+client, SUM(TotalAmount)
+    # net_amount in rpt_sales_detail = header-level TotalAmount (repeated per line)
+    # Must deduplicate by trx_code first to avoid double-counting
+    # Strike = 1 if SUM(TotalAmount) > 100, else 0 per (route, date, client)
+    # =========================================================
+    f_strike = _filter_keys(filters, SALES_DETAIL_KEYS)
+    stw, stp = build_where(f_strike, date_col='trx_date')
+    strike_row = query_one(
+        f"SELECT COALESCE(ROUND( "
+        f"  SUM(CASE WHEN trx_total > 100 THEN 1 ELSE 0 END)::numeric "
+        f"  / NULLIF(COUNT(*), 0) * 100, 2), 0) AS strike_rate "
+        f"FROM ( "
+        f"  SELECT route_code, trx_date, customer_code, SUM(net_amount) AS trx_total "
+        f"  FROM ( "
+        f"    SELECT DISTINCT trx_code, route_code, trx_date, customer_code, net_amount "
+        f"    FROM rpt_sales_detail "
+        f"    WHERE trx_type IN (1, 5) AND {stw} "
+        f"  ) trx "
+        f"  GROUP BY route_code, trx_date, customer_code "
+        f") sub", stp
+    )
+    strike_rate = float(strike_row["strike_rate"]) if strike_row else 0
 
-    # Productive planned and unplanned
+    # Coverage: productive (selling) calls / actual calls * 100
+    coverage_pct = min(100.0, round(selling / total_actual * 100, 2)) if total_actual else 0
+
+    # Productive unplanned
     productive_unplanned = max(0, selling - planned_selling)
 
     call_metrics = {
         "scheduled_calls": scheduled,
-        "actual_calls": actual,
+        "actual_calls": total_actual,
         "planned_calls": planned,
         "unplanned_calls": unplanned,
         "selling_calls": selling,
@@ -217,34 +400,125 @@ def get_dashboard(
         "coverage_pct": coverage_pct,
     }
 
-    # --- Route-wise Sales vs Target vs Collection ---
-    f_rsc = _filter_keys(filters, ROUTE_SC_KEYS)
-    rw, rp = build_where(f_rsc, date_col='date')
+    # =========================================================
+    # ROUTE-WISE SALES VS COLLECTION
+    # Matches: sp_GetSalesmanWiseCollection_Dashboard_Reports_By_Item
+    # Sales from tblRouteSalesSummaryByItem, Collection from tblRouteSalesCollectionSummary
+    # =========================================================
+    f_rssi_rt = _filter_keys(filters, ROUTE_SALES_ITEM_KEYS)
+    rw_s, rp_s = build_where(f_rssi_rt, date_col='date', prefix='s')
+    f_rsc_rt = _filter_keys(filters, ROUTE_SC_KEYS)
+    rw_c, rp_c = build_where(f_rsc_rt, date_col='date', prefix='c')
     route_sales_target = query(
-        f"SELECT route_code, route_name, "
-        f"  COALESCE(SUM(total_sales),0) AS sales, "
-        f"  COALESCE(SUM(total_collection),0) AS collection, "
-        f"  COALESCE(SUM(target_amount),0) AS target "
-        f"FROM rpt_route_sales_collection WHERE {rw} "
-        f"GROUP BY route_code, route_name ORDER BY sales DESC", rp
+        f"SELECT COALESCE(s.route_code, c.route_code) AS route_code, "
+        f"  COALESCE(s.route_name, c.route_name) AS route_name, "
+        f"  COALESCE(s.sales, 0) AS sales, "
+        f"  COALESCE(c.collection, 0) AS collection, "
+        f"  COALESCE(s.target, 0) AS target "
+        f"FROM ( "
+        f"  SELECT s.route_code, s.route_name, SUM(s.total_sales) AS sales, SUM(s.target_amount) AS target "
+        f"  FROM rpt_route_sales_summary_by_item s WHERE {rw_s} "
+        f"  GROUP BY s.route_code, s.route_name "
+        f") s "
+        f"FULL OUTER JOIN ( "
+        f"  SELECT c.route_code, c.route_name, SUM(c.total_collection) AS collection "
+        f"  FROM rpt_route_sales_collection c WHERE {rw_c} "
+        f"  GROUP BY c.route_code, c.route_name "
+        f") c ON s.route_code = c.route_code "
+        f"ORDER BY sales DESC NULLS LAST",
+        rp_s + rp_c
     )
 
-    # --- Route-wise Visits ---
+    # Fallback 1: route-wise sales from rpt_invoice_totals
+    if not route_sales_target:
+        f_it_rt = _filter_keys(filters, INVOICE_TOTALS_KEYS)
+        itw_rt, itp_rt = build_where(f_it_rt, date_col='trx_date')
+        route_sales_target = query(
+            f"SELECT route_code, route_name, "
+            f"  COALESCE(SUM(total_sales) - SUM(total_returns), 0) AS sales, "
+            f"  0 AS collection, 0 AS target "
+            f"FROM rpt_invoice_totals WHERE {itw_rt} "
+            f"GROUP BY route_code, route_name "
+            f"ORDER BY sales DESC", itp_rt
+        )
+
+    # Fallback 2: route-wise sales from rpt_route_sales_by_item_customer
+    if not route_sales_target:
+        f_rsic_rt = _filter_keys(filters, RSIC_KEYS)
+        rsicw_rt, rsicp_rt = build_where(f_rsic_rt, date_col='date')
+        route_sales_target = query(
+            f"SELECT r.route_code, COALESCE(dr.name, r.route_code) AS route_name, "
+            f"  COALESCE(SUM(r.total_sales), 0) AS sales, "
+            f"  0 AS collection, 0 AS target "
+            f"FROM rpt_route_sales_by_item_customer r "
+            f"LEFT JOIN dim_route dr ON r.route_code = dr.code "
+            f"WHERE {rsicw_rt} "
+            f"GROUP BY r.route_code, COALESCE(dr.name, r.route_code) "
+            f"ORDER BY sales DESC", rsicp_rt
+        )
+
+    # =========================================================
+    # ROUTE-WISE VISITS / COVERAGE
+    # Matches: SP_GetDashboardRouteDetails_Dashboard_Reports_V1_New_OPTS
+    # Returns SUM(ScheduledCalls) as TotalCount, SUM(ActualCalls) as VisitCount
+    # MSSQL ActualCalls = our planned_calls (planned actual calls)
+    # =========================================================
     f_cov2 = _filter_keys(filters, COVERAGE_KEYS)
     vw2, vp2 = build_where(f_cov2, date_col='visit_date')
     route_visits = query(
         f"SELECT route_code, route_name, "
         f"  COALESCE(SUM(scheduled_calls),0) AS scheduled, "
-        f"  COALESCE(SUM(total_actual_calls),0) AS actual, "
+        f"  COALESCE(SUM(planned_calls),0) AS actual, "
         f"  COALESCE(SUM(selling_calls),0) AS selling "
         f"FROM rpt_coverage_summary WHERE {vw2} "
         f"GROUP BY route_code, route_name ORDER BY route_name", vp2
     )
 
+    # Fallback: build route-wise visits from raw tables when coverage_summary has no data
+    if not route_visits:
+        f_rv = _filter_keys(filters, VISITS_KEYS)
+        vw_rv, vp_rv = build_where(f_rv, date_col='date')
+        f_jp_rv = _filter_keys(filters, JOURNEY_KEYS)
+        vw_jp_rv, vp_jp_rv = build_where(f_jp_rv, date_col='date')
+
+        # Actual visits per route from rpt_customer_visits
+        route_actual = {
+            r['route_code']: r for r in query(
+                f"SELECT route_code, route_name, COUNT(*) AS actual, "
+                f"  COALESCE(SUM(CASE WHEN is_planned THEN 1 ELSE 0 END), 0) AS planned "
+                f"FROM rpt_customer_visits WHERE {vw_rv} "
+                f"GROUP BY route_code, route_name", vp_rv
+            )
+        }
+
+        # Scheduled per route from rpt_journey_plan
+        route_scheduled = {
+            r['route_code']: int(r['scheduled']) for r in query(
+                f"SELECT route_code, COUNT(*) AS scheduled "
+                f"FROM rpt_journey_plan WHERE {vw_jp_rv} "
+                f"GROUP BY route_code", vp_jp_rv
+            )
+        }
+
+        # Merge both dicts — union of routes from either table
+        all_rv_routes = set(route_actual.keys()) | set(route_scheduled.keys())
+        route_visits = sorted([
+            {
+                'route_code': rc,
+                'route_name': route_actual.get(rc, {}).get('route_name', rc),
+                'scheduled': route_scheduled.get(rc, 0),
+                'actual': int(route_actual.get(rc, {}).get('actual', 0)),
+                'selling': 0,
+            }
+            for rc in all_rv_routes if rc
+        ], key=lambda x: x['route_name'] or '')
+
     return {
         "total_sales": total_sales,
         "total_collection": total_collection,
         "total_target": total_target,
+        "total_sales_with_tax": total_sales_with_tax,
+        "total_wastage": total_wastage,
         "weekly_sales": daily_sales,
         "weekly_collection": daily_collection,
         "week_chart_sales": weekly_sales,
@@ -260,6 +534,8 @@ def _empty_response():
         "total_sales": 0,
         "total_collection": 0,
         "total_target": 0,
+        "total_sales_with_tax": 0,
+        "total_wastage": 0,
         "weekly_sales": [],
         "weekly_collection": [],
         "week_chart_sales": [],

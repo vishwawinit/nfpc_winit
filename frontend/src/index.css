@@ -114,45 +114,63 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   box-shadow: var(--shadow-card-hover);
 }
 
-/* ─── Chart Container Enhancements ─── */
+/* ─── Chart Container ─── */
 .chart-container {
   background: var(--color-surface-raised);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
   overflow: hidden;
 }
 .chart-container:hover {
-  box-shadow: var(--shadow-card-hover);
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.1), 0 2px 8px -4px rgba(0, 0, 0, 0.04);
+  transform: translateY(-2px);
+  border-color: rgba(99, 102, 241, 0.12);
 }
 .chart-header {
   padding: 20px 24px 0 24px;
 }
 .chart-body {
-  padding: 8px 16px 16px 16px;
+  padding: 16px 20px 24px 20px;
 }
 
-/* ─── KPI Card Elevation ─── */
+/* ─── KPI Card ─── */
 .kpi-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 .kpi-card:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.1), 0 2px 6px -2px rgba(0, 0, 0, 0.04);
+  border-color: rgba(99, 102, 241, 0.1);
 }
 
-/* ─── Recharts Legend Spacing ─── */
+/* ─── Recharts ─── */
 .recharts-default-legend {
-  padding-top: 12px !important;
+  padding-top: 14px !important;
 }
 .recharts-legend-item {
-  margin-right: 20px !important;
+  margin-right: 24px !important;
+}
+.recharts-legend-item-text {
+  font-weight: 500 !important;
+  letter-spacing: 0.01em;
+}
+.recharts-tooltip-wrapper {
+  z-index: 100;
 }
 
-/* ─── Tooltip Enhancement ─── */
-.recharts-tooltip-wrapper {
-  filter: drop-shadow(0 4px 12px rgb(0 0 0 / 0.08));
+/* ─── Bar hover glow ─── */
+.recharts-bar-rectangle {
+  transition: filter 0.2s ease, opacity 0.2s ease;
+}
+.recharts-bar-rectangle:hover {
+  filter: brightness(1.08) drop-shadow(0 2px 8px rgba(0,0,0,0.15));
+}
+
+/* ─── Active dot glow ─── */
+.recharts-active-dot circle {
+  filter: drop-shadow(0 0 6px currentColor);
 }
 
 /* ─── Selection & Focus ─── */

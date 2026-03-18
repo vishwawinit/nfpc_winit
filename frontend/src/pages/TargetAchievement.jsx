@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { fetchTargetAchievement } from '../api';
 import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
@@ -22,34 +22,49 @@ const chartTooltipStyle = {
 export default function TargetAchievement() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ year: 2026, month: 3 });
+  const [refreshing, setRefreshing] = useState(false);
+  const hasData = useRef(false);
+  const [filters, setFilters] = useState(() => {
+    const now = new Date();
+    return { month: now.getMonth() + 1, year: now.getFullYear() };
+  });
   const [view, setView] = useState('chart'); // 'chart' or 'list'
 
   useEffect(() => {
-    setLoading(true);
+    let cancelled = false;
+    if (!hasData.current) setLoading(true);
+    else setRefreshing(true);
     fetchTargetAchievement(filters)
-      .then(setData)
-      .catch(console.error)
-      .finally(() => setLoading(false));
+      .then(res => { if (!cancelled) { setData(res); hasData.current = true; } })
+      .catch(err => { if (!cancelled) console.error(err); })
+      .finally(() => { if (!cancelled) { setLoading(false); setRefreshing(false); } });
+    return () => { cancelled = true; };
   }, [filters]);
 
-  if (loading) return <Loading />;
-  if (!data) return <div className="text-center py-12 text-gray-400">No data available</div>;
-
-  const routeData = data.route_data || [];
+  const routeData = data?.route_data || [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Target vs Achievement</h1>
-        <p className="text-sm text-gray-500 mt-1">Route-wise target tracking and achievement analysis</p>
+        <h1 className="text-[22px] font-bold text-gray-900 tracking-tight">Target vs Achievement</h1>
+        <p className="text-[13px] text-gray-400 mt-0.5 font-medium">Route-wise target tracking and achievement analysis</p>
       </div>
 
       <FilterPanel
         filters={filters}
         onChange={setFilters}
-        showFields={['sales_org', 'route', 'month', 'year']}
+        showFields={['month', 'year', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route']}
       />
+
+      {refreshing && (
+        <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-1 bg-indigo-500 rounded-full animate-pulse" style={{ width: '60%' }} />
+        </div>
+      )}
+
+      {loading && !data ? <Loading /> : !data ? (
+        <div className="text-center py-16 text-gray-400 font-medium">No data available</div>
+      ) : (<>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -153,6 +168,8 @@ export default function TargetAchievement() {
           exportName="target-achievement"
         />
       )}
+
+      </>)}
     </div>
   );
 }

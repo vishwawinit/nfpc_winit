@@ -16,12 +16,24 @@ const pctColor = (val) => {
 export default function RevenueDispersion() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ date_from: '2026-01-01', date_to: '2026-03-12' });
+  const [filters, setFilters] = useState(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const d = String(now.getDate()).padStart(2, '0');
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    return { date_from: `${y}-01-01`, date_to: `${y}-${m}-${d}` };
+  });
   const [activeTab, setActiveTab] = useState('revenue');
 
   useEffect(() => {
-    setLoading(true);
-    fetchRevenueDispersion(filters).then(setData).catch(console.error).finally(() => setLoading(false));
+    let cancelled = false;
+    if (!hasData.current) setLoading(true);
+    else setRefreshing(true);
+    fetchRevenueDispersion(filters)
+      .then(res => { if (!cancelled) { setData(res); hasData.current = true; } })
+      .catch(err => { if (!cancelled) console.error(err); })
+      .finally(() => { if (!cancelled) { setLoading(false); setRefreshing(false); } });
+    return () => { cancelled = true; };
   }, [filters]);
 
   const revenueData = data?.revenue_dispersion || [];
@@ -52,7 +64,7 @@ export default function RevenueDispersion() {
       </div>
 
       <FilterPanel filters={filters} onChange={setFilters}
-        showFields={['sales_org', 'user_code', 'date_from', 'date_to']} />
+        showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route']} />
 
       {loading ? <Loading /> : !data ? (
         <div className="text-center py-20">

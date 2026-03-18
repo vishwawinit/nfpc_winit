@@ -29,11 +29,29 @@ CREATE TABLE IF NOT EXISTS dim_route (
 CREATE TABLE IF NOT EXISTS dim_user (
     code VARCHAR(50) PRIMARY KEY,
     name VARCHAR(200),
+    email VARCHAR(150),
+    username VARCHAR(100),
+    mobile_no VARCHAR(50),
     sales_org_code VARCHAR(50),
     route_code VARCHAR(100),
     depot_code VARCHAR(50),
+    depot_name VARCHAR(255),
     reports_to VARCHAR(50),
+    reports_to_name VARCHAR(200),
     user_type VARCHAR(50),
+    user_sub_type VARCHAR(50),
+    department VARCHAR(50),
+    sales_group VARCHAR(50),
+    emp_code VARCHAR(50),
+    emp_file_no VARCHAR(100),
+    role_code VARCHAR(50),
+    role_name VARCHAR(200),
+    location_code VARCHAR(50),
+    van_code VARCHAR(100),
+    country_code VARCHAR(50),
+    region_code VARCHAR(50),
+    ud_sales_org_code VARCHAR(50),
+    ud_reports_to VARCHAR(50),
     is_active BOOLEAN
 );
 
@@ -306,6 +324,27 @@ CREATE TABLE rpt_route_sales_collection (
     target_amount FLOAT
 );
 
+-- Route Sales Summary By Item (from tblRouteSalesSummaryByItem - primary dashboard source)
+DROP TABLE IF EXISTS rpt_route_sales_summary_by_item;
+CREATE TABLE rpt_route_sales_summary_by_item (
+    id SERIAL PRIMARY KEY,
+    date DATE,
+    route_code VARCHAR(50),
+    route_name VARCHAR(100),
+    user_code VARCHAR(50),
+    user_name VARCHAR(200),
+    sales_org_code VARCHAR(50),
+    item_code VARCHAR(50),
+    item_name VARCHAR(200),
+    category_code VARCHAR(50),
+    brand_code VARCHAR(50),
+    total_sales FLOAT,
+    total_collection FLOAT,
+    total_sales_with_tax FLOAT,
+    total_wastage FLOAT,
+    target_amount FLOAT
+);
+
 -- Targets flat
 DROP TABLE IF EXISTS rpt_targets;
 CREATE TABLE rpt_targets (
@@ -382,6 +421,22 @@ CREATE TABLE rpt_journey_plan (
     sales_org_code VARCHAR(50)
 );
 
+-- Invoice totals (aggregated from tblTrxHeader with correct net formula)
+DROP TABLE IF EXISTS rpt_invoice_totals;
+CREATE TABLE rpt_invoice_totals (
+    id SERIAL PRIMARY KEY,
+    trx_date DATE,
+    route_code VARCHAR(50),
+    route_name VARCHAR(100),
+    user_code VARCHAR(50),
+    user_name VARCHAR(200),
+    sales_org_code VARCHAR(50),
+    customer_code VARCHAR(50),
+    customer_name VARCHAR(200),
+    total_sales NUMERIC(18,4) DEFAULT 0,
+    total_returns NUMERIC(18,4) DEFAULT 0
+);
+
 -- Holidays reference
 DROP TABLE IF EXISTS rpt_holidays;
 CREATE TABLE rpt_holidays (
@@ -452,6 +507,19 @@ CREATE INDEX idx_jp_user ON rpt_journey_plan(user_code, date);
 -- rpt_route_sales_collection
 CREATE INDEX idx_rsc_date ON rpt_route_sales_collection(date);
 CREATE INDEX idx_rsc_route ON rpt_route_sales_collection(route_code, date);
+
+-- rpt_route_sales_summary_by_item
+CREATE INDEX idx_rssi_date ON rpt_route_sales_summary_by_item(date);
+CREATE INDEX idx_rssi_route_date ON rpt_route_sales_summary_by_item(route_code, date);
+CREATE INDEX idx_rssi_item_date ON rpt_route_sales_summary_by_item(item_code, date);
+CREATE INDEX idx_rssi_user_date ON rpt_route_sales_summary_by_item(user_code, date);
+CREATE INDEX idx_rssi_org_date ON rpt_route_sales_summary_by_item(sales_org_code, date);
+
+-- rpt_invoice_totals
+CREATE INDEX idx_it_date ON rpt_invoice_totals(trx_date);
+CREATE INDEX idx_it_user_date ON rpt_invoice_totals(user_code, trx_date);
+CREATE INDEX idx_it_route_date ON rpt_invoice_totals(route_code, trx_date);
+CREATE INDEX idx_it_org_date ON rpt_invoice_totals(sales_org_code, trx_date);
 
 -- rpt_targets
 CREATE INDEX idx_tgt_salesman ON rpt_targets(salesman_code);

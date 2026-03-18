@@ -1,11 +1,17 @@
-"""Top Customers report endpoint."""
+"""Top Customers report endpoint.
+Matches: SP_tblItem_SelTopCustomersByFilter
+
+Source: rpt_route_sales_by_item_customer (single month, top N by sales)
+"""
 from fastapi import APIRouter, Query
 from typing import Optional
 from datetime import date, timedelta
 from api.database import query
-from api.models import build_where
+from api.models import build_where, resolve_user_codes
 
 router = APIRouter()
+
+RSIC_KEYS = {'date_from', 'date_to', 'route', 'user_code', 'item', 'customer'}
 
 
 @router.get("/top-customers")
@@ -16,56 +22,107 @@ def get_top_customers(
     month: Optional[int] = None,
     year: Optional[int] = None,
     channel: Optional[str] = None,
+    route: Optional[str] = None,
+    brand: Optional[str] = None,
+    category: Optional[str] = None,
+    hos: Optional[str] = None,
+    asm: Optional[str] = None,
+    depot: Optional[str] = None,
+    supervisor: Optional[str] = None,
+    limit: int = Query(100, description="Max rows to return"),
 ):
+    _hier = {k: v for k, v in {'hos': hos, 'depot': depot, 'supervisor': supervisor, 'asm': asm}.items() if v}
+    if _hier:
+        resolved = resolve_user_codes(_hier)
+        if resolved == "__NO_MATCH__":
+            return {"data": []}
+        if resolved:
+            if user_code:
+                intersected = set(user_code.split(',')) & set(resolved.split(','))
+                user_code = ','.join(intersected) if intersected else "__NO_MATCH__"
+            else:
+                user_code = resolved
+
     today = date.today()
     cur_year = year or today.year
     cur_month = month or today.month
-
-    # Current period
     cur_start = date(cur_year, cur_month, 1)
-    if cur_month == 12:
-        cur_end = date(cur_year, 12, 31)
-    else:
-        cur_end = date(cur_year, cur_month + 1, 1) - timedelta(days=1)
+    cur_end = date(cur_year, 12, 31) if cur_month == 12 else date(cur_year, cur_month + 1, 1) - timedelta(days=1)
 
-    # Prior period (previous month)
-    if cur_month == 1:
-        prev_start = date(cur_year - 1, 12, 1)
-        prev_end = date(cur_year - 1, 12, 31)
-    else:
-        prev_start = date(cur_year, cur_month - 1, 1)
-        prev_end = cur_start - timedelta(days=1)
+    base_filters = {k: v for k, v in {'route': route, 'user_code': user_code, 'item': item}.items() if v}
 
-    base_filters = {k: v for k, v in {
-        'item': item, 'user_code': user_code, 'sales_org': sales_org, 'channel': channel,
-    }.items() if v}
+    # Resolve sales_org
+    if sales_org:
+        orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
+        org_ph = ','.join(['%s'] * len(orgs))
+        org_rows = query(f"SELECT DISTINCT code FROM dim_user WHERE is_active = true AND sales_org_code IN ({org_ph})", orgs)
+        if not org_rows:
+            return {"data": []}
+        org_users = set(r['code'] for r in org_rows)
+        if base_filters.get('user_code'):
+            intersected = set(base_filters['user_code'].split(',')) & org_users
+            if not intersected:
+                return {"data": []}
+            base_filters['user_code'] = ','.join(intersected)
+        else:
+            base_filters['user_code'] = ','.join(org_users)
 
-    # Build WHERE for current period
-    cur_filters = {**base_filters, 'date_from': cur_start, 'date_to': cur_end}
-    cw, cp = build_where(cur_filters, date_col='trx_date')
+    # Channel → customer filter
+    channel_cond = ""
+    channel_params = []
+    if channel:
+        ch_vals = [v.strip() for v in channel.split(',') if v.strip()]
+        ch_ph = ','.join(['%s'] * len(ch_vals))
+        cust_rows = query(
+            f"SELECT DISTINCT dc.code FROM dim_customer dc "
+            f"JOIN dim_route dr ON dr.sales_org_code = dc.sales_org_code "
+            f"WHERE TRIM(dc.channel_code) IN ({ch_ph})", ch_vals)
+        if not cust_rows:
+            return {"data": []}
+        c_codes = [r['code'] for r in cust_rows]
+        c_ph = ','.join(['%s'] * len(c_codes))
+        channel_cond = f" AND r.customer_code IN ({c_ph})"
+        channel_params = c_codes
 
-    # Build WHERE for prior period
-    prev_filters = {**base_filters, 'date_from': prev_start, 'date_to': prev_end}
-    pw, pp = build_where(prev_filters, date_col='trx_date')
+    # Brand/Category → item filter
+    item_cond = ""
+    item_params = []
+    if brand or category:
+        i_conds, i_params = [], []
+        if brand:
+            b_vals = [v.strip() for v in brand.split(',') if v.strip()]
+            i_conds.append(f"TRIM(brand_code) IN ({','.join(['%s']*len(b_vals))})")
+            i_params.extend(b_vals)
+        if category:
+            c_vals = [v.strip() for v in category.split(',') if v.strip()]
+            i_conds.append(f"category_code IN ({','.join(['%s']*len(c_vals))})")
+            i_params.extend(c_vals)
+        i_rows = query(f"SELECT DISTINCT code FROM dim_item WHERE {' AND '.join(i_conds)}", i_params)
+        if not i_rows:
+            return {"data": []}
+        codes = [r['code'] for r in i_rows]
+        item_cond = f" AND r.item_code IN ({','.join(['%s']*len(codes))})"
+        item_params = codes
+
+    f_rsic = {**base_filters, 'date_from': cur_start, 'date_to': cur_end}
+    f = {k: v for k, v in f_rsic.items() if k in RSIC_KEYS}
+    rw, rp = build_where(f, date_col='date', prefix='r')
 
     rows = query(
-        f"SELECT "
-        f"  customer_code, customer_name, "
-        f"  SUM(CASE WHEN trx_date BETWEEN %s AND %s THEN net_amount ELSE 0 END) AS total_sales, "
-        f"  SUM(CASE WHEN trx_date BETWEEN %s AND %s THEN qty_cases ELSE 0 END) AS total_qty, "
-        f"  SUM(CASE WHEN trx_date BETWEEN %s AND %s THEN net_amount ELSE 0 END) AS prev_sales "
-        f"FROM rpt_sales_detail "
-        f"WHERE trx_type = 1 AND (({cw}) OR ({pw})) "
-        f"GROUP BY customer_code, customer_name "
+        f"SELECT r.customer_code, "
+        f"  COALESCE(dc.name, r.customer_code) AS customer_name, "
+        f"  ROUND(SUM(r.total_sales)::numeric, 2) AS total_sales, "
+        f"  ROUND(SUM(r.total_qty)::numeric, 0) AS total_qty "
+        f"FROM rpt_route_sales_by_item_customer r "
+        f"LEFT JOIN (SELECT DISTINCT code, name FROM dim_customer) dc ON r.customer_code = dc.code "
+        f"WHERE {rw}{channel_cond}{item_cond} "
+        f"GROUP BY r.customer_code, COALESCE(dc.name, r.customer_code) "
         f"ORDER BY total_sales DESC "
-        f"LIMIT 20",
-        [cur_start, cur_end, cur_start, cur_end, prev_start, prev_end] + cp + pp
+        f"LIMIT %s",
+        rp + channel_params + item_params + [limit]
     )
 
     for row in rows:
-        cur_s = float(row.get("total_sales") or 0)
-        prev_s = float(row.get("prev_sales") or 0)
-        row["growth_pct"] = round((cur_s - prev_s) / prev_s * 100, 2) if prev_s else 0
-        row.pop("prev_sales", None)
+        row["growth_pct"] = 0
 
     return {"data": rows}

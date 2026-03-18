@@ -1,42 +1,92 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { fetchBrandWiseSales, fetchBrandItems } from '../api';
 import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
 import KpiCard from '../components/KpiCard';
 import DataTable from '../components/DataTable';
-import { Target, TrendingUp, Award, Eye, X, ChevronRight } from 'lucide-react';
+import { Target, TrendingUp, Award, Eye, X, ChevronRight, Download } from 'lucide-react';
 
 const aed = (v) => v != null ? `AED ${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-';
+
+function exportToExcel(data, columns, filename) {
+  const header = columns.map(c => c.label).join('\t');
+  const rows = data.map(row => columns.map(c => {
+    const v = row[c.key] ?? '';
+    return typeof v === 'number' ? v : String(v);
+  }).join('\t'));
+  const tsv = header + '\n' + rows.join('\n');
+  const blob = new Blob([tsv], { type: 'application/vnd.ms-excel' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${filename}.xls`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export default function BrandWiseSales() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ date_from: '2026-03-01', date_to: '2026-03-12' });
-  const [drillBrand, setDrillBrand] = useState(null);
-  const [drillItems, setDrillItems] = useState([]);
-  const [drillLoading, setDrillLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const hasData = useRef(false);
+  const [filters, setFilters] = useState(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return { date_from: `${y}-${m}-01`, date_to: `${y}-${m}-${d}` };
+  });
+  const [modalBrand, setModalBrand] = useState(null);
+  const [modalItems, setModalItems] = useState([]);
+  const [modalLoading, setModalLoading] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
-    fetchBrandWiseSales(filters).then(setData).catch(console.error).finally(() => setLoading(false));
+    let cancelled = false;
+    if (!hasData.current) setLoading(true);
+    else setRefreshing(true);
+    fetchBrandWiseSales(filters)
+      .then(res => { if (!cancelled) { setData(res); hasData.current = true; } })
+      .catch(err => { if (!cancelled) console.error(err); })
+      .finally(() => { if (!cancelled) { setLoading(false); setRefreshing(false); } });
+    return () => { cancelled = true; };
   }, [filters]);
 
-  const handleDrill = (brand) => {
-    if (drillBrand?.brand_code === brand.brand_code) {
-      setDrillBrand(null);
-      setDrillItems([]);
-      return;
-    }
-    setDrillBrand(brand);
-    setDrillLoading(true);
+  const handleView = (brand) => {
+    setModalBrand(brand);
+    setModalLoading(true);
+    setModalItems([]);
     fetchBrandItems({ ...filters, brand: brand.brand_code })
-      .then(res => setDrillItems(res.items || []))
+      .then(res => setModalItems(res.items || []))
       .catch(console.error)
-      .finally(() => setDrillLoading(false));
+      .finally(() => setModalLoading(false));
+  };
+
+  const closeModal = () => {
+    setModalBrand(null);
+    setModalItems([]);
   };
 
   const summary = data?.summary || {};
   const brands = data?.brands || [];
+
+  const brandColumns = [
+    { key: 'brand_code', label: 'Brand Code' },
+    { key: 'brand_name', label: 'Brand Name' },
+    { key: 'target', label: 'Target' },
+    { key: 'sales', label: 'Sales' },
+    { key: 'qty', label: 'Qty' },
+    { key: 'achieved_pct', label: 'Achieved %' },
+    { key: 'pct_of_total', label: '% of Total' },
+  ];
+
+  const itemColumns = [
+    { key: 'item_code', label: 'Item Code' },
+    { key: 'item_name', label: 'Item Name' },
+    { key: 'target', label: 'Target', format: 'currency' },
+    { key: 'sales', label: 'Sales', format: 'currency' },
+    { key: 'qty', label: 'Qty', format: 'number' },
+    { key: 'achieved_pct', label: 'Achieved %', format: 'percent' },
+  ];
 
   return (
     <div className="space-y-6">
@@ -46,7 +96,7 @@ export default function BrandWiseSales() {
       </div>
 
       <FilterPanel filters={filters} onChange={setFilters}
-        showFields={['sales_org', 'brand', 'user_code', 'date_from', 'date_to', 'route']} />
+        showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'channel', 'category', 'brand']} />
 
       {loading ? <Loading /> : !data ? (
         <div className="text-center py-16 text-gray-400">No data available</div>
@@ -61,10 +111,16 @@ export default function BrandWiseSales() {
               color={summary.brand_achieved_pct >= 100 ? 'green' : summary.brand_achieved_pct >= 80 ? 'yellow' : 'red'} />
           </div>
 
-          {/* Brand Table */}
+          {/* Brand Table with Export */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Brand Breakdown</h2>
+              <button
+                onClick={() => exportToExcel(brands, brandColumns, 'brand-wise-sales')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" /> Export Excel
+              </button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -82,9 +138,7 @@ export default function BrandWiseSales() {
                 </thead>
                 <tbody>
                   {brands.map((b, i) => (
-                    <tr key={i} className={`border-b border-gray-50 last:border-0 transition-colors ${
-                      drillBrand?.brand_code === b.brand_code ? 'bg-indigo-50/50' : 'hover:bg-gray-50/70'
-                    }`}>
+                    <tr key={i} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/70 transition-colors">
                       <td className="px-6 py-3.5 font-mono text-xs text-gray-500">{b.brand_code}</td>
                       <td className="px-6 py-3.5 font-medium text-gray-900">{b.brand_name}</td>
                       <td className="px-6 py-3.5 text-right text-gray-700 tabular-nums">{aed(b.target)}</td>
@@ -101,17 +155,9 @@ export default function BrandWiseSales() {
                       </td>
                       <td className="px-6 py-3.5 text-right text-gray-600 tabular-nums">{b.pct_of_total != null ? `${Number(b.pct_of_total).toFixed(1)}%` : '-'}</td>
                       <td className="px-6 py-3.5 text-center">
-                        <button onClick={() => handleDrill(b)}
-                          className={`inline-flex items-center gap-1 text-sm font-medium transition-colors ${
-                            drillBrand?.brand_code === b.brand_code
-                              ? 'text-rose-600 hover:text-rose-700'
-                              : 'text-indigo-600 hover:text-indigo-700'
-                          }`}>
-                          {drillBrand?.brand_code === b.brand_code ? (
-                            <><X className="w-3.5 h-3.5" /> Close</>
-                          ) : (
-                            <><Eye className="w-3.5 h-3.5" /> View</>
-                          )}
+                        <button onClick={() => handleView(b)}
+                          className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+                          <Eye className="w-3.5 h-3.5" /> View
                         </button>
                       </td>
                     </tr>
@@ -123,33 +169,54 @@ export default function BrandWiseSales() {
               </table>
             </div>
           </div>
+        </>
+      )}
 
-          {/* Drill-down Items */}
-          {drillBrand && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <ChevronRight className="w-4 h-4 text-indigo-500" />
-                <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
-                  Items for {drillBrand.brand_name}
-                </h2>
+      {/* Modal for Item Drill-down */}
+      {modalBrand && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={closeModal}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+                  <ChevronRight className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">
+                    {modalBrand.brand_name} <span className="text-gray-400 font-normal text-sm">({modalBrand.brand_code})</span>
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    Total Sales: {aed(modalBrand.sales)} &bull; {modalItems.length} items
+                  </p>
+                </div>
               </div>
-              {drillLoading ? <Loading /> : (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => exportToExcel(modalItems, itemColumns, `brand-items-${modalBrand.brand_code}`)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5" /> Export Excel
+                </button>
+                <button onClick={closeModal}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-auto p-6">
+              {modalLoading ? <Loading /> : (
                 <DataTable
-                  columns={[
-                    { key: 'item_code', label: 'Item Code' },
-                    { key: 'item_name', label: 'Item Name' },
-                    { key: 'target', label: 'Target', format: 'currency' },
-                    { key: 'sales', label: 'Sales', format: 'currency' },
-                    { key: 'qty', label: 'Qty', format: 'number' },
-                    { key: 'achieved_pct', label: 'Achieved %', format: 'percent' },
-                  ]}
-                  data={drillItems}
-                  exportName={`brand-items-${drillBrand.brand_code}`}
+                  columns={itemColumns}
+                  data={modalItems}
+                  pageSize={50}
                 />
               )}
             </div>
-          )}
-        </>
+          </div>
+        </div>
       )}
     </div>
   );

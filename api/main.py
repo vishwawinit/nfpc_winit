@@ -25,7 +25,7 @@ from api.routes import (
     log_report, time_management, customer_attendance, mtd_attendance,
     journey_plan_compliance, outstanding_collection, eot_status,
     productivity_coverage, salesman_journey, revenue_dispersion,
-    monthly_sales_stock, filters
+    monthly_sales_stock, filters, items_sold
 )
 
 app = FastAPI(title="NFPC Reports API", version="1.0.0", lifespan=lifespan)
@@ -40,6 +40,7 @@ app.add_middleware(
 
 # Filter dropdown data
 app.include_router(filters.router, prefix="/api", tags=["Filters"])
+app.include_router(items_sold.router, prefix="/api", tags=["Items Sold"])
 
 # Report endpoints
 app.include_router(dashboard.router, prefix="/api", tags=["Dashboard"])

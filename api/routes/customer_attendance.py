@@ -3,7 +3,7 @@ from fastapi import APIRouter, Query
 from typing import Optional
 from datetime import date
 from api.database import query
-from api.models import build_where
+from api.models import build_where, resolve_user_codes
 
 router = APIRouter()
 
@@ -15,7 +15,25 @@ def get_customer_attendance(
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
     sales_org: Optional[str] = None,
+    hos: Optional[str] = None,
+    asm: Optional[str] = None,
+    depot: Optional[str] = None,
+    supervisor: Optional[str] = None,
 ):
+    # Resolve hierarchy filters (hos/asm/supervisor/depot) to user_codes
+    _hier = {k: v for k, v in {'hos': hos, 'depot': depot, 'supervisor': supervisor, 'asm': asm}.items() if v}
+    if _hier:
+        resolved = resolve_user_codes(_hier)
+        if resolved == "__NO_MATCH__":
+            user_code = "__NO_MATCH__"
+        elif resolved:
+            if user_code:
+                existing = set(user_code.split(','))
+                intersected = existing & set(resolved.split(','))
+                user_code = ','.join(intersected) if intersected else "__NO_MATCH__"
+            else:
+                user_code = resolved
+
     filters = {k: v for k, v in {
         'user_code': user_code, 'customer': customer,
         'date_from': date_from, 'date_to': date_to,

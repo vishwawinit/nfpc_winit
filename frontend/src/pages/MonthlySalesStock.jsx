@@ -1,29 +1,83 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { fetchMonthlySalesStock } from '../api';
 import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
-import { Package, Layers } from 'lucide-react';
+import { Package, Layers, Search, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const aed = (v) => v != null ? `AED ${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-';
+const PAGE_SIZES = [20, 50, 100, 200];
+
+function exportToExcel(items, channels, filename) {
+  const header = ['Item Code', 'Item Name', ...channels.flatMap(ch => [`${ch} MTD`, `${ch} YTD`])].join('\t');
+  const rows = items.map(item => {
+    const base = [item.item_code, item.item_name];
+    const chVals = channels.flatMap(ch => {
+      const d = item.channels?.[ch] || {};
+      return [d.mtd_amount || 0, d.ytd_amount || 0];
+    });
+    return [...base, ...chVals].join('\t');
+  });
+  const blob = new Blob([header + '\n' + rows.join('\n')], { type: 'application/vnd.ms-excel' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `${filename}.xls`; a.click();
+  URL.revokeObjectURL(url);
+}
 
 export default function MonthlySalesStock() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ date_from: '2026-03-01', date_to: '2026-03-12' });
+  const [filters, setFilters] = useState(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return { date_from: `${y}-${m}-01`, date_to: `${y}-${m}-${d}` };
+  });
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
 
   useEffect(() => {
-    setLoading(true);
-    fetchMonthlySalesStock(filters).then(setData).catch(console.error).finally(() => setLoading(false));
+    let cancelled = false;
+    if (!hasData.current) setLoading(true);
+    else setRefreshing(true);
+    fetchMonthlySalesStock(filters)
+      .then(res => { if (!cancelled) { setData(res); hasData.current = true; } })
+      .catch(err => { if (!cancelled) console.error(err); })
+      .finally(() => { if (!cancelled) { setLoading(false); setRefreshing(false); } });
+    return () => { cancelled = true; };
   }, [filters]);
 
   const items = data?.items || [];
 
-  // Collect all unique channel names dynamically
-  const channelSet = new Set();
-  items.forEach(item => {
-    if (item.channels) Object.keys(item.channels).forEach(ch => channelSet.add(ch));
-  });
-  const channels = [...channelSet].sort();
+  // Collect channels
+  const channels = useMemo(() => {
+    const s = new Set();
+    items.forEach(item => {
+      if (item.channels) Object.keys(item.channels).forEach(ch => s.add(ch));
+    });
+    return [...s].sort();
+  }, [items]);
+
+  // Search filter
+  const filtered = useMemo(() => {
+    if (!search) return items;
+    const s = search.toLowerCase();
+    return items.filter(item =>
+      item.item_code?.toLowerCase().includes(s) ||
+      item.item_name?.toLowerCase().includes(s)
+    );
+  }, [items, search]);
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const startIdx = (safePage - 1) * pageSize;
+  const paged = filtered.slice(startIdx, startIdx + pageSize);
+
+  // Reset page on search/filter change
+  useEffect(() => { setPage(1); }, [search, filters, pageSize]);
 
   return (
     <div className="space-y-6">
@@ -50,20 +104,43 @@ export default function MonthlySalesStock() {
       </div>
 
       <FilterPanel filters={filters} onChange={setFilters}
-        showFields={['sales_org', 'brand', 'category', 'date_from', 'date_to']} />
+        showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'category', 'brand']} />
 
       {loading ? <Loading /> : items.length === 0 ? (
         <div className="text-center py-16 text-gray-400">No data available</div>
       ) : (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Toolbar: Search + Export + Page Size */}
+          <div className="px-6 py-3 border-b border-gray-100 flex items-center justify-between gap-4">
+            <div className="relative flex-1 max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search items..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => exportToExcel(filtered, channels, 'monthly-sales-stock')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" /> Export Excel
+              </button>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className={`overflow-x-auto ${paged.length >= 50 ? 'max-h-[600px] overflow-y-auto' : ''}`}>
             <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50/80">
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50/80 z-10 backdrop-blur-sm" rowSpan={2}>
+              <thead className="sticky top-0 z-20">
+                <tr className="bg-gray-50">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-30" rowSpan={2}>
                     Item Code
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50/80" rowSpan={2}>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50" rowSpan={2}>
                     Item Name
                   </th>
                   {channels.map(ch => (
@@ -72,7 +149,7 @@ export default function MonthlySalesStock() {
                     </th>
                   ))}
                 </tr>
-                <tr className="bg-gray-50/60 border-b border-gray-200">
+                <tr className="bg-gray-50 border-b border-gray-200">
                   {channels.map(ch => (
                     <React.Fragment key={ch}>
                       <th className="px-3 py-2 text-right text-xs font-medium text-gray-400 border-l border-gray-200">MTD</th>
@@ -82,7 +159,7 @@ export default function MonthlySalesStock() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((item, i) => (
+                {paged.map((item, i) => (
                   <tr key={i} className={`border-b border-gray-50 last:border-0 transition-colors hover:bg-indigo-50/30 ${
                     i % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'
                   }`}>
@@ -101,11 +178,47 @@ export default function MonthlySalesStock() {
                     })}
                   </tr>
                 ))}
+                {paged.length === 0 && (
+                  <tr><td colSpan={2 + channels.length * 2} className="px-6 py-12 text-center text-gray-400">No matching items</td></tr>
+                )}
               </tbody>
             </table>
           </div>
+
+          {/* Footer: Page Size (left) + Info (center) + Pagination (right) */}
           <div className="px-6 py-3 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
-            <span className="text-xs text-gray-400">{items.length} items across {channels.length} channels</span>
+            <select
+              value={pageSize}
+              onChange={e => setPageSize(Number(e.target.value))}
+              className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-gray-600 focus:outline-none"
+            >
+              {PAGE_SIZES.map(s => (
+                <option key={s} value={s}>{s} rows</option>
+              ))}
+            </select>
+            <span className="text-xs text-gray-400">
+              Showing {startIdx + 1}–{Math.min(startIdx + pageSize, filtered.length)} of {filtered.length} items
+              {search && ` (filtered from ${items.length})`}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={safePage <= 1}
+                className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-xs text-gray-500 min-w-[80px] text-center">
+                Page {safePage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={safePage >= totalPages}
+                className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       )}

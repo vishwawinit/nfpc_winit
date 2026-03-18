@@ -4,7 +4,8 @@ const api = axios.create({ baseURL: '/api' });
 
 export const fetchFilters = {
   salesOrgs: () => api.get('/filters/sales-orgs').then(r => r.data),
-  asms: (salesOrg) => api.get('/filters/asms', { params: { sales_org: salesOrg } }).then(r => r.data),
+  hos: (params) => api.get('/filters/hos', { params }).then(r => r.data),
+  asms: (params) => api.get('/filters/asms', { params }).then(r => r.data),
   routes: (params) => api.get('/filters/routes', { params }).then(r => r.data),
   users: (params) => api.get('/filters/users', { params }).then(r => r.data),
   customers: (salesOrg) => api.get('/filters/customers', { params: { sales_org: salesOrg } }).then(r => r.data),
@@ -39,6 +40,7 @@ export const fetchOutstandingInvoices = (params) => api.get('/outstanding-collec
 export const fetchEotStatus = (params) => api.get('/eot-status', { params }).then(r => r.data);
 export const fetchProductivityCoverage = (params) => api.get('/productivity-coverage', { params }).then(r => r.data);
 export const fetchSalesmanJourney = (params) => api.get('/salesman-journey', { params }).then(r => r.data);
+export const fetchSalesmanJourneyDetail = (params) => api.get('/salesman-journey/detail', { params }).then(r => r.data);
 export const fetchRevenueDispersion = (params) => api.get('/revenue-dispersion', { params }).then(r => r.data);
 export const fetchMonthlySalesStock = (params) => api.get('/monthly-sales-stock', { params }).then(r => r.data);
 

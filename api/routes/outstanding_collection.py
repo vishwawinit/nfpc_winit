@@ -3,24 +3,37 @@ from fastapi import APIRouter, Query
 from typing import Optional
 from datetime import date
 from api.database import query
-from api.models import build_where
+from api.models import build_where, resolve_user_codes
 
 router = APIRouter()
 
 
-def _build_outstanding_where(filters: dict):
-    """Build WHERE for rpt_outstanding which has org_code instead of sales_org_code."""
+def _build_summary_where(filters: dict):
+    """Build WHERE for rpt_outstanding_summary (pre-aggregated table)."""
     conditions = []
     params = []
+    if filters.get('year'):
+        conditions.append("year = %s")
+        params.append(int(filters['year']))
     if filters.get('sales_org'):
-        conditions.append("org_code = %s")
-        params.append(filters['sales_org'])
+        vals = [v.strip() for v in filters['sales_org'].split(',') if v.strip()]
+        if len(vals) == 1:
+            conditions.append("org_code = %s")
+            params.append(vals[0])
+        else:
+            conditions.append(f"org_code IN ({','.join(['%s']*len(vals))})")
+            params.extend(vals)
     if filters.get('customer'):
         conditions.append("customer_code = %s")
         params.append(filters['customer'])
     if filters.get('user_code'):
-        conditions.append("user_code = %s")
-        params.append(filters['user_code'])
+        vals = [v.strip() for v in filters['user_code'].split(',') if v.strip()]
+        if len(vals) == 1:
+            conditions.append("user_code = %s")
+            params.append(vals[0])
+        else:
+            conditions.append(f"user_code IN ({','.join(['%s']*len(vals))})")
+            params.extend(vals)
     if filters.get('route'):
         conditions.append("route_code = %s")
         params.append(filters['route'])
@@ -35,39 +48,51 @@ def get_outstanding_collection(
     user_code: Optional[str] = None,
     route: Optional[str] = None,
     bucket: Optional[str] = None,
+    year: Optional[int] = None,
+    hos: Optional[str] = None,
+    asm: Optional[str] = None,
+    depot: Optional[str] = None,
+    supervisor: Optional[str] = None,
 ):
+    # Resolve hierarchy filters (hos/asm/supervisor/depot) to user_codes
+    _hier = {k: v for k, v in {'hos': hos, 'depot': depot, 'supervisor': supervisor, 'asm': asm}.items() if v}
+    if _hier:
+        resolved = resolve_user_codes(_hier)
+        if resolved == "__NO_MATCH__":
+            user_code = "__NO_MATCH__"
+        elif resolved:
+            if user_code:
+                existing = set(user_code.split(','))
+                intersected = existing & set(resolved.split(','))
+                user_code = ','.join(intersected) if intersected else "__NO_MATCH__"
+            else:
+                user_code = resolved
+
     filters = {k: v for k, v in {
         'customer': customer, 'sales_org': sales_org,
         'user_code': user_code, 'route': route,
+        'year': year,
     }.items() if v is not None}
 
-    w, p = _build_outstanding_where(filters)
+    w, p = _build_summary_where(filters)
 
-    # Aging buckets
+    # Query 1: Bucket KPIs from pre-aggregated summary (fast)
     aging_buckets = query(
         f"""
-        SELECT
-            aging_bucket AS bucket,
-            COALESCE(SUM(balance_amount), 0) AS amount,
+        SELECT aging_bucket AS bucket,
+            COALESCE(SUM(pending_amount), 0) AS amount,
             COUNT(DISTINCT customer_code) AS customer_count
-        FROM rpt_outstanding
-        WHERE balance_amount > 0 AND {w}
+        FROM rpt_outstanding_summary
+        WHERE {w}
         GROUP BY aging_bucket
-        ORDER BY
-            CASE aging_bucket
-                WHEN 'Current' THEN 1
-                WHEN '1-30' THEN 2
-                WHEN '31-60' THEN 3
-                WHEN '61-90' THEN 4
-                WHEN '91-120' THEN 5
-                WHEN '120+' THEN 6
-                ELSE 7
-            END
+        ORDER BY CASE aging_bucket
+            WHEN 'Current' THEN 1 WHEN '1-30' THEN 2 WHEN '31-60' THEN 3
+            WHEN '61-90' THEN 4 WHEN '91-120' THEN 5 WHEN '120+' THEN 6 ELSE 7 END
         """,
         p
     )
 
-    # Customer-level detail, optionally filtered by bucket
+    # Query 2: Customer-level from summary (filtered by bucket if selected)
     bucket_cond = ""
     bucket_params = []
     if bucket:
@@ -76,16 +101,13 @@ def get_outstanding_collection(
 
     customers = query(
         f"""
-        SELECT
-            customer_code,
-            customer_name,
-            COUNT(DISTINCT trx_code) AS invoice_count,
-            COALESCE(SUM(balance_amount), 0) AS pending_amount
-        FROM rpt_outstanding
-        WHERE balance_amount > 0 AND {w}{bucket_cond}
-        GROUP BY customer_code, customer_name
+        SELECT customer_code, MIN(customer_name) AS customer_name,
+            SUM(invoice_count) AS invoice_count,
+            COALESCE(SUM(pending_amount), 0) AS pending_amount
+        FROM rpt_outstanding_summary
+        WHERE {w}{bucket_cond}
+        GROUP BY customer_code
         ORDER BY pending_amount DESC
-        LIMIT 100
         """,
         p + bucket_params
     )
@@ -102,13 +124,51 @@ def get_outstanding_invoices(
     sales_org: Optional[str] = None,
     user_code: Optional[str] = None,
     route: Optional[str] = None,
+    year: Optional[int] = None,
+    hos: Optional[str] = None,
+    asm: Optional[str] = None,
+    depot: Optional[str] = None,
+    supervisor: Optional[str] = None,
 ):
+    # Resolve hierarchy filters (hos/asm/supervisor/depot) to user_codes
+    _hier = {k: v for k, v in {'hos': hos, 'depot': depot, 'supervisor': supervisor, 'asm': asm}.items() if v}
+    if _hier:
+        resolved = resolve_user_codes(_hier)
+        if resolved == "__NO_MATCH__":
+            user_code = "__NO_MATCH__"
+        elif resolved:
+            if user_code:
+                existing = set(user_code.split(','))
+                intersected = existing & set(resolved.split(','))
+                user_code = ','.join(intersected) if intersected else "__NO_MATCH__"
+            else:
+                user_code = resolved
+
     filters = {k: v for k, v in {
         'customer': customer, 'sales_org': sales_org,
         'user_code': user_code, 'route': route,
+        'year': year,
     }.items() if v is not None}
 
-    w, p = _build_outstanding_where(filters)
+    # Build WHERE for raw rpt_outstanding table (invoices detail)
+    conds, prms = [], []
+    if filters.get('sales_org'):
+        conds.append("org_code = %s"); prms.append(filters['sales_org'])
+    if filters.get('customer'):
+        conds.append("customer_code = %s"); prms.append(filters['customer'])
+    if filters.get('user_code'):
+        vals = [v.strip() for v in filters['user_code'].split(',') if v.strip()]
+        if len(vals) == 1:
+            conds.append("user_code = %s"); prms.append(vals[0])
+        else:
+            conds.append(f"user_code IN ({','.join(['%s']*len(vals))})"); prms.extend(vals)
+    if filters.get('route'):
+        conds.append("route_code = %s"); prms.append(filters['route'])
+    if filters.get('year'):
+        y = int(filters['year'])
+        conds.append("trx_date >= %s AND trx_date < %s"); prms.extend([f"{y}-01-01", f"{y+1}-01-01"])
+    w = " AND ".join(conds) if conds else "1=1"
+    p = prms
 
     invoices = query(
         f"""
@@ -129,7 +189,6 @@ def get_outstanding_invoices(
         FROM rpt_outstanding
         WHERE {w}
         ORDER BY trx_date DESC
-        LIMIT 200
         """,
         p
     )

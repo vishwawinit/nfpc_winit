@@ -58,7 +58,7 @@ def build_where(filters: dict, date_col: str = "date", prefix: str = "") -> tupl
     if filters.get('customer'):
         _add_multi(conditions, params, f"{p}customer_code", filters['customer'])
     if filters.get('brand'):
-        _add_multi(conditions, params, f"TRIM({p}category_code)", filters['brand'])
+        _add_multi(conditions, params, f"TRIM({p}brand_code)", filters['brand'])
     if filters.get('category'):
         _add_multi(conditions, params, f"{p}category_code", filters['category'])
     if filters.get('item'):
@@ -68,66 +68,97 @@ def build_where(filters: dict, date_col: str = "date", prefix: str = "") -> tupl
     return where, params
 
 
+def _get_all_subordinates(manager_codes: list) -> list:
+    """Recursively get ALL subordinates under given manager codes (any depth).
+    Returns list of user codes (includes direct and indirect reports)."""
+    from api.database import query
+    all_codes = set()
+    current_level = set(manager_codes)
+
+    # Walk down the hierarchy up to 5 levels deep (HOS->ASM->Sup->Salesman + safety)
+    for _ in range(5):
+        if not current_level:
+            break
+        ph = ','.join(['%s'] * len(current_level))
+        rows = query(
+            f"SELECT DISTINCT code FROM dim_user WHERE is_active = true AND reports_to IN ({ph})",
+            list(current_level)
+        )
+        next_level = set(r['code'] for r in rows) - all_codes
+        all_codes |= next_level
+        current_level = next_level
+
+    return list(all_codes)
+
+
 def resolve_user_codes(filters: dict) -> Optional[str]:
-    """Resolve supervisor/depot/asm filters to user_code list.
-    Hierarchy: ASM -> Supervisor -> Salesman.
+    """Resolve hos/supervisor/depot/asm filters to user_code list.
+    Uses recursive subordinate resolution to get ALL users under a manager,
+    regardless of role_code. This ensures salesmen reporting directly to ASMs
+    (skipping supervisors) are included.
     Returns comma-separated user codes or None if no hierarchy filter is active.
     """
     from api.database import query
-    sub_filters = []
-    sub_params = []
+    from api.routes.filters import ROLE_CODES_SUPERVISOR
 
-    # ASM filter: first resolve ASM -> supervisors, then supervisors -> salesmen
-    if filters.get('asm'):
-        asm_vals = [v.strip() for v in filters['asm'].split(',') if v.strip()]
-        asm_ph = ','.join(['%s'] * len(asm_vals))
-        # Get supervisors under these ASMs
-        sup_rows = query(
-            f"SELECT DISTINCT code FROM dim_user WHERE is_active = true AND reports_to IN ({asm_ph})",
-            asm_vals
-        )
-        sup_codes = [r['code'] for r in sup_rows]
-
-        # If supervisor filter also given, intersect
-        if filters.get('supervisor'):
-            sel_sups = set(v.strip() for v in filters['supervisor'].split(',') if v.strip())
-            sup_codes = [c for c in sup_codes if c in sel_sups]
-
-        if not sup_codes:
-            return "__NO_MATCH__"
-
-        sup_ph = ','.join(['%s'] * len(sup_codes))
-        sub_filters.append(f"reports_to IN ({sup_ph})")
-        sub_params.extend(sup_codes)
-
-    elif filters.get('supervisor'):
-        vals = [v.strip() for v in filters['supervisor'].split(',') if v.strip()]
-        if len(vals) == 1:
-            sub_filters.append("reports_to = %s")
-            sub_params.append(vals[0])
-        else:
-            placeholders = ','.join(['%s'] * len(vals))
-            sub_filters.append(f"reports_to IN ({placeholders})")
-            sub_params.extend(vals)
-
-    if filters.get('depot'):
-        vals = [v.strip() for v in filters['depot'].split(',') if v.strip()]
-        if len(vals) == 1:
-            sub_filters.append("depot_code = %s")
-            sub_params.append(vals[0])
-        else:
-            placeholders = ','.join(['%s'] * len(vals))
-            sub_filters.append(f"depot_code IN ({placeholders})")
-            sub_params.extend(vals)
-
-    if not sub_filters:
+    if not any(filters.get(k) for k in ('hos', 'asm', 'supervisor', 'depot')):
         return None
 
-    where = " AND ".join(sub_filters)
-    rows = query(
-        f"SELECT DISTINCT code FROM dim_user WHERE is_active = true AND {where}",
-        sub_params
-    )
-    if not rows:
+    # Step 1: Determine the starting manager codes
+    manager_codes = None
+
+    if filters.get('hos'):
+        hos_vals = [v.strip() for v in filters['hos'].split(',') if v.strip()]
+        if filters.get('asm'):
+            # Both HOS and ASM selected: use ASM codes directly
+            manager_codes = [v.strip() for v in filters['asm'].split(',') if v.strip()]
+        else:
+            # HOS only: get all subordinates under HOS
+            manager_codes = hos_vals
+    elif filters.get('asm'):
+        manager_codes = [v.strip() for v in filters['asm'].split(',') if v.strip()]
+
+    if filters.get('supervisor'):
+        sup_vals = [v.strip() for v in filters['supervisor'].split(',') if v.strip()]
+        if manager_codes:
+            # ASM/HOS + Supervisor: get all subordinates under the ASM/HOS,
+            # then intersect supervisors, then get subordinates of those supervisors
+            all_under_manager = _get_all_subordinates(manager_codes)
+            # Keep only the selected supervisors that are actually under the manager
+            valid_sups = [s for s in sup_vals if s in all_under_manager]
+            if not valid_sups:
+                return "__NO_MATCH__"
+            manager_codes = valid_sups
+        else:
+            # Supervisor only
+            manager_codes = sup_vals
+
+    # Step 2: Get all subordinates recursively
+    if manager_codes:
+        all_users = _get_all_subordinates(manager_codes)
+        if not all_users:
+            return "__NO_MATCH__"
+    else:
+        all_users = None
+
+    # Step 3: Apply depot filter
+    if filters.get('depot'):
+        vals = [v.strip() for v in filters['depot'].split(',') if v.strip()]
+        dep_ph = ','.join(['%s'] * len(vals))
+        depot_rows = query(
+            f"SELECT DISTINCT code FROM dim_user WHERE is_active = true AND depot_code IN ({dep_ph})",
+            vals
+        )
+        depot_users = set(r['code'] for r in depot_rows)
+        if all_users is not None:
+            all_users = [u for u in all_users if u in depot_users]
+        else:
+            all_users = list(depot_users)
+        if not all_users:
+            return "__NO_MATCH__"
+
+    if all_users is None:
+        return None
+    if not all_users:
         return "__NO_MATCH__"
-    return ",".join(r["code"] for r in rows)
+    return ",".join(all_users)

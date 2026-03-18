@@ -291,10 +291,6 @@ def load_dimensions(ms_conn, pg_conn):
          "SELECT Code, Name, SalesOrgCode, RouteType, AreaCode, SubAreaCode, RouteCatCode, SalesmanCode, WHCode, IsActive FROM tblRoute",
          "INSERT INTO dim_route (code, name, sales_org_code, route_type, area_code, sub_area_code, route_cat_code, salesman_code, wh_code, is_active) VALUES %s"),
 
-        ('dim_user', "DELETE FROM dim_user",
-         "SELECT Code, Description, SalesOrgCode, RouteCode, DepotCode, ReportsTo, UserType, IsActive FROM tblUser",
-         "INSERT INTO dim_user (code, name, sales_org_code, route_code, depot_code, reports_to, user_type, is_active) VALUES %s"),
-
         ('dim_channel', "DELETE FROM dim_channel",
          "SELECT Code, Description FROM tblChannel",
          "INSERT INTO dim_channel (code, name) VALUES %s"),
@@ -312,7 +308,7 @@ def load_dimensions(ms_conn, pg_conn):
          "INSERT INTO dim_city (code, name, region_code) VALUES %s"),
     ]
 
-    progress.start_step('Dimensions (7 tables)', expected_rows=2000)
+    progress.start_step('Dimensions (6 simple tables)', expected_rows=2000)
     total = 0
     for name, delete_sql, select_sql, insert_sql in dims:
         pg_cur.execute(delete_sql)
@@ -325,25 +321,104 @@ def load_dimensions(ms_conn, pg_conn):
         log(f"    {name}: {len(rows)} rows")
     progress.finish_step(total)
 
-    # dim_item (needs dedup)
-    progress.start_step('dim_item (with group lookups)', expected_rows=5000)
+    # dim_user (flat join across tblUser + tblUserRole + tblUserDetails + DepotMaster + tblUserLocations)
+    # NOTE: tblUser.ReportsTo is NULL for all users. The actual hierarchy is in tblUserDetails.ReportsTo.
+    # We use COALESCE(sup.Code, ud.ReportsTo) for reports_to to preserve the exact case of the user code.
+    progress.start_step('dim_user (flat with roles/details/depot/location)', expected_rows=1200)
+    pg_cur.execute("DELETE FROM dim_user")
+    ms_cur.execute("""
+        SELECT
+            u.Code,
+            u.Description,
+            u.Email,
+            u.Username,
+            u.MobileNo,
+            COALESCE(u.SalesOrgCode, ud.SalesOrgCode),
+            u.RouteCode,
+            COALESCE(rt.AreaCode, ul.RegionCode),
+            COALESCE(rg.Description, ul.RegionCode),
+            COALESCE(sup.Code, ud.ReportsTo),
+            sup.Description,
+            u.UserType,
+            u.UserSubType,
+            u.Department,
+            u.SalesGroup,
+            u.EmpCode,
+            u.EmpFileNo,
+            COALESCE(ur2.RoleCode, u.RoleCode),
+            rl.Name,
+            u.LocationCode,
+            u.VanCode,
+            ul.CountryCode,
+            ul.RegionCode,
+            ud.SalesOrgCode,
+            ud.ReportsTo,
+            u.IsActive
+        FROM tblUser u
+        LEFT JOIN (
+            SELECT UserCode, RoleCode,
+                   ROW_NUMBER() OVER (PARTITION BY UserCode ORDER BY CreatedOn DESC) AS rn
+            FROM tblUserRole
+        ) ur2 ON ur2.UserCode = u.Code AND ur2.rn = 1
+        LEFT JOIN tblRole rl ON rl.Code = COALESCE(ur2.RoleCode, u.RoleCode)
+        LEFT JOIN tblRoute rt ON rt.Code = u.RouteCode
+        LEFT JOIN tblRegion rg ON rg.Code = rt.AreaCode
+        LEFT JOIN (
+            SELECT UserCode, SalesOrgCode, ReportsTo,
+                   ROW_NUMBER() OVER (PARTITION BY UserCode ORDER BY UserDetailsID DESC) AS rn
+            FROM tblUserDetails
+        ) ud ON ud.UserCode = u.Code AND ud.rn = 1
+        LEFT JOIN tblUser sup ON sup.Code = ud.ReportsTo COLLATE SQL_Latin1_General_CP1_CI_AS
+        LEFT JOIN (
+            SELECT UserCode, CountryCode, RegionCode, Site,
+                   ROW_NUMBER() OVER (PARTITION BY UserCode ORDER BY UserLocationId DESC) AS rn
+            FROM tblUserLocations
+        ) ul ON ul.UserCode = u.Code AND ul.rn = 1
+    """)
+    rows = ms_cur.fetchall()
+    if rows:
+        execute_values(pg_cur,
+            """INSERT INTO dim_user (code, name, email, username, mobile_no,
+               sales_org_code, route_code, depot_code, depot_name,
+               reports_to, reports_to_name, user_type, user_sub_type,
+               department, sales_group, emp_code, emp_file_no,
+               role_code, role_name, location_code, van_code,
+               country_code, region_code, ud_sales_org_code, ud_reports_to,
+               is_active) VALUES %s""",
+            rows)
+    pg_conn.commit()
+    log(f"    dim_user: {len(rows)} rows")
+    progress.finish_step(len(rows))
+
+    # dim_item (flat with correct GroupLevel -> ItemGroupLevel mapping + UOM)
+    # GroupLevel1=Agency(0), GL2=Brand(1), GL3=SubBrand(2), GL4=Category(3),
+    # GL5=PackType(5), GL6=PackSize, GL7=Flavor(7), GL8=Segment(8)
+    progress.start_step('dim_item (flat with groups + UOM)', expected_rows=10000)
     pg_cur.execute("DELETE FROM dim_item")
     ms_cur.execute("""
-        SELECT i.Code, i.Description, i.BaseUOM,
-            i.GroupLevel1, g1.Description,
-            i.GroupLevel2, g2.Description,
-            i.GroupLevel3, g3.Description,
-            i.GroupLevel4, g4.Description,
-            i.GroupLevel5, g5.Description,
-            i.GroupLevel8, g8.Description,
-            i.Liter, i.LiterPerUnit, i.IsActive
+        SELECT i.Code, i.Description, i.AltDescription, i.ArabicName,
+            i.SalesOrgCode, i.BaseUOM, i.IsActive,
+            RTRIM(i.GroupLevel1), g0.Description,
+            RTRIM(i.GroupLevel2), g1.Description,
+            RTRIM(i.GroupLevel3), g2.Description,
+            RTRIM(i.GroupLevel4), g3.Description,
+            RTRIM(i.GroupLevel5), g5.Description,
+            RTRIM(i.GroupLevel6),
+            RTRIM(i.GroupLevel7), g7.Description,
+            RTRIM(i.GroupLevel8), g8.Description,
+            i.ItemType, i.Classification, i.Size,
+            i.Liter, i.LiterPerUnit, i.OrderCategory,
+            u_ct.Conversion, u_pc.Conversion
         FROM tblItem i
-        LEFT JOIN tblItemGroup g1 ON i.GroupLevel1 = g1.Code AND g1.ItemGroupLevelId = 1
-        LEFT JOIN tblItemGroup g2 ON i.GroupLevel2 = g2.Code AND g2.ItemGroupLevelId = 2
-        LEFT JOIN tblItemGroup g3 ON i.GroupLevel3 = g3.Code AND g3.ItemGroupLevelId = 3
-        LEFT JOIN tblItemGroup g4 ON i.GroupLevel4 = g4.Code AND g4.ItemGroupLevelId = 4
-        LEFT JOIN tblItemGroup g5 ON i.GroupLevel5 = g5.Code AND g5.ItemGroupLevelId = 5
-        LEFT JOIN tblItemGroup g8 ON i.GroupLevel8 = g8.Code AND g8.ItemGroupLevelId = 8
+        LEFT JOIN tblItemGroup g0 ON RTRIM(i.GroupLevel1) = RTRIM(g0.Code) AND g0.ItemGroupLevelId = 0
+        LEFT JOIN tblItemGroup g1 ON RTRIM(i.GroupLevel2) = RTRIM(g1.Code) AND g1.ItemGroupLevelId = 1
+        LEFT JOIN tblItemGroup g2 ON RTRIM(i.GroupLevel3) = RTRIM(g2.Code) AND g2.ItemGroupLevelId = 2
+        LEFT JOIN tblItemGroup g3 ON RTRIM(i.GroupLevel4) = RTRIM(g3.Code) AND g3.ItemGroupLevelId = 3
+        LEFT JOIN tblItemGroup g5 ON RTRIM(i.GroupLevel5) = RTRIM(g5.Code) AND g5.ItemGroupLevelId = 5
+        LEFT JOIN tblItemGroup g7 ON RTRIM(i.GroupLevel7) = RTRIM(g7.Code) AND g7.ItemGroupLevelId = 7
+        LEFT JOIN tblItemGroup g8 ON RTRIM(i.GroupLevel8) = RTRIM(g8.Code) AND g8.ItemGroupLevelId = 8
+        LEFT JOIN tblItemUom u_ct ON i.Code = u_ct.ItemCode AND u_ct.UOM = 'CT' AND i.SalesOrgCode = u_ct.SalesOrgCode
+        LEFT JOIN tblItemUom u_pc ON i.Code = u_pc.ItemCode AND u_pc.UOM = 'PC' AND i.SalesOrgCode = u_pc.SalesOrgCode
     """)
     rows = ms_cur.fetchall()
     seen = set()
@@ -353,9 +428,19 @@ def load_dimensions(ms_conn, pg_conn):
             seen.add(r[0])
             unique_rows.append(r)
     execute_values(pg_cur,
-        """INSERT INTO dim_item (code, name, base_uom, brand_code, brand_name, sub_brand_code, sub_brand_name,
-           category_code, category_name, sub_category_code, sub_category_name, pack_type_code, pack_type_name,
-           segment_code, segment_name, liter, liter_per_unit, is_active) VALUES %s""",
+        """INSERT INTO dim_item (code, name, alt_name, arabic_name,
+           sales_org_code, base_uom, is_active,
+           agency_code, agency_name,
+           brand_code, brand_name,
+           sub_brand_code, sub_brand_name,
+           category_code, category_name,
+           pack_type_code, pack_type_name,
+           pack_size_code,
+           flavor_code, flavor_name,
+           segment_code, segment_name,
+           item_type, classification, size,
+           liter, liter_per_unit, order_category,
+           case_conversion, pc_conversion) VALUES %s""",
         unique_rows)
     pg_conn.commit()
     log(f"    Deduped {len(rows)} -> {len(unique_rows)} items")
@@ -408,7 +493,7 @@ def load_sales_detail(ms_conn, pg_conn):
     query = """
         SELECT
             h.TrxCode, d.[LineNo], CAST(h.TrxDate AS DATE), CAST(h.TripDate AS DATE),
-            h.TrxType, h.PaymentType,
+            h.TrxType, h.PaymentType, h.TRXStatus,
             h.UserCode, u.Description,
             h.OrgCode, so.Description, u.DepotCode,
             h.RouteCode, rt.Name, rt.RouteType, rt.AreaCode, rt.SubAreaCode,
@@ -447,7 +532,7 @@ def load_sales_detail(ms_conn, pg_conn):
         WHERE h.TrxDate >= %s AND h.TrxDate < %s
     """
     columns = [
-        'trx_code', 'line_no', 'trx_date', 'trip_date', 'trx_type', 'payment_type',
+        'trx_code', 'line_no', 'trx_date', 'trip_date', 'trx_type', 'payment_type', 'trx_status',
         'user_code', 'user_name', 'sales_org_code', 'sales_org_name', 'depot_code',
         'route_code', 'route_name', 'route_type', 'area_code', 'sub_area_code',
         'customer_code', 'customer_name',
@@ -881,22 +966,152 @@ def load_journey_plan(ms_conn, pg_conn):
     pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
+    # NOTE: In tblDailyJourneyPlan, UserCode = route code, SalesmanCode = actual user
     query = """
         SELECT jp.DailyJourneyPlanId, CAST(jp.JourneyDate AS DATE),
-            jp.UserCode, u.Description, jp.CustomerCode, c.Description,
-            rt.Code, jp.Sequence, jp.VisitStatus, u.SalesOrgCode
-        FROM tblDailyJourneyPlan jp
-        LEFT JOIN tblUser u ON jp.UserCode = u.Code
-        LEFT JOIN tblCustomer c ON jp.CustomerCode = c.Code
-        LEFT JOIN tblRoute rt ON u.RouteCode = rt.Code
+            ISNULL(jp.SalesmanCode, jp.UserCode),
+            ISNULL(u.Description, ''),
+            jp.CustomerCode, ISNULL(c.Description, ''),
+            jp.UserCode,
+            jp.Sequence, jp.VisitStatus,
+            ISNULL(rt.SalesOrgCode, '')
+        FROM tblDailyJourneyPlan jp (NOLOCK)
+        LEFT JOIN tblUser u (NOLOCK) ON jp.SalesmanCode = u.Code
+        LEFT JOIN tblCustomer c (NOLOCK) ON jp.CustomerCode = c.Code
+        LEFT JOIN tblRoute rt (NOLOCK) ON jp.UserCode = rt.Code
         WHERE jp.JourneyDate >= %s AND jp.JourneyDate < %s
             AND (jp.IsDeleted = 0 OR jp.IsDeleted IS NULL)
     """
     columns = [
-        'id', 'date', 'user_code', 'user_name', 'customer_code', 'customer_name',
-        'route_code', 'sequence', 'visit_status', 'sales_org_code'
+        'id', 'date',
+        'user_code',       # = jp.SalesmanCode (the actual salesman)
+        'user_name',
+        'customer_code', 'customer_name',
+        'route_code',      # = jp.UserCode (this IS the route code)
+        'sequence', 'visit_status',
+        'sales_org_code'   # from tblRoute via jp.UserCode
     ]
     total = extract_batch(ms_cur, query, (DATE_FROM, DATE_TO), pg_conn, 'rpt_journey_plan', columns)
+    pg_cur.close()
+    progress.finish_step(total)
+
+
+def load_invoice_totals(ms_conn, pg_conn):
+    """Load rpt_invoice_totals - aggregated from tblTrxHeader with correct net formula.
+    Matches: sp_tblOrder_Total_SalesAndCollection_Dashboard_Reports_V1
+    Formula: TotalAmount + TotalTAXAmount - TotalDiscountAmount
+    TrxType=1 → TotalSales, TrxType IN (4,12) → TotalReturns
+    """
+    progress.start_step('rpt_invoice_totals', expected_rows=500_000)
+    pg_cur = pg_conn.cursor()
+    pg_cur.execute("TRUNCATE rpt_invoice_totals")
+    pg_conn.commit()
+
+    query = """
+        SELECT
+            CAST(h.TrxDate AS DATE),
+            h.RouteCode, ISNULL(rt.Name, ''),
+            h.UserCode, ISNULL(u.Description, ''),
+            ISNULL(rt.SalesOrgCode, h.OrgCode),
+            h.ClientCode, ISNULL(c.Description, ''),
+            SUM(CASE WHEN h.TrxType = 1
+                THEN h.TotalAmount + ISNULL(h.TotalTAXAmount,0) - ISNULL(h.TotalDiscountAmount,0)
+                ELSE 0 END),
+            SUM(CASE WHEN h.TrxType IN (4, 12)
+                THEN h.TotalAmount + ISNULL(h.TotalTAXAmount,0) - ISNULL(h.TotalDiscountAmount,0)
+                ELSE 0 END)
+        FROM tblTrxHeader h (NOLOCK)
+        LEFT JOIN tblRoute rt (NOLOCK) ON h.RouteCode = rt.Code
+        LEFT JOIN tblUser u (NOLOCK) ON h.UserCode = u.Code
+        LEFT JOIN tblCustomer c (NOLOCK) ON h.ClientCode = c.Code
+        WHERE h.TrxType IN (1, 4, 12) AND h.TRXStatus = 200
+            AND h.TrxDate >= %s AND h.TrxDate < %s
+        GROUP BY CAST(h.TrxDate AS DATE), h.RouteCode, rt.Name,
+            h.UserCode, u.Description, ISNULL(rt.SalesOrgCode, h.OrgCode),
+            h.ClientCode, c.Description
+    """
+    columns = [
+        'trx_date', 'route_code', 'route_name', 'user_code', 'user_name',
+        'sales_org_code', 'customer_code', 'customer_name',
+        'total_sales', 'total_returns'
+    ]
+
+    # Process in 2-week chunks to avoid MSSQL tempdb overflow
+    from datetime import datetime
+    start = datetime.strptime(DATE_FROM, '%Y-%m-%d').date()
+    end = datetime.strptime(DATE_TO, '%Y-%m-%d').date()
+
+    grand_total = 0
+    chunk_start = start
+    chunk_days = 14
+    while chunk_start < end:
+        chunk_end = min(chunk_start + timedelta(days=chunk_days), end)
+        log(f"    Processing {chunk_start} to {chunk_end}...")
+        ms_cur = ms_conn.cursor()
+        total = extract_batch(ms_cur, query, (str(chunk_start), str(chunk_end)),
+                              pg_conn, 'rpt_invoice_totals', columns)
+        grand_total += total
+        log(f"    {chunk_start} to {chunk_end}: {total:,} rows")
+        chunk_start = chunk_end
+
+    pg_cur.close()
+    progress.finish_step(grand_total)
+
+
+def load_route_sales_summary_by_item(ms_conn, pg_conn):
+    """Load rpt_route_sales_summary_by_item - primary dashboard source for sales/targets."""
+    progress.start_step('rpt_route_sales_summary_by_item', expected_rows=500_000)
+    pg_cur = pg_conn.cursor()
+    pg_cur.execute("TRUNCATE rpt_route_sales_summary_by_item")
+    pg_conn.commit()
+
+    ms_cur = ms_conn.cursor()
+    query = """
+        SELECT CAST(R.Date AS DATE), R.RouteCode, RR.Name,
+            R.UserCode, U.Description, RR.SalesOrgCode,
+            R.ItemCode, I.Description, I.GroupLevel3, I.GroupLevel1,
+            R.TotalSales, R.TotalCollection, R.TotalSalesWithTax,
+            R.TotalWastage, R.TargetAmount
+        FROM tblRouteSalesSummaryByItem R WITH(NOLOCK)
+        LEFT JOIN tblRoute RR ON RR.Code = R.RouteCode
+        LEFT JOIN tblUser U ON R.UserCode = U.Code
+        LEFT JOIN tblItem I ON R.ItemCode = I.Code
+        WHERE R.Date >= %s AND R.Date < %s
+    """
+    columns = [
+        'date', 'route_code', 'route_name', 'user_code', 'user_name',
+        'sales_org_code', 'item_code', 'item_name', 'category_code', 'brand_code',
+        'total_sales', 'total_collection', 'total_sales_with_tax',
+        'total_wastage', 'target_amount'
+    ]
+    total = extract_batch(ms_cur, query, (DATE_FROM, DATE_TO), pg_conn,
+                          'rpt_route_sales_summary_by_item', columns)
+    pg_cur.close()
+    progress.finish_step(total)
+
+
+def load_route_sales_by_item_customer(ms_conn, pg_conn):
+    """Load rpt_route_sales_by_item_customer from tblRouteSalesSummaryByItemCustomer."""
+    progress.start_step('rpt_route_sales_by_item_customer', expected_rows=2_500_000)
+    pg_cur = pg_conn.cursor()
+    pg_cur.execute("TRUNCATE rpt_route_sales_by_item_customer")
+    pg_conn.commit()
+
+    ms_cur = ms_conn.cursor()
+    query = """
+        SELECT RouteCode, UserCode, CustomerCode, ItemCode,
+            CAST(Date AS DATE), TotalQty, TotalGRQty, TotalDamageQty, TotalExpiryQty,
+            TotalSales, TotalGRSales, TotalDamageSales, TotalExpirySales
+        FROM tblRouteSalesSummaryByItemCustomer WITH(NOLOCK)
+        WHERE Date >= %s AND Date < %s
+    """
+    columns = [
+        'route_code', 'user_code', 'customer_code', 'item_code',
+        'date', 'total_qty', 'total_gr_qty', 'total_damage_qty', 'total_expiry_qty',
+        'total_sales', 'total_gr_sales', 'total_damage_sales', 'total_expiry_sales'
+    ]
+    total = extract_batch(ms_cur, query, (DATE_FROM, DATE_TO), pg_conn,
+                          'rpt_route_sales_by_item_customer', columns)
     pg_cur.close()
     progress.finish_step(total)
 
@@ -930,6 +1145,9 @@ ALL_STEPS = [
     ('targets', load_targets),
     ('coverage_summary', load_coverage_summary),
     ('route_sales_collection', load_route_sales_collection),
+    ('route_sales_summary_by_item', load_route_sales_summary_by_item),
+    ('route_sales_by_item_customer', load_route_sales_by_item_customer),
+    ('invoice_totals', load_invoice_totals),
     ('eot', load_eot),
     ('journeys', load_journeys),
     ('collections', load_collections),

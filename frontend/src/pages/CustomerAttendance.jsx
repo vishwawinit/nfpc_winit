@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { fetchCustomerAttendance } from '../api';
 import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
@@ -9,11 +9,25 @@ import { Users, MapPin, Clock, CalendarDays } from 'lucide-react';
 export default function CustomerAttendance() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ date_from: '2026-03-01', date_to: '2026-03-12' });
+  const [refreshing, setRefreshing] = useState(false);
+  const hasData = useRef(false);
+  const [filters, setFilters] = useState(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return { date_from: `${y}-${m}-01`, date_to: `${y}-${m}-${d}` };
+  });
 
   useEffect(() => {
-    setLoading(true);
-    fetchCustomerAttendance(filters).then(setData).catch(console.error).finally(() => setLoading(false));
+    let cancelled = false;
+    if (!hasData.current) setLoading(true);
+    else setRefreshing(true);
+    fetchCustomerAttendance(filters)
+      .then(res => { if (!cancelled) { setData(res); hasData.current = true; } })
+      .catch(err => { if (!cancelled) console.error(err); })
+      .finally(() => { if (!cancelled) { setLoading(false); setRefreshing(false); } });
+    return () => { cancelled = true; };
   }, [filters]);
 
   const rows = Array.isArray(data) ? data : [];
@@ -30,7 +44,7 @@ export default function CustomerAttendance() {
       </div>
 
       <FilterPanel filters={filters} onChange={setFilters}
-        showFields={['user_code', 'customer', 'date_from', 'date_to', 'sales_org']} />
+        showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'channel', 'category', 'brand']} />
 
       {loading ? <Loading /> : rows.length === 0 ? (
         <div className="text-center py-16 text-gray-400">No data available</div>

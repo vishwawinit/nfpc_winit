@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { fetchWeeklySalesReturns } from '../api';
 import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
@@ -12,11 +12,25 @@ const aed = (v) => v != null ? `AED ${Number(v).toLocaleString('en-US', { maximu
 export default function WeeklySalesReturns() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ date_from: '2026-01-01', date_to: '2026-03-12' });
+  const [refreshing, setRefreshing] = useState(false);
+  const hasData = useRef(false);
+  const [filters, setFilters] = useState(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const d = String(now.getDate()).padStart(2, '0');
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    return { date_from: `${y}-01-01`, date_to: `${y}-${m}-${d}` };
+  });
 
   useEffect(() => {
-    setLoading(true);
-    fetchWeeklySalesReturns(filters).then(setData).catch(console.error).finally(() => setLoading(false));
+    let cancelled = false;
+    if (!hasData.current) setLoading(true);
+    else setRefreshing(true);
+    fetchWeeklySalesReturns(filters)
+      .then(res => { if (!cancelled) { setData(res); hasData.current = true; } })
+      .catch(err => { if (!cancelled) console.error(err); })
+      .finally(() => { if (!cancelled) { setLoading(false); setRefreshing(false); } });
+    return () => { cancelled = true; };
   }, [filters]);
 
   const weekly = data?.weekly_data || [];
@@ -35,7 +49,7 @@ export default function WeeklySalesReturns() {
       </div>
 
       <FilterPanel filters={filters} onChange={setFilters}
-        showFields={['sales_org', 'user_code', 'date_from', 'date_to', 'route']} />
+        showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'category', 'brand']} />
 
       {loading ? <Loading /> : !data ? (
         <div className="text-center py-16 text-gray-400">No data available</div>

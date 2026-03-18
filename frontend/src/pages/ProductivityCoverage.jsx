@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { fetchProductivityCoverage } from '../api';
 import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
@@ -9,12 +9,26 @@ import { CalendarCheck, Users, Target, TrendingUp, MapPin, Navigation, Zap } fro
 export default function ProductivityCoverage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ date_from: '2026-03-01', date_to: '2026-03-12' });
+  const [refreshing, setRefreshing] = useState(false);
+  const hasData = useRef(false);
   const [tab, setTab] = useState('coverage');
+  const [filters, setFilters] = useState(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return { date_from: `${y}-${m}-01`, date_to: `${y}-${m}-${d}` };
+  });
 
   useEffect(() => {
-    setLoading(true);
-    fetchProductivityCoverage(filters).then(setData).catch(console.error).finally(() => setLoading(false));
+    let cancelled = false;
+    if (!hasData.current) setLoading(true);
+    else setRefreshing(true);
+    fetchProductivityCoverage(filters)
+      .then(res => { if (!cancelled) { setData(res); hasData.current = true; } })
+      .catch(err => { if (!cancelled) console.error(err); })
+      .finally(() => { if (!cancelled) { setLoading(false); setRefreshing(false); } });
+    return () => { cancelled = true; };
   }, [filters]);
 
   const summary = data?.summary || {};
@@ -26,17 +40,28 @@ export default function ProductivityCoverage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">Productivity & Coverage</h1>
-        <p className="text-sm text-gray-500 mt-1">Scheduled vs actual visits, productive calls and coverage metrics per salesman</p>
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-end justify-between">
+        <div>
+          <h1 className="text-[22px] font-bold text-gray-900 tracking-tight">Productivity & Coverage</h1>
+          <p className="text-[13px] text-gray-400 mt-0.5 font-medium">Scheduled vs actual visits, productive calls and coverage metrics</p>
+        </div>
       </div>
 
+      {/* Filters — always mounted */}
       <FilterPanel filters={filters} onChange={setFilters}
-        showFields={['date_from', 'date_to', 'sales_org']} />
+        showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route']} />
 
-      {loading ? <Loading /> : !data ? (
-        <div className="text-center py-16 text-gray-400">No data available</div>
+      {/* Refreshing indicator */}
+      {refreshing && (
+        <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-1 bg-indigo-500 rounded-full animate-pulse" style={{ width: '60%' }} />
+        </div>
+      )}
+
+      {/* Data area */}
+      {loading && !data ? <Loading /> : !data ? (
+        <div className="text-center py-16 text-gray-400 font-medium">No data available</div>
       ) : (
         <>
           {/* Summary KPI Cards */}
@@ -75,7 +100,7 @@ export default function ProductivityCoverage() {
 
           {/* Per-User Table */}
           <div>
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+            <h2 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-3">
               {tab === 'coverage' ? 'Coverage by Salesman' : 'Productivity by Salesman'}
             </h2>
 
