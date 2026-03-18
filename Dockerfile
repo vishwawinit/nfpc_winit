@@ -1,10 +1,8 @@
 # Stage 1: Build frontend
 FROM node:20-slim AS frontend-build
-WORKDIR /app/frontend
-COPY frontend/package*.json ./
-RUN npm ci
-COPY frontend/ ./
-RUN npm run build
+WORKDIR /app
+COPY frontend/ frontend/
+RUN cd frontend && npm ci && npm run build
 
 # Stage 2: Python backend
 FROM python:3.12-slim
