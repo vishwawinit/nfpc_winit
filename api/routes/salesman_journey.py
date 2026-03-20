@@ -45,6 +45,18 @@ def get_salesman_journey(
         'sales_org': sales_org,
     }.items() if v is not None}
 
+    # Auto-fallback: if requested date has no data, use latest available date
+    if date_from and date_from == date_to:
+        check = query(
+            "SELECT MAX(date) AS latest FROM rpt_customer_visits WHERE date <= %s",
+            [date_from]
+        )
+        if check and check[0]["latest"]:
+            latest = check[0]["latest"]
+            if str(latest) != str(date_from):
+                filters['date_from'] = latest
+                filters['date_to'] = latest
+
     # User list: visits + sales joined (fast, single query)
     vw, vp = build_where(filters, date_col='date', prefix='cv')
     rw, rp = build_where({k: v for k, v in filters.items() if k in RSIC_KEYS}, date_col='date', prefix='rc')

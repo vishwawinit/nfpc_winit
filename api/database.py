@@ -14,7 +14,7 @@ _pool = None
 
 # ---------- Simple TTL cache ----------
 _cache = {}
-CACHE_TTL = 300  # 5 minutes
+CACHE_TTL = 900  # 15 minutes
 
 
 def _cache_key(sql, params):

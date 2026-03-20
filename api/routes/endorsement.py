@@ -1,14 +1,4 @@
-"""Endorsement Report endpoint.
-Matches: usp_EndorsementReport_Customers_BySubGroups
-
-Customer visit details with sales, planned/unplanned, productive detection.
-
-Sources:
-  - Visits: rpt_customer_visits
-  - Sales: rpt_route_sales_by_item_customer
-  - Planned: rpt_journey_plan (match = planned visit)
-  - Productive: has matching sale
-"""
+"""Endorsement Report endpoint — optimized single-query approach."""
 from fastapi import APIRouter, Query
 from typing import Optional
 from datetime import date
@@ -52,112 +42,82 @@ def get_endorsement(
         'sales_org': sales_org, 'user_code': user_code,
     }.items() if v is not None}
 
-    vw, vp = build_where(filters, date_col='date')
+    vw, vp = build_where(filters, date_col='date', prefix='cv')
 
-    # Header: route info + summary
-    header_row = query_one(
-        f"SELECT route_code, route_name, user_code, user_name, sales_org_code, "
-        f"  MIN(arrival_time) AS depot_out_time, MAX(out_time) AS depot_in_time, "
-        f"  EXTRACT(EPOCH FROM MAX(out_time) - MIN(arrival_time)) / 60 AS total_driving_mins, "
-        f"  COUNT(*) AS total_visits, "
-        f"  ROUND(AVG(total_time_mins)::numeric, 1) AS avg_time_per_visit "
-        f"FROM rpt_customer_visits WHERE {vw} "
-        f"GROUP BY route_code, route_name, user_code, user_name, sales_org_code",
+    # Single optimized query: visits + planned + sales in one go
+    customers = query(
+        f"SELECT cv.customer_code, cv.customer_name, cv.channel_name, "
+        f"  cv.route_code, cv.user_code, cv.user_name, cv.date, "
+        f"  cv.arrival_time, cv.out_time, cv.total_time_mins, "
+        f"  cv.latitude, cv.longitude, "
+        f"  CASE WHEN jp.customer_code IS NOT NULL THEN true ELSE false END AS is_planned, "
+        f"  COALESCE(s.total_value, 0) AS total_value, "
+        f"  COALESCE(s.total_returns, 0) AS total_returns "
+        f"FROM rpt_customer_visits cv "
+        f"LEFT JOIN rpt_journey_plan jp "
+        f"  ON cv.route_code = jp.route_code AND cv.customer_code = jp.customer_code AND cv.date = jp.date "
+        f"LEFT JOIN ( "
+        f"  SELECT route_code, customer_code, date, "
+        f"    ROUND(SUM(total_sales)::numeric, 2) AS total_value, "
+        f"    ROUND(SUM(total_gr_sales + total_damage_sales + total_expiry_sales)::numeric, 2) AS total_returns "
+        f"  FROM rpt_route_sales_by_item_customer "
+        f"  GROUP BY route_code, customer_code, date "
+        f") s ON cv.route_code = s.route_code AND cv.customer_code = s.customer_code AND cv.date = s.date "
+        f"WHERE {vw} "
+        f"ORDER BY cv.arrival_time",
         vp
     )
 
-    header = {}
-    if header_row:
-        header = {
-            "route_code": header_row["route_code"],
-            "route_name": header_row["route_name"],
-            "user_code": header_row["user_code"],
-            "user_name": header_row["user_name"],
-            "sales_org_code": header_row["sales_org_code"],
-            "depot_out_time": str(header_row["depot_out_time"])[11:16] if header_row["depot_out_time"] else None,
-            "depot_in_time": str(header_row["depot_in_time"])[11:16] if header_row["depot_in_time"] else None,
-            "total_driving_mins": round(float(header_row["total_driving_mins"]), 1) if header_row["total_driving_mins"] else 0,
-            "total_visits": int(header_row["total_visits"]),
-            "avg_time_per_visit": float(header_row["avg_time_per_visit"]) if header_row["avg_time_per_visit"] else 0,
-        }
-
-    # Pre-compute sets for planned + productive
-    f_rsic = {k: v for k, v in filters.items() if k in RSIC_KEYS}
-    rw, rp = build_where(f_rsic, date_col='date')
-
-    # Planned set: journey plan entries
-    plan_rows = query(
-        f"SELECT DISTINCT route_code, customer_code, date FROM rpt_journey_plan WHERE {rw}", rp
-    )
-    planned_set = set((r["route_code"], r["customer_code"], str(r["date"])) for r in plan_rows)
-
-    # Productive set: has a sale
-    prod_rows = query(
-        f"SELECT DISTINCT route_code, customer_code, date "
-        f"FROM rpt_route_sales_by_item_customer WHERE total_sales > 0 AND {rw}", rp
-    )
-    productive_set = set((r["route_code"], r["customer_code"], str(r["date"])) for r in prod_rows)
-
-    # Sales per customer+route+date
-    sales_rows = query(
-        f"SELECT route_code, customer_code, date, "
-        f"  ROUND(SUM(total_sales)::numeric, 2) AS total_value, "
-        f"  ROUND(SUM(total_gr_sales + total_damage_sales + total_expiry_sales)::numeric, 2) AS total_returns "
-        f"FROM rpt_route_sales_by_item_customer WHERE {rw} "
-        f"GROUP BY route_code, customer_code, date",
-        rp
-    )
-    sales_map = {(r["route_code"], r["customer_code"], str(r["date"])): r for r in sales_rows}
-
-    # Visits
-    visits = query(
-        f"SELECT customer_code, customer_name, channel_name, "
-        f"  route_code, date, arrival_time, out_time, total_time_mins, "
-        f"  latitude, longitude "
-        f"FROM rpt_customer_visits WHERE {vw} ORDER BY arrival_time",
-        vp
-    )
-
+    # Build response + track seen customers for dedup
     customer_list = []
+    seen = set()
     planned_count = 0
     productive_count = 0
-    seen_customers = set()  # Track to avoid double-counting sales on repeat visits
-    for v in visits:
-        key = (v["route_code"], v["customer_code"], str(v["date"]))
-        is_planned = key in planned_set
-        is_productive = key in productive_set
-        s = sales_map.get(key, {})
+    total_visits = 0
 
-        # Only count sales on first visit to this customer (avoid duplicate totals)
-        cust_key = (v["customer_code"], str(v["date"]))
-        first_visit = cust_key not in seen_customers
-        seen_customers.add(cust_key)
+    for c in customers:
+        is_planned = c["is_planned"]
+        is_productive = float(c["total_value"]) > 0
+        cust_key = (c["customer_code"], str(c["date"]))
+        first_visit = cust_key not in seen
+        seen.add(cust_key)
 
+        total_visits += 1
         if is_planned:
             planned_count += 1
         if is_productive:
             productive_count += 1
 
         customer_list.append({
-            "customer_code": v["customer_code"],
-            "customer_name": v["customer_name"],
-            "channel_name": v["channel_name"],
+            "customer_code": c["customer_code"],
+            "customer_name": c["customer_name"],
+            "channel_name": c["channel_name"],
             "is_planned": is_planned,
             "visit_type": "JP" if is_planned else "UJP",
-            "arrival_time": str(v["arrival_time"])[11:16] if v["arrival_time"] else None,
-            "out_time": str(v["out_time"])[11:16] if v["out_time"] else None,
-            "time_spent_mins": float(v["total_time_mins"]) if v["total_time_mins"] else 0,
+            "arrival_time": str(c["arrival_time"])[11:16] if c["arrival_time"] else None,
+            "out_time": str(c["out_time"])[11:16] if c["out_time"] else None,
+            "time_spent_mins": float(c["total_time_mins"]) if c["total_time_mins"] else 0,
             "is_productive": is_productive,
-            "total_value": float(s.get("total_value", 0)) if first_visit else 0,
-            "total_returns": float(s.get("total_returns", 0)) if first_visit else 0,
-            "latitude": float(v["latitude"]) if v["latitude"] else None,
-            "longitude": float(v["longitude"]) if v["longitude"] else None,
+            "total_value": float(c["total_value"]) if first_visit else 0,
+            "total_returns": float(c["total_returns"]) if first_visit else 0,
+            "latitude": float(c["latitude"]) if c["latitude"] else None,
+            "longitude": float(c["longitude"]) if c["longitude"] else None,
         })
 
-    if header:
-        header["scheduled"] = len(planned_set)  # Journey plan entries count
-        header["planned_visits"] = planned_count  # Visit rows that matched plan
-        header["productive_visits"] = productive_count
+    # Header from first row or aggregate
+    header = {}
+    if customers:
+        first = customers[0]
+        header = {
+            "route_code": first["route_code"],
+            "route_name": "",
+            "user_code": first["user_code"],
+            "user_name": first["user_name"],
+            "total_visits": total_visits,
+            "scheduled": len(set((c["route_code"], c["customer_code"], str(c["date"])) for c in customers if c["is_planned"])),
+            "planned_visits": planned_count,
+            "productive_visits": productive_count,
+        }
 
     return {
         "header": header,

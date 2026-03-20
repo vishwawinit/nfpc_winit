@@ -1,44 +1,34 @@
-"""Outstanding Collection report endpoint."""
+"""Outstanding Collection report endpoint.
+Source: rpt_outstanding (pending invoices with aging buckets)
+"""
 from fastapi import APIRouter, Query
 from typing import Optional
-from datetime import date
 from api.database import query
-from api.models import build_where, resolve_user_codes
+from api.models import resolve_user_codes
 
 router = APIRouter()
 
 
-def _build_summary_where(filters: dict):
-    """Build WHERE for rpt_outstanding_summary (pre-aggregated table)."""
-    conditions = []
+def _build_where(filters: dict):
+    conditions = ["balance_amount != 0"]
     params = []
-    if filters.get('year'):
-        conditions.append("year = %s")
-        params.append(int(filters['year']))
     if filters.get('sales_org'):
         vals = [v.strip() for v in filters['sales_org'].split(',') if v.strip()]
-        if len(vals) == 1:
-            conditions.append("org_code = %s")
-            params.append(vals[0])
-        else:
-            conditions.append(f"org_code IN ({','.join(['%s']*len(vals))})")
-            params.extend(vals)
+        ph = ','.join(['%s'] * len(vals))
+        conditions.append(f"org_code IN ({ph})")
+        params.extend(vals)
     if filters.get('customer'):
         conditions.append("customer_code = %s")
         params.append(filters['customer'])
     if filters.get('user_code'):
         vals = [v.strip() for v in filters['user_code'].split(',') if v.strip()]
-        if len(vals) == 1:
-            conditions.append("user_code = %s")
-            params.append(vals[0])
-        else:
-            conditions.append(f"user_code IN ({','.join(['%s']*len(vals))})")
-            params.extend(vals)
+        ph = ','.join(['%s'] * len(vals))
+        conditions.append(f"user_code IN ({ph})")
+        params.extend(vals)
     if filters.get('route'):
         conditions.append("route_code = %s")
         params.append(filters['route'])
-    where = " AND ".join(conditions) if conditions else "1=1"
-    return where, params
+    return " AND ".join(conditions), params
 
 
 @router.get("/outstanding-collection")
@@ -48,22 +38,19 @@ def get_outstanding_collection(
     user_code: Optional[str] = None,
     route: Optional[str] = None,
     bucket: Optional[str] = None,
-    year: Optional[int] = None,
     hos: Optional[str] = None,
     asm: Optional[str] = None,
     depot: Optional[str] = None,
     supervisor: Optional[str] = None,
 ):
-    # Resolve hierarchy filters (hos/asm/supervisor/depot) to user_codes
     _hier = {k: v for k, v in {'hos': hos, 'depot': depot, 'supervisor': supervisor, 'asm': asm}.items() if v}
     if _hier:
         resolved = resolve_user_codes(_hier)
         if resolved == "__NO_MATCH__":
-            user_code = "__NO_MATCH__"
-        elif resolved:
+            return {"aging_buckets": [], "customers": []}
+        if resolved:
             if user_code:
-                existing = set(user_code.split(','))
-                intersected = existing & set(resolved.split(','))
+                intersected = set(user_code.split(',')) & set(resolved.split(','))
                 user_code = ','.join(intersected) if intersected else "__NO_MATCH__"
             else:
                 user_code = resolved
@@ -71,28 +58,24 @@ def get_outstanding_collection(
     filters = {k: v for k, v in {
         'customer': customer, 'sales_org': sales_org,
         'user_code': user_code, 'route': route,
-        'year': year,
     }.items() if v is not None}
 
-    w, p = _build_summary_where(filters)
+    w, p = _build_where(filters)
 
-    # Query 1: Bucket KPIs from pre-aggregated summary (fast)
+    # Aging buckets
     aging_buckets = query(
-        f"""
-        SELECT aging_bucket AS bucket,
-            COALESCE(SUM(pending_amount), 0) AS amount,
-            COUNT(DISTINCT customer_code) AS customer_count
-        FROM rpt_outstanding_summary
-        WHERE {w}
-        GROUP BY aging_bucket
-        ORDER BY CASE aging_bucket
-            WHEN 'Current' THEN 1 WHEN '1-30' THEN 2 WHEN '31-60' THEN 3
-            WHEN '61-90' THEN 4 WHEN '91-120' THEN 5 WHEN '120+' THEN 6 ELSE 7 END
-        """,
+        f"SELECT aging_bucket AS bucket, "
+        f"  ROUND(COALESCE(SUM(balance_amount), 0)::numeric, 2) AS amount, "
+        f"  COUNT(DISTINCT customer_code) AS count "
+        f"FROM rpt_outstanding WHERE {w} "
+        f"GROUP BY aging_bucket "
+        f"ORDER BY CASE aging_bucket "
+        f"  WHEN 'Current' THEN 1 WHEN '1-30' THEN 2 WHEN '31-60' THEN 3 "
+        f"  WHEN '61-90' THEN 4 WHEN '91-120' THEN 5 WHEN '120+' THEN 6 END",
         p
     )
 
-    # Query 2: Customer-level from summary (filtered by bucket if selected)
+    # Customer breakdown
     bucket_cond = ""
     bucket_params = []
     if bucket:
@@ -100,15 +83,11 @@ def get_outstanding_collection(
         bucket_params = [bucket]
 
     customers = query(
-        f"""
-        SELECT customer_code, MIN(customer_name) AS customer_name,
-            SUM(invoice_count) AS invoice_count,
-            COALESCE(SUM(pending_amount), 0) AS pending_amount
-        FROM rpt_outstanding_summary
-        WHERE {w}{bucket_cond}
-        GROUP BY customer_code
-        ORDER BY pending_amount DESC
-        """,
+        f"SELECT customer_code, customer_name, "
+        f"  ROUND(COALESCE(SUM(balance_amount), 0)::numeric, 2) AS pending_amount "
+        f"FROM rpt_outstanding WHERE {w}{bucket_cond} "
+        f"GROUP BY customer_code, customer_name "
+        f"ORDER BY pending_amount DESC",
         p + bucket_params
     )
 
@@ -124,22 +103,19 @@ def get_outstanding_invoices(
     sales_org: Optional[str] = None,
     user_code: Optional[str] = None,
     route: Optional[str] = None,
-    year: Optional[int] = None,
     hos: Optional[str] = None,
     asm: Optional[str] = None,
     depot: Optional[str] = None,
     supervisor: Optional[str] = None,
 ):
-    # Resolve hierarchy filters (hos/asm/supervisor/depot) to user_codes
     _hier = {k: v for k, v in {'hos': hos, 'depot': depot, 'supervisor': supervisor, 'asm': asm}.items() if v}
     if _hier:
         resolved = resolve_user_codes(_hier)
         if resolved == "__NO_MATCH__":
-            user_code = "__NO_MATCH__"
-        elif resolved:
+            return []
+        if resolved:
             if user_code:
-                existing = set(user_code.split(','))
-                intersected = existing & set(resolved.split(','))
+                intersected = set(user_code.split(',')) & set(resolved.split(','))
                 user_code = ','.join(intersected) if intersected else "__NO_MATCH__"
             else:
                 user_code = resolved
@@ -147,50 +123,16 @@ def get_outstanding_invoices(
     filters = {k: v for k, v in {
         'customer': customer, 'sales_org': sales_org,
         'user_code': user_code, 'route': route,
-        'year': year,
     }.items() if v is not None}
 
-    # Build WHERE for raw rpt_outstanding table (invoices detail)
-    conds, prms = [], []
-    if filters.get('sales_org'):
-        conds.append("org_code = %s"); prms.append(filters['sales_org'])
-    if filters.get('customer'):
-        conds.append("customer_code = %s"); prms.append(filters['customer'])
-    if filters.get('user_code'):
-        vals = [v.strip() for v in filters['user_code'].split(',') if v.strip()]
-        if len(vals) == 1:
-            conds.append("user_code = %s"); prms.append(vals[0])
-        else:
-            conds.append(f"user_code IN ({','.join(['%s']*len(vals))})"); prms.extend(vals)
-    if filters.get('route'):
-        conds.append("route_code = %s"); prms.append(filters['route'])
-    if filters.get('year'):
-        y = int(filters['year'])
-        conds.append("trx_date >= %s AND trx_date < %s"); prms.extend([f"{y}-01-01", f"{y+1}-01-01"])
-    w = " AND ".join(conds) if conds else "1=1"
-    p = prms
+    w, p = _build_where(filters)
 
-    invoices = query(
-        f"""
-        SELECT
-            trx_code,
-            trx_date,
-            due_date,
-            original_amount,
-            balance_amount,
-            pending_amount,
-            collected_amount,
-            days_overdue,
-            aging_bucket,
-            user_code,
-            user_name,
-            route_code,
-            route_name
-        FROM rpt_outstanding
-        WHERE {w}
-        ORDER BY trx_date DESC
-        """,
+    return query(
+        f"SELECT trx_code, trx_date, due_date, "
+        f"  original_amount, balance_amount, pending_amount, collected_amount, "
+        f"  days_overdue, aging_bucket, "
+        f"  user_code, user_name, route_code, route_name "
+        f"FROM rpt_outstanding WHERE {w} "
+        f"ORDER BY trx_date DESC",
         p
     )
-
-    return invoices

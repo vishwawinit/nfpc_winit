@@ -40,22 +40,31 @@ def get_sales_performance(
 ):
     today = date.today()
 
+    # Get latest available data date
+    latest_row = query_one("SELECT MAX(date) AS latest FROM rpt_route_sales_by_item_customer")
+    latest_data = latest_row["latest"] if latest_row and latest_row["latest"] else today
+
     # Determine period
     if date_from and date_to:
         cur_start = date_from
         cur_end = date_to
     elif day and month and year:
-        # Specific day selected
-        cur_start = date(year, month, day)
-        cur_end = date(year, month, day)
+        requested = date(year, month, day)
+        # If requested day is beyond available data, use latest
+        if requested > latest_data:
+            cur_start = latest_data
+            cur_end = latest_data
+        else:
+            cur_start = requested
+            cur_end = requested
     elif month and year:
         cur_start, cur_end = _month_range(year, month)
-        # MTD: if selected month is current month, cap to today
-        if year == today.year and month == today.month:
-            cur_end = today
+        # Cap to latest available data date
+        if cur_end > latest_data:
+            cur_end = latest_data
     else:
         cur_start = date(today.year, today.month, 1)
-        cur_end = today
+        cur_end = min(today, latest_data)
 
     # Last month MTD: same day range in previous month
     # e.g. if current = Mar 1-17, last = Feb 1-17
