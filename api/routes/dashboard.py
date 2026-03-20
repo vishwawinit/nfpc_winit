@@ -81,34 +81,40 @@ def get_dashboard(
                 return _empty_response()
             filters['user_code'] = ','.join(intersected)
 
-    # When sales_org is set, resolve to route_codes for tables lacking sales_org_code
-    _rsic_routes = None
+    # When sales_org is set, build a JOIN clause for RSIC tables (which lack sales_org_code)
+    _rsic_org_join = ""
+    _rsic_org_params = []
     if filters.get('sales_org') and not filters.get('route'):
         orgs = [v.strip() for v in filters['sales_org'].split(',') if v.strip()]
         org_ph = ','.join(['%s'] * len(orgs))
-        route_rows = query(
-            f"SELECT code FROM dim_route WHERE is_active = true AND sales_org_code IN ({org_ph})", orgs
-        )
-        if route_rows:
-            _rsic_routes = ','.join(r['code'] for r in route_rows)
+        _rsic_org_join = f"JOIN dim_route _dr ON {{alias}}.route_code = _dr.code AND _dr.sales_org_code IN ({org_ph}) "
+        _rsic_org_params = orgs
 
     def _rsic_filters():
-        """Get RSIC filters with sales_org resolved to routes."""
-        f = _filter_keys(filters, RSIC_KEYS)
-        if _rsic_routes and not f.get('route'):
-            f['route'] = _rsic_routes
-        return f
+        """Get RSIC filters (without sales_org since RSIC table lacks it)."""
+        return _filter_keys(filters, RSIC_KEYS)
+
+    def _rsic_query(select, table, alias, where, params, group_by="", order_by=""):
+        """Helper for RSIC table queries that need sales_org via JOIN."""
+        join = _rsic_org_join.replace("{alias}", alias) if _rsic_org_join else ""
+        all_params = _rsic_org_params + params
+        sql = f"{select} FROM {table} {alias} {join}WHERE {where}"
+        if group_by: sql += f" {group_by}"
+        if order_by: sql += f" {order_by}"
+        return sql, all_params
 
     # =========================================================
     # TOTAL SALES — primary: rpt_route_sales_by_item_customer (matches MSSQL exactly)
     # rpt_route_sales_summary_by_item has duplicate rows, so we avoid it for totals
     # =========================================================
     f_rsic = _rsic_filters()
-    rsicw, rsicp = build_where(f_rsic, date_col='date')
+    rsicw, rsicp = build_where(f_rsic, date_col='date', prefix='rc')
+    join_clause = _rsic_org_join.replace("{alias}", "rc") if _rsic_org_join else ""
     sales_row = query_one(
-        f"SELECT COALESCE(SUM(total_sales),0) AS total_sales, "
-        f"  COALESCE(SUM(total_gr_sales + total_damage_sales + total_expiry_sales),0) AS total_wastage "
-        f"FROM rpt_route_sales_by_item_customer WHERE {rsicw}", rsicp
+        f"SELECT COALESCE(SUM(rc.total_sales),0) AS total_sales, "
+        f"  COALESCE(SUM(rc.total_gr_sales + rc.total_damage_sales + rc.total_expiry_sales),0) AS total_wastage "
+        f"FROM rpt_route_sales_by_item_customer rc {join_clause}WHERE {rsicw}",
+        _rsic_org_params + rsicp
     )
     total_sales = float(sales_row["total_sales"]) if sales_row else 0
     total_sales_with_tax = total_sales  # same source, tax included
@@ -177,11 +183,12 @@ def get_dashboard(
     # DAILY SALES TREND — primary: rpt_route_sales_by_item_customer
     # =========================================================
     f_rsic2 = _rsic_filters()
-    rsicw2, rsicp2 = build_where(f_rsic2, date_col='date')
+    rsicw2, rsicp2 = build_where(f_rsic2, date_col='date', prefix='rc')
+    join2 = _rsic_org_join.replace("{alias}", "rc") if _rsic_org_join else ""
     daily_sales = query(
-        f"SELECT date, COALESCE(SUM(total_sales), 0) AS sales "
-        f"FROM rpt_route_sales_by_item_customer WHERE {rsicw2} "
-        f"GROUP BY date ORDER BY date", rsicp2
+        f"SELECT rc.date, COALESCE(SUM(rc.total_sales), 0) AS sales "
+        f"FROM rpt_route_sales_by_item_customer rc {join2}WHERE {rsicw2} "
+        f"GROUP BY rc.date ORDER BY rc.date", _rsic_org_params + rsicp2
     )
 
     # Fallback: rpt_invoice_totals
@@ -221,14 +228,15 @@ def get_dashboard(
     # WEEK-WISE SALES & COLLECTION
     # =========================================================
     f_rsic3 = _rsic_filters()
-    rsicw3, rsicp3 = build_where(f_rsic3, date_col='date')
+    rsicw3, rsicp3 = build_where(f_rsic3, date_col='date', prefix='rc')
+    join3 = _rsic_org_join.replace("{alias}", "rc") if _rsic_org_join else ""
     weekly_sales = query(
-        f"SELECT DATE_TRUNC('week', date)::date AS week_start, "
-        f"  'W' || EXTRACT(WEEK FROM date)::int AS week_label, "
-        f"  COALESCE(SUM(total_sales), 0) AS sales "
-        f"FROM rpt_route_sales_by_item_customer WHERE {rsicw3} "
-        f"GROUP BY DATE_TRUNC('week', date), EXTRACT(WEEK FROM date) "
-        f"ORDER BY week_start", rsicp3
+        f"SELECT DATE_TRUNC('week', rc.date)::date AS week_start, "
+        f"  'W' || EXTRACT(WEEK FROM rc.date)::int AS week_label, "
+        f"  COALESCE(SUM(rc.total_sales), 0) AS sales "
+        f"FROM rpt_route_sales_by_item_customer rc {join3}WHERE {rsicw3} "
+        f"GROUP BY DATE_TRUNC('week', rc.date), EXTRACT(WEEK FROM rc.date) "
+        f"ORDER BY week_start", _rsic_org_params + rsicp3
     )
 
     # Fallback: weekly sales from rpt_invoice_totals
@@ -282,7 +290,10 @@ def get_dashboard(
     # =========================================================
 
     # Primary: use rpt_coverage_summary (pre-computed, matches MSSQL tblRouteCoverageSummary)
-    # Filter to routes with active user-location assignments (matches old dashboard SP behavior)
+    # When no hierarchy/user filter: restrict to routes with active user-location assignments
+    # When specific users are filtered: show all their routes (already scoped by user_code)
+    _has_user_filter = bool(filters.get('user_code'))
+    _cov_route_join = "" if _has_user_filter else "JOIN dim_route r ON c.route_code = r.code AND r.has_active_assignment = true "
     f_cov = _filter_keys(filters, COVERAGE_KEYS)
     covw, covp = build_where(f_cov, date_col='visit_date', prefix='c')
     cov_row = query_one(
@@ -292,7 +303,7 @@ def get_dashboard(
         f"  COALESCE(SUM(c.selling_calls),0) AS selling, "
         f"  COALESCE(SUM(c.planned_selling_calls),0) AS planned_selling "
         f"FROM rpt_coverage_summary c "
-        f"JOIN dim_route r ON c.route_code = r.code AND r.has_active_assignment = true "
+        f"{_cov_route_join}"
         f"WHERE {covw}", covp
     )
     scheduled = int(cov_row["scheduled"]) if cov_row else 0
@@ -387,6 +398,7 @@ def get_dashboard(
     # Route-wise: sales from rpt_route_sales_by_item_customer, collection from rpt_route_sales_collection
     f_rsic_rt = _rsic_filters()
     rsicw_rt, rsicp_rt = build_where(f_rsic_rt, date_col='date', prefix='r')
+    join_rt = _rsic_org_join.replace("{alias}", "r") if _rsic_org_join else ""
     f_rsc_rt = _filter_keys(filters, ROUTE_SC_KEYS)
     rw_c, rp_c = build_where(f_rsc_rt, date_col='date', prefix='c')
     route_sales_target = query(
@@ -400,6 +412,7 @@ def get_dashboard(
         f"    SUM(r.total_sales) AS sales "
         f"  FROM rpt_route_sales_by_item_customer r "
         f"  LEFT JOIN dim_route dr ON r.route_code = dr.code "
+        f"  {join_rt}"
         f"  WHERE {rsicw_rt} "
         f"  GROUP BY r.route_code, COALESCE(dr.name, r.route_code) "
         f") s "
@@ -409,7 +422,7 @@ def get_dashboard(
         f"  GROUP BY c.route_code, c.route_name "
         f") c ON s.route_code = c.route_code "
         f"ORDER BY sales DESC NULLS LAST",
-        rsicp_rt + rp_c
+        _rsic_org_params + rsicp_rt + rp_c
     )
 
     # =========================================================
@@ -420,13 +433,14 @@ def get_dashboard(
     # =========================================================
     f_cov2 = _filter_keys(filters, COVERAGE_KEYS)
     vw2, vp2 = build_where(f_cov2, date_col='visit_date', prefix='c')
+    _cov2_join = "" if _has_user_filter else "JOIN dim_route r ON c.route_code = r.code AND r.has_active_assignment = true "
     route_visits = query(
         f"SELECT c.route_code, c.route_name, "
         f"  COALESCE(SUM(c.scheduled_calls),0) AS scheduled, "
         f"  COALESCE(SUM(c.planned_calls),0) AS actual, "
         f"  COALESCE(SUM(c.selling_calls),0) AS selling "
         f"FROM rpt_coverage_summary c "
-        f"JOIN dim_route r ON c.route_code = r.code AND r.has_active_assignment = true "
+        f"{_cov2_join}"
         f"WHERE {vw2} "
         f"GROUP BY c.route_code, c.route_name ORDER BY c.route_name", vp2
     )

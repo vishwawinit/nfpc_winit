@@ -70,25 +70,22 @@ def build_where(filters: dict, date_col: str = "date", prefix: str = "") -> tupl
 
 def _get_all_subordinates(manager_codes: list) -> list:
     """Recursively get ALL subordinates under given manager codes (any depth).
+    Uses a single recursive CTE query for performance.
     Returns list of user codes (includes direct and indirect reports)."""
     from api.database import query
-    all_codes = set()
-    current_level = set(c.strip().upper() for c in manager_codes if c.strip())
-
-    # Walk down the hierarchy up to 5 levels deep (HOS->ASM->Sup->Salesman + safety)
-    for _ in range(5):
-        if not current_level:
-            break
-        ph = ','.join(['%s'] * len(current_level))
-        rows = query(
-            f"SELECT DISTINCT code FROM dim_user WHERE is_active = true AND reports_to IN ({ph})",
-            list(current_level)
-        )
-        next_level = set(r['code'] for r in rows) - all_codes
-        all_codes |= next_level
-        current_level = next_level
-
-    return list(all_codes)
+    codes = [c.strip().upper() for c in manager_codes if c.strip()]
+    if not codes:
+        return []
+    ph = ','.join(['%s'] * len(codes))
+    rows = query(
+        f"WITH RECURSIVE subs AS ("
+        f"  SELECT code FROM dim_user WHERE is_active = true AND reports_to IN ({ph})"
+        f"  UNION"
+        f"  SELECT u.code FROM dim_user u JOIN subs s ON u.reports_to = s.code WHERE u.is_active = true"
+        f") SELECT DISTINCT code FROM subs",
+        codes
+    )
+    return [r['code'] for r in rows]
 
 
 def resolve_user_codes(filters: dict) -> Optional[str]:
