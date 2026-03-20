@@ -1,6 +1,11 @@
-"""Filter dropdown data endpoints."""
+"""Filter dropdown data endpoints.
+
+Hierarchy: HOS → ASM → Supervisor → Salesman → Route
+All hierarchy filters use recursive subordinate resolution via _get_all_subordinates.
+"""
 from fastapi import APIRouter
 from api.database import query
+from api.models import _get_all_subordinates
 
 router = APIRouter()
 
@@ -10,276 +15,294 @@ ROLE_CODES_ASM = ('ASM',)
 ROLE_CODES_SUPERVISOR = ('FreshSup', 'AMBIENTSUP', 'C_SALES_SUPERVISOR')
 ROLE_CODES_SALESMAN = ('C_PRESALES_VANSALES', 'Vansales')
 
+
+def _split(val, upper=False):
+    """Split comma-separated string into list of stripped values."""
+    if not val:
+        return []
+    parts = [v.strip() for v in val.split(',') if v.strip()]
+    return [v.upper() for v in parts] if upper else parts
+
+
+def _in_clause(col, vals, conditions, params):
+    """Add an IN clause for a list of values."""
+    if not vals:
+        return
+    ph = ','.join(['%s'] * len(vals))
+    conditions.append(f"{col} IN ({ph})")
+    params.extend(vals)
+
+
+def _get_all_users_under(hos=None, asm=None, supervisor=None):
+    """Get all recursive subordinate codes from the deepest hierarchy level specified.
+    Returns set of user codes or None if no hierarchy filter."""
+    manager_codes = None
+
+    if hos:
+        manager_codes = _split(hos, upper=True)
+    if asm:
+        asm_codes = _split(asm, upper=True)
+        if manager_codes:
+            # Intersect: only ASMs that are under the selected HOS
+            all_under_hos = set(_get_all_subordinates(manager_codes))
+            asm_codes = [a for a in asm_codes if a in all_under_hos]
+            if not asm_codes:
+                return set()
+        manager_codes = asm_codes
+    if supervisor:
+        sup_codes = _split(supervisor, upper=True)
+        if manager_codes:
+            all_under = set(_get_all_subordinates(manager_codes))
+            sup_codes = [s for s in sup_codes if s in all_under]
+            if not sup_codes:
+                return set()
+        manager_codes = sup_codes
+
+    if manager_codes:
+        subs = _get_all_subordinates(manager_codes)
+        return set(subs) if subs else set()
+    return None
+
+
 @router.get("/filters/sales-orgs")
 def get_sales_orgs():
     return query("SELECT code, name FROM dim_sales_org WHERE is_active = true ORDER BY name")
 
-@router.get("/filters/routes")
-def get_routes(sales_org: str = None, depot: str = None, supervisor: str = None, asm: str = None, hos: str = None):
-    """Routes, optionally filtered by sales_org, depot, supervisor, asm, or hos.
-    When hierarchy filters are given, only return routes assigned to matching users."""
-    # If hierarchy filters given, resolve to user codes first, then get their routes
-    user_codes = _resolve_hierarchy_to_users(depot=depot, supervisor=supervisor, asm=asm, hos=hos, sales_org=sales_org)
-    if user_codes is not None:
-        if not user_codes:
-            return []
-        placeholders = ','.join(['%s'] * len(user_codes))
-        base = f"SELECT DISTINCT r.code, r.name FROM dim_route r JOIN dim_user u ON u.route_code = r.code WHERE r.is_active = true AND u.code IN ({placeholders})"
-        params = list(user_codes)
-        if sales_org:
-            orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
-            org_ph = ','.join(['%s'] * len(orgs))
-            base += f" AND r.sales_org_code IN ({org_ph})"
-            params.extend(orgs)
-        return query(f"{base} ORDER BY r.name", params)
+
+@router.get("/filters/hos")
+def get_hos(sales_org: str = None):
+    """HOS users. When sales_org given, include HOS who manage users in that org
+    (cross-org lookup since HOS can manage multiple orgs)."""
+    hos_ph = ','.join(['%s'] * len(ROLE_CODES_HOS))
+    base = f"role_code IN ({hos_ph}) AND is_active = true"
+    params = list(ROLE_CODES_HOS)
 
     if sales_org:
-        orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
-        if len(orgs) == 1:
-            return query("SELECT code, name FROM dim_route WHERE is_active = true AND sales_org_code = %s ORDER BY name", [orgs[0]])
-        placeholders = ','.join(['%s'] * len(orgs))
-        return query(f"SELECT code, name FROM dim_route WHERE is_active = true AND sales_org_code IN ({placeholders}) ORDER BY name", orgs)
-    return query("SELECT code, name FROM dim_route WHERE is_active = true ORDER BY name")
+        orgs = _split(sales_org)
+        org_ph = ','.join(['%s'] * len(orgs))
+        # Include HOS whose own sales_org matches OR who have ANY subordinate in that org
+        return query(
+            f"SELECT DISTINCT code, name FROM dim_user WHERE {base} AND ("
+            f"  sales_org_code IN ({org_ph}) OR "
+            f"  code IN ("
+            f"    WITH RECURSIVE subs AS ("
+            f"      SELECT code, reports_to FROM dim_user WHERE is_active = true AND sales_org_code IN ({org_ph})"
+            f"      UNION"
+            f"      SELECT u.code, u.reports_to FROM dim_user u JOIN subs s ON u.code = s.reports_to WHERE u.is_active = true"
+            f"    ) SELECT DISTINCT code FROM subs"
+            f"  )"
+            f") ORDER BY name",
+            params + orgs + orgs
+        )
 
-@router.get("/filters/users")
-def get_users(sales_org: str = None, supervisor: str = None, depot: str = None, asm: str = None, hos: str = None):
-    """All active users, optionally filtered by hierarchy (recursive subordinates).
-    Cascading: hos -> asm -> supervisor -> all subordinates at any depth."""
-    from api.models import _get_all_subordinates
+    return query(f"SELECT code, name FROM dim_user WHERE {base} ORDER BY name", params)
 
-    # Determine manager codes for recursive resolution
-    manager_codes = None
-    if hos and not asm:
-        hos_codes = [v.strip() for v in hos.split(',') if v.strip()]
-        manager_codes = hos_codes
-    if asm:
-        manager_codes = [v.strip() for v in asm.split(',') if v.strip()]
-    if supervisor:
-        sup_codes = [v.strip() for v in supervisor.split(',') if v.strip()]
-        if manager_codes:
-            # Intersect: only supervisors that are under the selected ASM/HOS
-            all_under = _get_all_subordinates(manager_codes)
-            sup_codes = [s for s in sup_codes if s in all_under]
-            if not sup_codes:
-                return []
-        manager_codes = sup_codes
 
-    conditions = ["is_active = true"]
-    params = []
+@router.get("/filters/asms")
+def get_asms(sales_org: str = None, hos: str = None):
+    """ASMs. When HOS given, use recursive lookup to find all ASMs under HOS (not just direct reports)."""
+    asm_ph = ','.join(['%s'] * len(ROLE_CODES_ASM))
+    conditions = [f"role_code IN ({asm_ph})", "is_active = true"]
+    params = list(ROLE_CODES_ASM)
 
-    if manager_codes:
-        all_subs = _get_all_subordinates(manager_codes)
+    if hos:
+        # Recursively find all subordinates of HOS, then filter to ASM role
+        hos_codes = _split(hos, upper=True)
+        all_subs = _get_all_subordinates(hos_codes)
         if not all_subs:
             return []
-        ph = ','.join(['%s'] * len(all_subs))
-        conditions.append(f"code IN ({ph})")
-        params.extend(all_subs)
-
-    if depot:
-        depots = [v.strip() for v in depot.split(',') if v.strip()]
-        dep_ph = ','.join(['%s'] * len(depots))
-        conditions.append(f"depot_code IN ({dep_ph})")
-        params.extend(depots)
+        _in_clause("code", all_subs, conditions, params)
 
     if sales_org:
-        orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
-        org_ph = ','.join(['%s'] * len(orgs))
-        conditions.append(f"sales_org_code IN ({org_ph})")
-        params.extend(orgs)
+        _in_clause("sales_org_code", _split(sales_org), conditions, params)
 
     where = " AND ".join(conditions)
     return query(f"SELECT code, name FROM dim_user WHERE {where} ORDER BY name", params)
 
+
+@router.get("/filters/depots")
+def get_depots(sales_org: str = None, asm: str = None, hos: str = None):
+    """Depots (regions). When hierarchy given, only show depots that have users under that hierarchy."""
+    if not hos and not asm:
+        # No hierarchy filter — return all depots
+        return query("SELECT code, name FROM dim_region ORDER BY name")
+
+    # Get all users under the hierarchy, then find their depot codes
+    all_subs_set = _get_all_users_under(hos=hos, asm=asm)
+    if all_subs_set is not None and not all_subs_set:
+        return []
+
+    conditions = ["is_active = true", "depot_code IS NOT NULL", "depot_code != ''"]
+    params = []
+
+    if all_subs_set:
+        _in_clause("code", list(all_subs_set), conditions, params)
+    if sales_org:
+        _in_clause("sales_org_code", _split(sales_org), conditions, params)
+
+    where = " AND ".join(conditions)
+    depot_codes = query(f"SELECT DISTINCT depot_code FROM dim_user WHERE {where}", params)
+    if not depot_codes:
+        return []
+
+    codes = [r['depot_code'] for r in depot_codes]
+    ph = ','.join(['%s'] * len(codes))
+    return query(f"SELECT code, name FROM dim_region WHERE code IN ({ph}) ORDER BY name", codes)
+
+
+@router.get("/filters/supervisors")
+def get_supervisors(sales_org: str = None, asm: str = None, hos: str = None):
+    """Supervisors. Uses recursive subordinate lookup under HOS/ASM."""
+    sup_ph = ','.join(['%s'] * len(ROLE_CODES_SUPERVISOR))
+    conditions = [f"role_code IN ({sup_ph})", "is_active = true"]
+    params = list(ROLE_CODES_SUPERVISOR)
+
+    if hos or asm:
+        all_subs_set = _get_all_users_under(hos=hos, asm=asm)
+        if all_subs_set is not None:
+            if not all_subs_set:
+                return []
+            _in_clause("code", list(all_subs_set), conditions, params)
+
+    if sales_org:
+        _in_clause("sales_org_code", _split(sales_org), conditions, params)
+
+    where = " AND ".join(conditions)
+    return query(f"SELECT code, name FROM dim_user WHERE {where} ORDER BY name", params)
+
+
+@router.get("/filters/users")
+def get_users(sales_org: str = None, supervisor: str = None, depot: str = None, asm: str = None, hos: str = None):
+    """Salesmen only. Uses recursive subordinate lookup for hierarchy filters."""
+    salesman_ph = ','.join(['%s'] * len(ROLE_CODES_SALESMAN))
+    conditions = ["is_active = true", f"role_code IN ({salesman_ph})"]
+    params = list(ROLE_CODES_SALESMAN)
+
+    # Resolve hierarchy
+    all_subs_set = _get_all_users_under(hos=hos, asm=asm, supervisor=supervisor)
+    if all_subs_set is not None:
+        if not all_subs_set:
+            return []
+        _in_clause("code", list(all_subs_set), conditions, params)
+
+    if depot:
+        _in_clause("depot_code", _split(depot), conditions, params)
+
+    if sales_org:
+        _in_clause("sales_org_code", _split(sales_org), conditions, params)
+
+    where = " AND ".join(conditions)
+    return query(f"SELECT code, name FROM dim_user WHERE {where} ORDER BY name", params)
+
+
+@router.get("/filters/routes")
+def get_routes(sales_org: str = None, depot: str = None, supervisor: str = None, asm: str = None, hos: str = None):
+    """Routes. When hierarchy filters given, only return routes assigned to matching users."""
+    all_subs_set = _get_all_users_under(hos=hos, asm=asm, supervisor=supervisor)
+
+    if all_subs_set is not None or depot:
+        # Build user code list from hierarchy + depot
+        user_conditions = ["is_active = true"]
+        user_params = []
+
+        if all_subs_set is not None:
+            if not all_subs_set:
+                return []
+            _in_clause("code", list(all_subs_set), user_conditions, user_params)
+
+        if depot:
+            _in_clause("depot_code", _split(depot), user_conditions, user_params)
+
+        if sales_org:
+            _in_clause("sales_org_code", _split(sales_org), user_conditions, user_params)
+
+        user_where = " AND ".join(user_conditions)
+        # Get route_codes from dim_user (assigned routes)
+        user_rows = query(f"SELECT DISTINCT route_code FROM dim_user WHERE {user_where} AND route_code IS NOT NULL", user_params)
+        route_codes = set(r['route_code'] for r in user_rows)
+
+        # Also get routes from transaction data (some users have NULL route_code in dim_user)
+        if all_subs_set:
+            user_list = list(all_subs_set)
+            u_ph = ','.join(['%s'] * len(user_list))
+            txn_routes = query(f"SELECT DISTINCT route_code FROM rpt_customer_visits WHERE user_code IN ({u_ph})", user_list)
+            route_codes |= set(r['route_code'] for r in txn_routes if r['route_code'])
+
+        if not route_codes:
+            return []
+
+        rc_list = list(route_codes)
+        ph = ','.join(['%s'] * len(rc_list))
+        result = query(f"SELECT code, name FROM dim_route WHERE is_active = true AND code IN ({ph}) ORDER BY name", rc_list)
+        # If dim_route doesn't have all codes, include them anyway
+        if len(result) < len(rc_list):
+            found = set(r['code'] for r in result)
+            for rc in rc_list:
+                if rc not in found:
+                    result.append({'code': rc, 'name': rc})
+            result.sort(key=lambda x: x['name'] or x['code'])
+        return result
+
+    if sales_org:
+        orgs = _split(sales_org)
+        org_ph = ','.join(['%s'] * len(orgs))
+        return query(f"SELECT code, name FROM dim_route WHERE is_active = true AND sales_org_code IN ({org_ph}) ORDER BY name", orgs)
+
+    return query("SELECT code, name FROM dim_route WHERE is_active = true ORDER BY name")
+
+
 @router.get("/filters/customers")
 def get_customers(sales_org: str = None):
     if sales_org:
-        orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
-        if len(orgs) == 1:
-            return query("SELECT code, name FROM dim_customer WHERE is_active = true AND sales_org_code = %s ORDER BY name", [orgs[0]])
-        placeholders = ','.join(['%s'] * len(orgs))
-        return query(f"SELECT code, name FROM dim_customer WHERE is_active = true AND sales_org_code IN ({placeholders}) ORDER BY name", orgs)
+        orgs = _split(sales_org)
+        org_ph = ','.join(['%s'] * len(orgs))
+        return query(f"SELECT code, name FROM dim_customer WHERE is_active = true AND sales_org_code IN ({org_ph}) ORDER BY name", orgs)
     return query("SELECT DISTINCT code, name FROM dim_customer WHERE is_active = true ORDER BY name")
+
 
 @router.get("/filters/items")
 def get_items():
     return query("SELECT code, name FROM dim_item WHERE is_active = true ORDER BY name")
 
+
 @router.get("/filters/brands")
 def get_brands():
     return query("SELECT DISTINCT TRIM(brand_code) as code, brand_name as name FROM dim_item WHERE brand_code IS NOT NULL AND TRIM(brand_code) != '' ORDER BY brand_name")
+
 
 @router.get("/filters/channels")
 def get_channels():
     return query("SELECT code, name FROM dim_channel ORDER BY name")
 
+
 @router.get("/filters/categories")
 def get_categories():
     return query("SELECT DISTINCT category_code as code, category_name as name FROM dim_item WHERE category_code IS NOT NULL ORDER BY category_name")
 
+
 @router.get("/filters/route-categories")
 def get_route_categories():
-    """Route categories (Van Sales, Pre-Sales, etc.)."""
     return query("SELECT DISTINCT route_type AS code, route_type AS name FROM dim_route WHERE route_type IS NOT NULL AND TRIM(route_type) != '' ORDER BY route_type")
+
 
 @router.get("/filters/routes-by-category")
 def get_routes_by_category(route_type: str = None, sales_org: str = None):
-    """Routes filtered by route category."""
     conditions = ["is_active = true"]
     params = []
     if route_type and route_type != '0':
         conditions.append("route_type = %s")
         params.append(route_type)
     if sales_org:
-        orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
-        org_ph = ','.join(['%s'] * len(orgs))
-        conditions.append(f"sales_org_code IN ({org_ph})")
-        params.extend(orgs)
+        _in_clause("sales_org_code", _split(sales_org), conditions, params)
     where = " AND ".join(conditions)
     return query(f"SELECT code, name, route_type, sales_org_code FROM dim_route WHERE {where} ORDER BY name", params)
 
+
 @router.get("/filters/cities")
 def get_cities():
-    """All cities."""
     return query("SELECT code, name, region_code FROM dim_city ORDER BY name")
+
 
 @router.get("/filters/regions")
 def get_regions():
-    """All regions."""
     return query("SELECT code, name FROM dim_region ORDER BY name")
-
-@router.get("/filters/depots")
-def get_depots(sales_org: str = None, asm: str = None):
-    """Depots sourced from dim_region. All 3 regions always available."""
-    return query("SELECT code, name FROM dim_region ORDER BY name")
-
-@router.get("/filters/supervisors")
-def get_supervisors(sales_org: str = None, asm: str = None, hos: str = None):
-    """Supervisors identified by role_code. Optionally filtered by sales_org, asm, and hos."""
-    sup_ph = ','.join(['%s'] * len(ROLE_CODES_SUPERVISOR))
-    conditions = [f"role_code IN ({sup_ph})", "is_active = true"]
-    params = list(ROLE_CODES_SUPERVISOR)
-
-    # HOS selected but no ASM: resolve HOS -> ASMs first
-    if hos and not asm:
-        hos_codes = [v.strip() for v in hos.split(',') if v.strip()]
-        h_ph = ','.join(['%s'] * len(hos_codes))
-        asm_role_ph = ','.join(['%s'] * len(ROLE_CODES_ASM))
-        asm_rows = query(
-            f"SELECT DISTINCT code FROM dim_user WHERE is_active = true AND role_code IN ({asm_role_ph}) AND reports_to IN ({h_ph})",
-            list(ROLE_CODES_ASM) + hos_codes
-        )
-        asm = ','.join(r['code'] for r in asm_rows) if asm_rows else None
-        if not asm:
-            return []
-
-    if asm:
-        asm_codes = [v.strip() for v in asm.split(',') if v.strip()]
-        asm_ph = ','.join(['%s'] * len(asm_codes))
-        conditions.append(f"reports_to IN ({asm_ph})")
-        params.extend(asm_codes)
-
-    if sales_org:
-        orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
-        org_ph = ','.join(['%s'] * len(orgs))
-        conditions.append(f"sales_org_code IN ({org_ph})")
-        params.extend(orgs)
-
-    where = " AND ".join(conditions)
-    return query(f"SELECT code, name FROM dim_user WHERE {where} ORDER BY name", params)
-
-@router.get("/filters/hos")
-def get_hos(sales_org: str = None):
-    """Head of Sales identified by role_code."""
-    hos_ph = ','.join(['%s'] * len(ROLE_CODES_HOS))
-    conditions = [f"role_code IN ({hos_ph})", "is_active = true"]
-    params = list(ROLE_CODES_HOS)
-
-    if sales_org:
-        orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
-        org_ph = ','.join(['%s'] * len(orgs))
-        conditions.append(f"sales_org_code IN ({org_ph})")
-        params.extend(orgs)
-
-    where = " AND ".join(conditions)
-    return query(f"SELECT code, name FROM dim_user WHERE {where} ORDER BY name", params)
-
-@router.get("/filters/asms")
-def get_asms(sales_org: str = None, hos: str = None):
-    """ASMs identified by role_code. Optionally filtered by sales_org and hos."""
-    asm_ph = ','.join(['%s'] * len(ROLE_CODES_ASM))
-    conditions = [f"role_code IN ({asm_ph})", "is_active = true"]
-    params = list(ROLE_CODES_ASM)
-
-    if hos:
-        hos_codes = [v.strip() for v in hos.split(',') if v.strip()]
-        h_ph = ','.join(['%s'] * len(hos_codes))
-        conditions.append(f"reports_to IN ({h_ph})")
-        params.extend(hos_codes)
-
-    if sales_org:
-        orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
-        org_ph = ','.join(['%s'] * len(orgs))
-        conditions.append(f"sales_org_code IN ({org_ph})")
-        params.extend(orgs)
-
-    where = " AND ".join(conditions)
-    return query(f"SELECT code, name FROM dim_user WHERE {where} ORDER BY name", params)
-
-
-def _resolve_hierarchy_to_users(depot=None, supervisor=None, asm=None, hos=None, sales_org=None):
-    """Helper: resolve hierarchy filters to a list of user codes using recursive subordinate lookup.
-    Returns None if no hierarchy filters, [] if no match, or list of user codes."""
-    from api.models import _get_all_subordinates
-
-    if not depot and not supervisor and not asm and not hos:
-        return None
-
-    # Determine manager codes
-    manager_codes = None
-    if hos and not asm:
-        manager_codes = [v.strip() for v in hos.split(',') if v.strip()]
-    if asm:
-        manager_codes = [v.strip() for v in asm.split(',') if v.strip()]
-    if supervisor:
-        sup_codes = [v.strip() for v in supervisor.split(',') if v.strip()]
-        if manager_codes:
-            all_under = _get_all_subordinates(manager_codes)
-            sup_codes = [s for s in sup_codes if s in all_under]
-            if not sup_codes:
-                return []
-        manager_codes = sup_codes
-
-    all_users = None
-    if manager_codes:
-        all_users = _get_all_subordinates(manager_codes)
-        if not all_users:
-            return []
-
-    # Apply depot filter
-    if depot:
-        depots = [v.strip() for v in depot.split(',') if v.strip()]
-        dep_ph = ','.join(['%s'] * len(depots))
-        depot_rows = query(
-            f"SELECT DISTINCT code FROM dim_user WHERE is_active = true AND depot_code IN ({dep_ph})",
-            depots
-        )
-        depot_users = set(r['code'] for r in depot_rows)
-        if all_users is not None:
-            all_users = [u for u in all_users if u in depot_users]
-        else:
-            all_users = list(depot_users)
-
-    # Apply sales_org filter
-    if sales_org and all_users is not None:
-        orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
-        org_ph = ','.join(['%s'] * len(orgs))
-        org_rows = query(
-            f"SELECT DISTINCT code FROM dim_user WHERE is_active = true AND sales_org_code IN ({org_ph})",
-            orgs
-        )
-        org_users = set(r['code'] for r in org_rows)
-        all_users = [u for u in all_users if u in org_users]
-
-    if all_users is None:
-        return None
-    return all_users if all_users else []

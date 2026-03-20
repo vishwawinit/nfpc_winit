@@ -73,7 +73,7 @@ def _get_all_subordinates(manager_codes: list) -> list:
     Returns list of user codes (includes direct and indirect reports)."""
     from api.database import query
     all_codes = set()
-    current_level = set(manager_codes)
+    current_level = set(c.strip().upper() for c in manager_codes if c.strip())
 
     # Walk down the hierarchy up to 5 levels deep (HOS->ASM->Sup->Salesman + safety)
     for _ in range(5):
@@ -108,18 +108,16 @@ def resolve_user_codes(filters: dict) -> Optional[str]:
     manager_codes = None
 
     if filters.get('hos'):
-        hos_vals = [v.strip() for v in filters['hos'].split(',') if v.strip()]
+        hos_vals = [v.strip().upper() for v in filters['hos'].split(',') if v.strip()]
         if filters.get('asm'):
-            # Both HOS and ASM selected: use ASM codes directly
-            manager_codes = [v.strip() for v in filters['asm'].split(',') if v.strip()]
+            manager_codes = [v.strip().upper() for v in filters['asm'].split(',') if v.strip()]
         else:
-            # HOS only: get all subordinates under HOS
             manager_codes = hos_vals
     elif filters.get('asm'):
-        manager_codes = [v.strip() for v in filters['asm'].split(',') if v.strip()]
+        manager_codes = [v.strip().upper() for v in filters['asm'].split(',') if v.strip()]
 
     if filters.get('supervisor'):
-        sup_vals = [v.strip() for v in filters['supervisor'].split(',') if v.strip()]
+        sup_vals = [v.strip().upper() for v in filters['supervisor'].split(',') if v.strip()]
         if manager_codes:
             # ASM/HOS + Supervisor: get all subordinates under the ASM/HOS,
             # then intersect supervisors, then get subordinates of those supervisors

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchFilters } from '../api';
 import {
   Calendar, Building2, Route, User, Radio, Tag, Layers, Hash, CalendarDays,
-  Warehouse, Users, ChevronDown, X, Check, Shield, Crown
+  Warehouse, Users, ChevronDown, X, Check, Shield, Crown, RotateCcw
 } from 'lucide-react';
 
 const fieldMeta = {
@@ -415,6 +415,21 @@ export default function FilterPanel({ filters, onChange, showFields = [] }) {
               />
             </div>
           )}
+          {/* Reset Filters Button */}
+          <button
+            type="button"
+            onClick={() => {
+              const reset = {};
+              if (hasDateFrom) reset.date_from = filters.date_from;
+              if (hasDateTo) reset.date_to = filters.date_to;
+              onChange(reset);
+            }}
+            className="flex items-center gap-1.5 px-3 py-[7px] text-[13px] font-medium text-gray-500 bg-gray-100 hover:bg-red-50 hover:text-red-600 rounded-lg border border-gray-200/80 transition-all duration-150 self-end"
+            title="Reset all filters"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            Reset
+          </button>
         </div>
       )}
 
