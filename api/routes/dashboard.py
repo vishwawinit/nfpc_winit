@@ -485,11 +485,11 @@ def get_dashboard(
         ], key=lambda x: x['route_name'] or '')
 
     return {
-        "total_sales": total_sales,
-        "total_collection": total_collection,
-        "total_target": total_target,
-        "total_sales_with_tax": total_sales_with_tax,
-        "total_wastage": total_wastage,
+        "total_sales": round(total_sales, 2),
+        "total_collection": round(total_collection, 2),
+        "total_target": round(total_target, 2),
+        "total_sales_with_tax": round(total_sales_with_tax, 2),
+        "total_wastage": round(total_wastage, 2),
         "weekly_sales": daily_sales,
         "weekly_collection": daily_collection,
         "week_chart_sales": weekly_sales,

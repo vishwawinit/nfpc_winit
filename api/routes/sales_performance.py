@@ -102,32 +102,14 @@ def get_sales_performance(
                 return _empty_response()
             base_filters['user_code'] = ','.join(intersected)
 
-    # Resolve sales_org to user_codes (table has no sales_org_code column)
-    if sales_org and not base_filters.get('user_code'):
-        from api.database import query as db_query
+    # Resolve sales_org to route JOIN for RSIC tables (no sales_org_code column)
+    _org_join = ""
+    _org_params = []
+    if sales_org and not base_filters.get('route'):
         orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
         org_ph = ','.join(['%s'] * len(orgs))
-        rows = db_query(
-            f"SELECT DISTINCT code FROM dim_user WHERE is_active = true AND sales_org_code IN ({org_ph})",
-            orgs
-        )
-        if not rows:
-            return _empty_response()
-        base_filters['user_code'] = ','.join(r['code'] for r in rows)
-    elif sales_org and base_filters.get('user_code'):
-        from api.database import query as db_query
-        orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
-        org_ph = ','.join(['%s'] * len(orgs))
-        rows = db_query(
-            f"SELECT DISTINCT code FROM dim_user WHERE is_active = true AND sales_org_code IN ({org_ph})",
-            orgs
-        )
-        org_users = set(r['code'] for r in rows)
-        existing = set(base_filters['user_code'].split(','))
-        intersected = existing & org_users
-        if not intersected:
-            return _empty_response()
-        base_filters['user_code'] = ','.join(intersected)
+        _org_join = f"JOIN dim_route _dr ON r.route_code = _dr.code AND _dr.sales_org_code IN ({org_ph}) "
+        _org_params = orgs
 
     # Resolve brand/category to item_codes (table has item_code but no brand/category columns)
     item_filter_codes = None
@@ -171,13 +153,13 @@ def get_sales_performance(
 
     def get_sales_returns(d_start, d_end):
         f = {k: v for k, v in {**base_filters, 'date_from': d_start, 'date_to': d_end}.items() if k in RSIC_KEYS}
-        sw, sp = build_where(f, date_col='date')
+        sw, sp = build_where(f, date_col='date', prefix='r')
         row = query_one(
-            f"SELECT COALESCE(SUM(total_sales),0) AS sales, "
-            f"  COALESCE(SUM(total_gr_sales),0) AS gr, "
-            f"  COALESCE(SUM(total_damage_sales),0) AS damage, "
-            f"  COALESCE(SUM(total_expiry_sales),0) AS expiry "
-            f"FROM rpt_route_sales_by_item_customer WHERE {sw}", sp
+            f"SELECT COALESCE(SUM(r.total_sales),0) AS sales, "
+            f"  COALESCE(SUM(r.total_gr_sales),0) AS gr, "
+            f"  COALESCE(SUM(r.total_damage_sales),0) AS damage, "
+            f"  COALESCE(SUM(r.total_expiry_sales),0) AS expiry "
+            f"FROM rpt_route_sales_by_item_customer r {_org_join}WHERE {sw}", _org_params + sp
         )
         return row if row else {"sales": 0, "gr": 0, "damage": 0, "expiry": 0}
 
@@ -230,15 +212,15 @@ def get_sales_performance(
         collection = float(coll_row2["collection"]) if coll_row2 else 0
 
     return_on_sales = {
-        "total_sales": total_s,
-        "total_returns": total_returns,
-        "good_return": gr,
-        "bad_return": damage + expiry,
-        "gr": gr,
-        "damage": damage,
-        "expiry": expiry,
-        "net_sales": total_s - total_returns,
-        "collection": collection,
+        "total_sales": round(total_s, 2),
+        "total_returns": round(total_returns, 2),
+        "good_return": round(gr, 2),
+        "bad_return": round(damage + expiry, 2),
+        "gr": round(gr, 2),
+        "damage": round(damage, 2),
+        "expiry": round(expiry, 2),
+        "net_sales": round(total_s - total_returns, 2),
+        "collection": round(collection, 2),
         "ros_pct": round(total_returns / total_s * 100, 2) if total_s else 0,
     }
 
@@ -255,10 +237,10 @@ def get_sales_performance(
 
     def sku_count(d_from, d_to):
         f = {**rsic_base, 'date_from': d_from, 'date_to': d_to}
-        sw, sp = build_where(f, date_col='date')
+        sw, sp = build_where(f, date_col='date', prefix='r')
         row = query_one(
-            f"SELECT COUNT(DISTINCT item_code) AS cnt "
-            f"FROM rpt_route_sales_by_item_customer WHERE total_sales >= 0 AND {sw}", sp
+            f"SELECT COUNT(DISTINCT r.item_code) AS cnt "
+            f"FROM rpt_route_sales_by_item_customer r {_org_join}WHERE r.total_sales >= 0 AND {sw}", _org_params + sp
         )
         return int(row["cnt"]) if row else 0
 
@@ -297,6 +279,7 @@ def get_sales_performance(
         f"  ROUND(SUM(CASE WHEN r.date BETWEEN %s AND %s THEN r.total_sales ELSE 0 END)::numeric, 2) AS current_week_sales "
         f"FROM rpt_route_sales_by_item_customer r "
         f"LEFT JOIN dim_item di ON r.item_code = di.code "
+        f"{_org_join}"
         f"WHERE ({cmw_s} OR {lyw_s}) "
         f"GROUP BY r.item_code, COALESCE(di.name, r.item_code), "
         f"  di.category_code, COALESCE(di.category_name, di.category_code), "
@@ -307,7 +290,7 @@ def get_sales_performance(
         f") "
         f"ORDER BY r.item_code",
         [cur_start, cur_end, ly_start, ly_end, cw_start, cw_end]
-        + cmp_s + lyp_s
+        + _org_params + cmp_s + lyp_s
         + [cur_start, cur_end, ly_start, ly_end]
     )
 
