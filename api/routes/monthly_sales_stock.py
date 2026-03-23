@@ -50,24 +50,14 @@ def get_monthly_sales_stock(
         'route': route, 'user_code': user_code,
     }.items() if v}
 
-    # Resolve sales_org to user_codes
-    if sales_org:
+    # Resolve sales_org to route JOIN
+    _org_join = ""
+    _org_params = []
+    if sales_org and not base_filters.get('route'):
         orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
         org_ph = ','.join(['%s'] * len(orgs))
-        org_rows = query(
-            f"SELECT DISTINCT code FROM dim_user WHERE is_active = true AND sales_org_code IN ({org_ph})", orgs
-        )
-        if not org_rows:
-            return {"items": []}
-        org_users = set(r['code'] for r in org_rows)
-        if base_filters.get('user_code'):
-            existing = set(base_filters['user_code'].split(','))
-            intersected = existing & org_users
-            if not intersected:
-                return {"items": []}
-            base_filters['user_code'] = ','.join(intersected)
-        else:
-            base_filters['user_code'] = ','.join(org_users)
+        _org_join = f"JOIN dim_route _dr ON r.route_code = _dr.code AND _dr.sales_org_code IN ({org_ph}) "
+        _org_params = orgs
 
     # Brand/Category → item_codes
     item_cond = ""
@@ -112,11 +102,12 @@ def get_monthly_sales_stock(
         f"LEFT JOIN dim_item di ON r.item_code = di.code "
         f"LEFT JOIN dim_route dr ON r.route_code = dr.code "
         f"LEFT JOIN dim_customer dc ON r.customer_code = dc.code AND dr.sales_org_code = dc.sales_org_code "
+        f"{_org_join}"
         f"WHERE {rw}{item_cond} "
         f"GROUP BY r.item_code, COALESCE(di.name, r.item_code), "
         f"  COALESCE(TRIM(dc.channel_name), 'Unknown') "
         f"ORDER BY COALESCE(di.name, r.item_code), channel_name",
-        [mtd_start, ref_date] + rp + item_params
+        [mtd_start, ref_date] + _org_params + rp + item_params
     )
 
     # Pivot: group by item, nest channels
@@ -135,6 +126,11 @@ def get_monthly_sales_stock(
             "ytd_amount": float(r["ytd_amount"]),
         }
 
+    # Get all channel names (show all columns even if empty, like old dashboard)
+    all_channels = query("SELECT DISTINCT TRIM(name) AS name FROM dim_channel WHERE name IS NOT NULL AND TRIM(name) != '' ORDER BY TRIM(name)")
+    channel_names = list(dict.fromkeys(r["name"].strip() for r in all_channels if r["name"]))
+
     return {
         "items": list(items_map.values()),
+        "all_channels": channel_names,
     }

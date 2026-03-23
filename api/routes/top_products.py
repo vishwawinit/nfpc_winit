@@ -51,21 +51,14 @@ def get_top_products(
 
     base_filters = {k: v for k, v in {'route': route, 'user_code': user_code, 'customer': customer}.items() if v}
 
-    # Resolve sales_org
-    if sales_org:
+    # Resolve sales_org to route JOIN
+    _org_join = ""
+    _org_params = []
+    if sales_org and not base_filters.get('route'):
         orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
         org_ph = ','.join(['%s'] * len(orgs))
-        org_rows = query(f"SELECT DISTINCT code FROM dim_user WHERE is_active = true AND sales_org_code IN ({org_ph})", orgs)
-        if not org_rows:
-            return {"data": []}
-        org_users = set(r['code'] for r in org_rows)
-        if base_filters.get('user_code'):
-            intersected = set(base_filters['user_code'].split(',')) & org_users
-            if not intersected:
-                return {"data": []}
-            base_filters['user_code'] = ','.join(intersected)
-        else:
-            base_filters['user_code'] = ','.join(org_users)
+        _org_join = f"JOIN dim_route _dr ON r.route_code = _dr.code AND _dr.sales_org_code IN ({org_ph}) "
+        _org_params = orgs
 
     # Channel → customer filter
     channel_cond = ""
@@ -116,13 +109,14 @@ def get_top_products(
         f"  ROUND(SUM(r.total_sales)::numeric, 2) AS total_sales, "
         f"  ROUND(SUM(r.total_qty)::numeric, 0) AS total_qty "
         f"FROM rpt_route_sales_by_item_customer r "
+        f"{_org_join}"
         f"LEFT JOIN dim_item di ON r.item_code = di.code "
         f"WHERE {rw}{channel_cond}{item_cond} "
         f"GROUP BY r.item_code, COALESCE(di.name, r.item_code), "
         f"  COALESCE(di.brand_name, di.brand_code), COALESCE(di.category_name, di.category_code) "
         f"ORDER BY total_sales DESC "
         f"LIMIT %s",
-        rp + channel_params + item_params + [limit]
+        _org_params + rp + channel_params + item_params + [limit]
     )
 
     for row in rows:

@@ -53,14 +53,16 @@ export default function MonthlySalesStock() {
 
   const items = data?.items || [];
 
-  // Collect channels
+  // Use all channels from API (shows all columns including empty ones)
   const channels = useMemo(() => {
+    if (data?.all_channels?.length) return data.all_channels;
+    // Fallback: derive from data
     const s = new Set();
     items.forEach(item => {
       if (item.channels) Object.keys(item.channels).forEach(ch => s.add(ch));
     });
     return [...s].sort();
-  }, [items]);
+  }, [data, items]);
 
   // Search filter
   const filtered = useMemo(() => {
@@ -111,7 +113,7 @@ export default function MonthlySalesStock() {
       {loading ? <Loading /> : items.length === 0 ? (
         <div className="text-center py-16 text-gray-400">No data available</div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
           {/* Toolbar: Search + Export + Page Size */}
           <div className="px-6 py-3 border-b border-gray-100 flex items-center justify-between gap-4">
             <div className="relative flex-1 max-w-xs">
@@ -135,8 +137,8 @@ export default function MonthlySalesStock() {
           </div>
 
           {/* Table */}
-          <div className={`overflow-x-auto ${paged.length >= 50 ? 'max-h-[600px] overflow-y-auto' : ''}`}>
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto overflow-y-auto max-h-[70vh]" style={{ scrollbarWidth: 'auto' }}>
+            <table className="min-w-max text-sm">
               <thead className="sticky top-0 z-20">
                 <tr className="bg-gray-50">
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-30" rowSpan={2}>

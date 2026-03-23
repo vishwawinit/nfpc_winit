@@ -51,20 +51,14 @@ def get_revenue_dispersion(
         'date_from': date_from, 'date_to': date_to,
     }.items() if v is not None}
 
-    # Resolve sales_org
-    if sales_org:
+    # Resolve sales_org to route JOIN
+    _org_join = ""
+    _org_params = []
+    if sales_org and not base_filters.get('route'):
         orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
         org_ph = ','.join(['%s'] * len(orgs))
-        org_rows = query(f"SELECT DISTINCT code FROM dim_user WHERE is_active = true AND sales_org_code IN ({org_ph})", orgs)
-        if org_rows:
-            org_users = set(r['code'] for r in org_rows)
-            if base_filters.get('user_code'):
-                intersected = set(base_filters['user_code'].split(',')) & org_users
-                if not intersected:
-                    return _empty()
-                base_filters['user_code'] = ','.join(intersected)
-            else:
-                base_filters['user_code'] = ','.join(org_users)
+        _org_join = f"JOIN dim_route _dr ON r.route_code = _dr.code AND _dr.sales_org_code IN ({org_ph}) "
+        _org_params = orgs
 
     f_rsic = {k: v for k, v in base_filters.items() if k in RSIC_KEYS}
     rw, rp = build_where(f_rsic, date_col='date', prefix='r')
@@ -78,6 +72,7 @@ def get_revenue_dispersion(
                 r.customer_code,
                 SUM(r.total_sales) AS total_amount
             FROM rpt_route_sales_by_item_customer r
+            {_org_join}
             WHERE {rw}
             GROUP BY TO_CHAR(r.date, 'YYYY-MM'), r.customer_code
         ),
@@ -105,7 +100,7 @@ def get_revenue_dispersion(
                 WHEN '1000-2500' THEN 4 WHEN '2500-5000' THEN 5 WHEN '5000+' THEN 6
             END
         """,
-        rp
+        _org_params + rp
     )
 
     month_totals = {}
@@ -125,6 +120,7 @@ def get_revenue_dispersion(
                 r.customer_code,
                 COUNT(DISTINCT r.item_code) AS item_count
             FROM rpt_route_sales_by_item_customer r
+            {_org_join}
             WHERE r.total_sales >= 0 AND {rw}
             GROUP BY TO_CHAR(r.date, 'YYYY-MM'), r.customer_code
         ),
@@ -150,7 +146,7 @@ def get_revenue_dispersion(
                 WHEN '15-20' THEN 4 WHEN '20+' THEN 5
             END
         """,
-        rp
+        _org_params + rp
     )
 
     sku_month_totals = {}

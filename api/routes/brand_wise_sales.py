@@ -43,24 +43,14 @@ def _resolve_filters(sales_org, user_code, route, channel, category, brand,
     if user_code:
         base['user_code'] = user_code
 
-    # Sales org → user codes
-    if sales_org:
+    # Sales org → route JOIN
+    org_join = ""
+    org_params = []
+    if sales_org and not base.get('route'):
         orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
         org_ph = ','.join(['%s'] * len(orgs))
-        org_rows = query(
-            f"SELECT DISTINCT code FROM dim_user WHERE is_active = true AND sales_org_code IN ({org_ph})", orgs
-        )
-        if not org_rows:
-            return None
-        org_users = set(r['code'] for r in org_rows)
-        if base.get('user_code'):
-            existing = set(base['user_code'].split(','))
-            intersected = existing & org_users
-            if not intersected:
-                return None
-            base['user_code'] = ','.join(intersected)
-        else:
-            base['user_code'] = ','.join(org_users)
+        org_join = f"JOIN dim_route _dr ON r.route_code = _dr.code AND _dr.sales_org_code IN ({org_ph}) "
+        org_params = orgs
 
     # Channel → customer codes
     extra_cond = ""
@@ -103,7 +93,7 @@ def _resolve_filters(sales_org, user_code, route, channel, category, brand,
         extra_cond += f" AND r.item_code IN ({i_ph})"
         extra_params.extend(i_codes)
 
-    return base, extra_cond, extra_params
+    return base, extra_cond, extra_params, org_join, org_params
 
 
 @router.get("/brand-wise-sales")
@@ -126,15 +116,13 @@ def get_brand_wise_sales(
     if result is None:
         return {"summary": {"total_brand_target": 0, "total_brand_achieved": 0, "brand_achieved_pct": 0}, "brands": []}
 
-    base, extra_cond, extra_params = result
+    base, extra_cond, extra_params, _org_join, _org_params = result
     filters = {**base, 'date_from': date_from, 'date_to': date_to}
     filters = {k: v for k, v in filters.items() if v is not None}
 
     f_rsic = {k: v for k, v in filters.items() if k in RSIC_KEYS}
     rw, rp = build_where(f_rsic, date_col='date', prefix='r')
 
-    # Brand-level sales from rpt_route_sales_by_item_customer + dim_item
-    # Brand = dim_item.brand_code (GroupLevel2 → ItemGroup Level 1)
     brand_rows = query(
         f"SELECT TRIM(di.brand_code) AS brand_code, "
         f"  COALESCE(di.brand_name, TRIM(di.brand_code)) AS brand_name, "
@@ -142,11 +130,12 @@ def get_brand_wise_sales(
         f"  ROUND(COALESCE(SUM(r.total_qty), 0)::numeric, 0) AS qty "
         f"FROM rpt_route_sales_by_item_customer r "
         f"JOIN dim_item di ON r.item_code = di.code "
+        f"{_org_join}"
         f"WHERE di.brand_code IS NOT NULL AND TRIM(di.brand_code) != '' "
         f"  AND {rw}{extra_cond} "
         f"GROUP BY TRIM(di.brand_code), COALESCE(di.brand_name, TRIM(di.brand_code)) "
         f"ORDER BY sales DESC",
-        rp + extra_params
+        _org_params + rp + extra_params
     )
 
     total_sales = sum(float(r["sales"]) for r in brand_rows)
@@ -194,15 +183,13 @@ def get_brand_items(
     if result is None:
         return {"items": []}
 
-    base, extra_cond, extra_params = result
+    base, extra_cond, extra_params, _org_join, _org_params = result
     filters = {**base, 'date_from': date_from, 'date_to': date_to}
     filters = {k: v for k, v in filters.items() if v is not None}
 
     f_rsic = {k: v for k, v in filters.items() if k in RSIC_KEYS}
     rw, rp = build_where(f_rsic, date_col='date', prefix='r')
 
-    # Item-level drill-down for specific brand
-    # Matches: sp_tblItemDateBasedOnBrand
     items = query(
         f"SELECT r.item_code, COALESCE(di.name, r.item_code) AS item_name, "
         f"  di.alt_name, "
@@ -210,10 +197,11 @@ def get_brand_items(
         f"  ROUND(COALESCE(SUM(r.total_qty), 0)::numeric, 0) AS qty "
         f"FROM rpt_route_sales_by_item_customer r "
         f"JOIN dim_item di ON r.item_code = di.code "
+        f"{_org_join}"
         f"WHERE TRIM(di.brand_code) = %s AND {rw}{extra_cond} "
         f"GROUP BY r.item_code, COALESCE(di.name, r.item_code), di.alt_name "
         f"ORDER BY sales DESC",
-        [brand] + rp + extra_params
+        _org_params + [brand] + rp + extra_params
     )
 
     item_list = []

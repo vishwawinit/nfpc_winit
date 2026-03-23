@@ -57,24 +57,14 @@ def get_mtd_sales_overview(
         'route': route, 'user_code': user_code,
     }.items() if v is not None}
 
-    # Resolve sales_org to user_codes (summary table has no sales_org column)
-    if sales_org:
+    # Resolve sales_org to route JOIN for RSIC tables (no sales_org_code column)
+    _org_join = ""
+    _org_params = []
+    if sales_org and not base_filters.get('route'):
         orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
         org_ph = ','.join(['%s'] * len(orgs))
-        org_rows = query(
-            f"SELECT DISTINCT code FROM dim_user WHERE is_active = true AND sales_org_code IN ({org_ph})", orgs
-        )
-        if not org_rows:
-            return _empty()
-        org_users = set(r['code'] for r in org_rows)
-        if base_filters.get('user_code'):
-            existing = set(base_filters['user_code'].split(','))
-            intersected = existing & org_users
-            if not intersected:
-                return _empty()
-            base_filters['user_code'] = ','.join(intersected)
-        else:
-            base_filters['user_code'] = ','.join(org_users)
+        _org_join = f"JOIN dim_route _dr ON r.route_code = _dr.code AND _dr.sales_org_code IN ({org_ph}) "
+        _org_params = orgs
 
     # Channel filter: resolve to customer_codes
     channel_cond = ""
@@ -122,26 +112,31 @@ def get_mtd_sales_overview(
     filters = {**base_filters, 'date_from': d_from, 'date_to': d_to}
 
     # --- Header info from rpt_customer_visits ---
-    vw, vp = build_where({k: v for k, v in filters.items() if k in COVERAGE_KEYS | {'date_from', 'date_to', 'sales_org'}},
-                         date_col='date')
+    # Aggregate across all filtered users (not per-user GROUP BY)
+    hdr_filters = {k: v for k, v in filters.items() if k in COVERAGE_KEYS | {'date_from', 'date_to', 'sales_org'}}
+    vw, vp = build_where(hdr_filters, date_col='date')
     header_row = query_one(
         f"SELECT "
-        f"  sales_org_code AS depot, user_code, user_name AS salesman, "
-        f"  route_code, route_name, "
-        f"  ROUND(AVG(CASE WHEN is_productive THEN total_time_mins ELSE NULL END)::numeric, 1) AS avg_productive_mins, "
+        f"  ROUND(AVG(CASE WHEN is_productive THEN total_time_mins ELSE NULL END)::numeric, 0) AS avg_productive_mins, "
         f"  ROUND(COUNT(*)::numeric / NULLIF(COUNT(DISTINCT date), 0), 1) AS avg_daily_calls "
-        f"FROM rpt_customer_visits WHERE {vw} "
-        f"GROUP BY sales_org_code, user_code, user_name, route_code, route_name",
+        f"FROM rpt_customer_visits WHERE {vw}",
+        vp
+    )
+    # Get first user/route info for display
+    first_row = query_one(
+        f"SELECT sales_org_code AS depot, user_code, user_name AS salesman, "
+        f"  route_code, route_name "
+        f"FROM rpt_customer_visits WHERE {vw} LIMIT 1",
         vp
     )
     header = {}
     if header_row:
         header = {
-            "depot": header_row["depot"],
-            "user_code": header_row["user_code"],
-            "salesman": header_row["salesman"],
-            "route_code": header_row["route_code"],
-            "route_name": header_row["route_name"],
+            "depot": first_row["depot"] if first_row else "",
+            "user_code": first_row["user_code"] if first_row else "",
+            "salesman": first_row["salesman"] if first_row else "",
+            "route_code": first_row["route_code"] if first_row else "",
+            "route_name": first_row["route_name"] if first_row else "",
             "avg_productive_mins": float(header_row["avg_productive_mins"]) if header_row["avg_productive_mins"] else 0,
             "avg_daily_calls": float(header_row["avg_daily_calls"]) if header_row["avg_daily_calls"] else 0,
         }
@@ -151,28 +146,28 @@ def get_mtd_sales_overview(
     rsw, rsp = build_where(f_rsic, date_col='date', prefix='r')
     daily_summary = query(
         f"SELECT r.date AS sale_date, COALESCE(SUM(r.total_sales), 0) AS total_sales "
-        f"FROM rpt_route_sales_by_item_customer r "
+        f"FROM rpt_route_sales_by_item_customer r {_org_join}"
         f"WHERE {rsw}{channel_cond}{item_cond} "
         f"GROUP BY r.date ORDER BY r.date",
-        rsp + channel_params + item_params
+        _org_params + rsp + channel_params + item_params
     )
-    summary_map = {str(r["sale_date"]): float(r["total_sales"]) for r in daily_summary}
+    summary_map = {str(r["sale_date"]): round(float(r["total_sales"]), 2) for r in daily_summary}
 
-    # --- Cash/Credit from rpt_sales_detail (dedup by trx_code, status=200) ---
-    sd_filters = {k: v for k, v in filters.items() if k in {'date_from', 'date_to', 'sales_org', 'route', 'user_code'}}
-    sw, sp = build_where(sd_filters, date_col='trx_date')
+    # --- Cash/Credit from rpt_route_sales_by_item_customer + dim_customer.customer_type ---
+    # Matches MSSQL SP: SUM(CASE WHEN CD.CustomerType='Cash' THEN TotalSales ELSE 0 END)
     daily_cc = query(
-        f"SELECT sale_date, "
-        f"  COALESCE(SUM(CASE WHEN payment_type::text = '1' THEN net_amount ELSE 0 END), 0) AS cash_sales, "
-        f"  COALESCE(SUM(CASE WHEN payment_type::text = '0' THEN net_amount ELSE 0 END), 0) AS credit_sales "
-        f"FROM (SELECT trx_date AS sale_date, trx_code, "
-        f"  MIN(payment_type) AS payment_type, MIN(net_amount) AS net_amount "
-        f"  FROM rpt_sales_detail WHERE trx_type = 1 AND trx_status = 200 AND {sw} "
-        f"  GROUP BY trx_date, trx_code) t "
-        f"GROUP BY sale_date ORDER BY sale_date",
-        sp
+        f"SELECT r.date AS sale_date, "
+        f"  COALESCE(SUM(CASE WHEN dc.customer_type = 'Cash' THEN r.total_sales ELSE 0 END), 0) AS cash_sales, "
+        f"  COALESCE(SUM(CASE WHEN dc.customer_type = 'Credit' THEN r.total_sales ELSE 0 END), 0) AS credit_sales "
+        f"FROM rpt_route_sales_by_item_customer r "
+        f"JOIN dim_route dr2 ON r.route_code = dr2.code "
+        f"JOIN dim_customer dc ON r.customer_code = dc.code AND dc.sales_org_code = dr2.sales_org_code "
+        f"{_org_join}"
+        f"WHERE {rsw}{channel_cond}{item_cond} "
+        f"GROUP BY r.date ORDER BY r.date",
+        _org_params + rsp + channel_params + item_params
     )
-    cc_map = {str(r["sale_date"]): (float(r["cash_sales"]), float(r["credit_sales"])) for r in daily_cc}
+    cc_map = {str(r["sale_date"]): (round(float(r["cash_sales"]), 2), round(float(r["credit_sales"]), 2)) for r in daily_cc}
 
     # --- Monthly Target ---
     month_start = date(d_from.year, d_from.month, 1)

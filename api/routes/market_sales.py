@@ -45,44 +45,37 @@ def get_market_sales_performance(
 
     base_filters = {k: v for k, v in {'route': route, 'user_code': user_code}.items() if v}
 
-    # Resolve sales_org to user_codes
-    if sales_org:
+    # Resolve sales_org to route JOIN
+    _org_join = ""
+    _org_params = []
+    if sales_org and not base_filters.get('route'):
         orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
         org_ph = ','.join(['%s'] * len(orgs))
-        org_rows = query(
-            f"SELECT DISTINCT code FROM dim_user WHERE is_active = true AND sales_org_code IN ({org_ph})", orgs
-        )
-        if org_rows:
-            org_users = set(r['code'] for r in org_rows)
-            if base_filters.get('user_code'):
-                existing = set(base_filters['user_code'].split(','))
-                intersected = existing & org_users
-                if not intersected:
-                    return _empty()
-                base_filters['user_code'] = ','.join(intersected)
-            else:
-                base_filters['user_code'] = ','.join(org_users)
+        _org_join = f"JOIN dim_route _dr ON r.route_code = _dr.code AND _dr.sales_org_code IN ({org_ph}) "
+        _org_params = orgs
 
     # Current year: monthly from rpt_route_sales_by_item_customer
     cur_f = {**base_filters, 'date_from': date(cur_year, 1, 1), 'date_to': date(cur_year, 12, 31)}
     f_rsic = {k: v for k, v in cur_f.items() if k in RSIC_KEYS}
-    cw, cp = build_where(f_rsic, date_col='date')
+    cw, cp = build_where(f_rsic, date_col='date', prefix='r')
     monthly_cur = query(
-        f"SELECT EXTRACT(MONTH FROM date)::int AS month, "
-        f"  ROUND(COALESCE(SUM(total_sales),0)::numeric, 0) AS sales "
-        f"FROM rpt_route_sales_by_item_customer WHERE {cw} "
-        f"GROUP BY EXTRACT(MONTH FROM date) ORDER BY month", cp
+        f"SELECT EXTRACT(MONTH FROM r.date)::int AS month, "
+        f"  ROUND(COALESCE(SUM(r.total_sales),0)::numeric, 0) AS sales "
+        f"FROM rpt_route_sales_by_item_customer r {_org_join}"
+        f"WHERE {cw} "
+        f"GROUP BY EXTRACT(MONTH FROM r.date) ORDER BY month", _org_params + cp
     )
 
     # Last year
     last_f = {**base_filters, 'date_from': date(last_year, 1, 1), 'date_to': date(last_year, 12, 31)}
     f_rsic_l = {k: v for k, v in last_f.items() if k in RSIC_KEYS}
-    lw, lp = build_where(f_rsic_l, date_col='date')
+    lw, lp = build_where(f_rsic_l, date_col='date', prefix='r')
     monthly_last = query(
-        f"SELECT EXTRACT(MONTH FROM date)::int AS month, "
-        f"  ROUND(COALESCE(SUM(total_sales),0)::numeric, 0) AS sales "
-        f"FROM rpt_route_sales_by_item_customer WHERE {lw} "
-        f"GROUP BY EXTRACT(MONTH FROM date) ORDER BY month", lp
+        f"SELECT EXTRACT(MONTH FROM r.date)::int AS month, "
+        f"  ROUND(COALESCE(SUM(r.total_sales),0)::numeric, 0) AS sales "
+        f"FROM rpt_route_sales_by_item_customer r {_org_join}"
+        f"WHERE {lw} "
+        f"GROUP BY EXTRACT(MONTH FROM r.date) ORDER BY month", _org_params + lp
     )
 
     cur_map = {int(r["month"]): float(r["sales"]) for r in monthly_cur}
