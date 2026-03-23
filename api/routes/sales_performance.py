@@ -45,37 +45,57 @@ def get_sales_performance(
     latest_data = latest_row["latest"] if latest_row and latest_row["latest"] else today
 
     # Determine period
+    # display_end = intended end date shown in label (not capped to latest data)
     if date_from and date_to:
         cur_start = date_from
         cur_end = date_to
+        display_end = date_to
     elif day and month and year:
         requested = date(year, month, day)
-        # If requested day is beyond available data, use latest
-        if requested > latest_data:
-            cur_start = latest_data
-            cur_end = latest_data
-        else:
-            cur_start = requested
-            cur_end = requested
+        cur_start = date(year, month, 1)  # MTD always starts from month start
+        display_end = requested           # label always shows the requested day
+        cur_end = min(requested, latest_data)
     elif month and year:
         cur_start, cur_end = _month_range(year, month)
-        # Cap to latest available data date
         if cur_end > latest_data:
             cur_end = latest_data
+        display_end = cur_end
     else:
         cur_start = date(today.year, today.month, 1)
+        display_end = today
         cur_end = min(today, latest_data)
 
-    # Last month MTD: same day range in previous month
-    # e.g. if current = Mar 1-17, last = Feb 1-17
+    # LMTD: same day range in previous month (Feb 1 → Feb <same day>)
+    # (used for filtered ROS/SKU queries only)
     if cur_start.month == 1:
         last_month_start = date(cur_start.year - 1, 12, 1)
     else:
         last_month_start = date(cur_start.year, cur_start.month - 1, 1)
-    # Cap last_month_end to same day-of-month as cur_end, or end of last month
-    last_month_max = (cur_start - timedelta(days=1))  # last day of prev month
-    last_month_day = min(cur_end.day, last_month_max.day)
+    last_month_max = cur_start - timedelta(days=1)  # last calendar day of prev month
+    last_month_day = min(display_end.day, last_month_max.day)
     last_month_end = date(last_month_start.year, last_month_start.month, last_month_day)
+
+    # ── MTD / LMTD KPIs are independent of the day filter ──────────────────────
+    # Always use today's day-of-month so selecting day=1 doesn't change the KPI.
+    eff_month = month if month else today.month
+    eff_year  = year  if year  else today.year
+    mtd_kpi_start        = date(eff_year, eff_month, 1)
+    _, month_last        = _month_range(eff_year, eff_month)
+    is_current_month     = (eff_year == today.year and eff_month == today.month)
+    # Current month → end at today; past/future month → use full month
+    mtd_kpi_display = min(date(eff_year, eff_month, today.day), month_last) \
+                      if is_current_month else month_last
+    mtd_kpi_end     = min(mtd_kpi_display, latest_data)
+
+    if mtd_kpi_start.month == 1:
+        lmtd_kpi_start = date(mtd_kpi_start.year - 1, 12, 1)
+    else:
+        lmtd_kpi_start = date(mtd_kpi_start.year, mtd_kpi_start.month - 1, 1)
+    lmtd_month_last = (mtd_kpi_start - timedelta(days=1))  # last day of lmtd month
+    # Current month → LMTD ends on same day-of-month; past month → full lmtd month
+    lmtd_kpi_end = date(lmtd_kpi_start.year, lmtd_kpi_start.month,
+                        min(today.day, lmtd_month_last.day)) \
+                   if is_current_month else lmtd_month_last
 
     # Year-to-date
     ytd_start = date(cur_start.year, 1, 1)
@@ -180,6 +200,17 @@ def get_sales_performance(
         expiry = float(row2["expiry"]) if row2 else 0
         return {"sales": sales, "gr": gr, "damage": damage, "expiry": expiry}
 
+    def get_unfiltered_sales(d_start, d_end):
+        """MTD/LMTD KPIs: date range only, no org/user/item filters."""
+        row = query_one(
+            "SELECT COALESCE(SUM(total_sales),0) AS sales "
+            "FROM (SELECT DISTINCT ON (route_code, item_code, date) total_sales "
+            "  FROM rpt_route_sales_summary_by_item "
+            "  WHERE date BETWEEN %s AND %s) t",
+            [d_start, d_end]
+        )
+        return float(row["sales"]) if row else 0
+
     def get_target(d_start, d_end):
         row = query_one(
             "SELECT COALESCE(SUM(amount),0) AS target "
@@ -189,11 +220,12 @@ def get_sales_performance(
         )
         return float(row["target"]) if row else 0
 
-    # Use exact selected period (respects day selection)
+    # Use exact selected period (respects day selection) — for ROS / SKU
     cur_data = get_sales_returns(cur_start, cur_end)
     last_data = get_sales_returns(last_month_start, last_month_end)
-    cur_sales = float(cur_data["sales"])
-    last_sales = float(last_data["sales"])
+    # MTD/LMTD KPIs: company-wide, day-filter independent
+    cur_sales  = get_unfiltered_sales(mtd_kpi_start, mtd_kpi_end)
+    last_sales = get_unfiltered_sales(lmtd_kpi_start, lmtd_kpi_end)
     cur_target = get_target(cur_start, cur_end)
     last_target = get_target(last_month_start, last_month_end)
 
@@ -243,6 +275,7 @@ def get_sales_performance(
 
     # --- SKU counts from rpt_route_sales_by_item_customer ---
     rsic_base = {k: v for k, v in base_filters.items() if k in RSIC_KEYS}
+    full_month_end = min(_month_range(cur_start.year, cur_start.month)[1], latest_data)
 
     # Find latest date with data (filtered by user if hierarchy selected)
     latest_f = {**rsic_base, 'date_from': cur_start, 'date_to': cur_end}
@@ -255,17 +288,23 @@ def get_sales_performance(
     def sku_count(d_from, d_to):
         f = {**rsic_base, 'date_from': d_from, 'date_to': d_to}
         sw, sp = build_where(f, date_col='date', prefix='r')
+        # Match sp_GetSKUsSold_Formula exactly:
+        #   INNER JOIN tblItem + tblCustomerDetail + UserHierarchy (role=C_PRESALES_VANSALES)
         row = query_one(
             f"SELECT COUNT(DISTINCT r.item_code) AS cnt "
-            f"FROM rpt_route_sales_by_item_customer r {_org_join}WHERE r.total_sales >= 0 AND {sw}", _org_params + sp
+            f"FROM rpt_route_sales_by_item_customer r "
+            f"JOIN dim_item di ON di.code = r.item_code "
+            f"JOIN dim_customer dc ON dc.code = r.customer_code "
+            f"JOIN dim_user du ON du.code = r.user_code AND du.role_code = 'C_PRESALES_VANSALES' "
+            f"{_org_join}WHERE {sw}", _org_params + sp
         )
         return int(row["cnt"]) if row else 0
 
-    # SP2: Daily = specific day, MTD = full month, YTD = full year
+    # SP2: Daily = specific day only, MTD = full month (day-filter independent), YTD = full year
     sku_counts = {
         "today": sku_count(latest_date, latest_date),
         "today_label": str(latest_date),
-        "mtd": sku_count(cur_start, cur_end),
+        "mtd": sku_count(cur_start, full_month_end),
         "ytd": sku_count(ytd_start, date(cur_end.year, 12, 31)),
     }
 
@@ -281,7 +320,9 @@ def get_sales_performance(
     cw_start = max(week_start, cur_start)
     cw_end = min(today, cur_end)
 
-    cm_sk = {k: v for k, v in {**base_filters, 'date_from': cur_start, 'date_to': cur_end}.items() if k in RSIC_KEYS}
+    # Use full_month_end for WHERE so the query fetches all month rows;
+    # current_month_sales CASE still uses cur_start/cur_end (MTD only).
+    cm_sk = {k: v for k, v in {**base_filters, 'date_from': cur_start, 'date_to': full_month_end}.items() if k in RSIC_KEYS}
     cmw_s, cmp_s = build_where(cm_sk, date_col='date', prefix='r')
     ly_sk = {k: v for k, v in {**base_filters, 'date_from': ly_start, 'date_to': ly_end}.items() if k in RSIC_KEYS}
     lyw_s, lyp_s = build_where(ly_sk, date_col='date', prefix='r')
@@ -306,9 +347,9 @@ def get_sales_performance(
         f"  AND COALESCE(SUM(CASE WHEN r.date BETWEEN %s AND %s THEN r.total_sales ELSE 0 END), 0) = 0 "
         f") "
         f"ORDER BY r.item_code",
-        [cur_start, cur_end, ly_start, ly_end, cw_start, cw_end]
+        [cur_start, full_month_end, ly_start, ly_end, cw_start, cw_end]
         + _org_params + cmp_s + lyp_s
-        + [cur_start, cur_end, ly_start, ly_end]
+        + [cur_start, full_month_end, ly_start, ly_end]
     )
 
     for row in sku_table:
@@ -322,8 +363,8 @@ def get_sales_performance(
             row["growth"] = min(100.0, round((cm - ly) / ly * 100, 2))
 
     return {
-        "period_label": f"{cur_start} to {cur_end}",
-        "last_month_label": f"{last_month_start} to {last_month_end}",
+        "period_label": f"{mtd_kpi_start} to {mtd_kpi_display}",
+        "last_month_label": f"{lmtd_kpi_start} to {lmtd_kpi_end}",
         "mtd_sales": cur_sales,
         "lmtd_sales": last_sales,
         "return_on_sales": return_on_sales,

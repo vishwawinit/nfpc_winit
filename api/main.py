@@ -71,6 +71,12 @@ app.include_router(monthly_sales_stock.router, prefix="/api", tags=["Monthly Sal
 def health():
     return {"status": "ok"}
 
+@app.post("/api/cache/clear")
+def clear_cache():
+    from api.database import cache_clear
+    cache_clear()
+    return {"cleared": True}
+
 # Serve frontend static files (after all API routes)
 _frontend_dir = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist')
 if os.path.isdir(_frontend_dir):
