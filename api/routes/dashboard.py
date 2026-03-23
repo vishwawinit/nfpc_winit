@@ -111,24 +111,38 @@ def get_dashboard(
     # TOTAL SALES — primary: rpt_route_sales_by_item_customer (matches MSSQL exactly)
     # rpt_route_sales_summary_by_item has duplicate rows, so we avoid it for totals
     # =========================================================
-    # Total Sales from rpt_route_sales_summary_by_item (matches old dashboard SP exactly)
-    # Old dashboard SP uses LEFT JOIN on routes — sales_org does NOT filter sales total
-    # Uses DISTINCT ON to dedup (table has duplicate rows)
-    _sales_keys = ROUTE_SALES_ITEM_KEYS - {'sales_org'}  # sales_org doesn't filter sales in old SP
-    f_rssi = _filter_keys(filters, _sales_keys)
-    sw_sales, sp_sales = build_where(f_rssi, date_col='date')
-    sales_row = query_one(
-        f"SELECT COALESCE(SUM(total_sales),0) AS total_sales, "
-        f"  COALESCE(SUM(total_sales_with_tax),0) AS total_sales_with_tax, "
-        f"  COALESCE(SUM(total_wastage),0) AS total_wastage "
-        f"FROM (SELECT DISTINCT ON (route_code, item_code, date) "
-        f"  total_sales, total_sales_with_tax, total_wastage "
-        f"  FROM rpt_route_sales_summary_by_item WHERE {sw_sales}) t",
-        sp_sales
-    )
-    total_sales = float(sales_row["total_sales"]) if sales_row else 0
-    total_sales_with_tax = float(sales_row["total_sales_with_tax"]) if sales_row else 0
-    total_wastage = float(sales_row["total_wastage"]) if sales_row else 0
+    # Total Sales: use rpt_route_sales_summary_by_item when no user filter (matches old dashboard)
+    # Use rpt_route_sales_by_item_customer when user/hierarchy filter is applied (has user_code)
+    _has_user_filter = bool(filters.get('user_code'))
+    if not _has_user_filter:
+        # No user filter — use summary_by_item (matches old dashboard SP exactly)
+        _sales_keys = ROUTE_SALES_ITEM_KEYS - {'sales_org'}
+        f_rssi = _filter_keys(filters, _sales_keys)
+        sw_sales, sp_sales = build_where(f_rssi, date_col='date')
+        sales_row = query_one(
+            f"SELECT COALESCE(SUM(total_sales),0) AS total_sales, "
+            f"  COALESCE(SUM(total_sales_with_tax),0) AS total_sales_with_tax, "
+            f"  COALESCE(SUM(total_wastage),0) AS total_wastage "
+            f"FROM (SELECT DISTINCT ON (route_code, item_code, date) "
+            f"  total_sales, total_sales_with_tax, total_wastage "
+            f"  FROM rpt_route_sales_summary_by_item WHERE {sw_sales}) t",
+            sp_sales
+        )
+    else:
+        # User/hierarchy filter — use by_item_customer (has user_code column)
+        f_rsic = _rsic_filters()
+        rsicw, rsicp = build_where(f_rsic, date_col='date', prefix='rc')
+        join_clause = _rsic_org_join.replace("{alias}", "rc") if _rsic_org_join else ""
+        sales_row = query_one(
+            f"SELECT COALESCE(SUM(rc.total_sales),0) AS total_sales, "
+            f"  COALESCE(SUM(rc.total_sales),0) AS total_sales_with_tax, "
+            f"  COALESCE(SUM(rc.total_gr_sales + rc.total_damage_sales + rc.total_expiry_sales),0) AS total_wastage "
+            f"FROM rpt_route_sales_by_item_customer rc {join_clause}WHERE {rsicw}",
+            _rsic_org_params + rsicp
+        )
+    total_sales = round(float(sales_row["total_sales"]), 2) if sales_row else 0
+    total_sales_with_tax = round(float(sales_row["total_sales_with_tax"]), 2) if sales_row else 0
+    total_wastage = round(float(sales_row["total_wastage"]), 2) if sales_row else 0
 
     # Fallback: rpt_invoice_totals
     if total_sales == 0:
@@ -190,18 +204,28 @@ def get_dashboard(
         total_target = float(tgt_row2["target"]) if tgt_row2 else 0
 
     # =========================================================
-    # DAILY SALES TREND — from rpt_route_sales_summary_by_item (same source as Total Sales KPI)
+    # DAILY SALES TREND — same source as Total Sales KPI
     # =========================================================
-    _daily_keys = ROUTE_SALES_ITEM_KEYS - {'sales_org'}
-    f_daily = _filter_keys(filters, _daily_keys)
-    sw_daily, sp_daily = build_where(f_daily, date_col='date')
-    daily_sales = query(
-        f"SELECT date, COALESCE(SUM(total_sales), 0) AS sales "
-        f"FROM (SELECT DISTINCT ON (route_code, item_code, date) date, total_sales "
-        f"  FROM rpt_route_sales_summary_by_item WHERE {sw_daily}) t "
-        f"GROUP BY date ORDER BY date",
-        sp_daily
-    )
+    if not _has_user_filter:
+        _daily_keys = ROUTE_SALES_ITEM_KEYS - {'sales_org'}
+        f_daily = _filter_keys(filters, _daily_keys)
+        sw_daily, sp_daily = build_where(f_daily, date_col='date')
+        daily_sales = query(
+            f"SELECT date, COALESCE(SUM(total_sales), 0) AS sales "
+            f"FROM (SELECT DISTINCT ON (route_code, item_code, date) date, total_sales "
+            f"  FROM rpt_route_sales_summary_by_item WHERE {sw_daily}) t "
+            f"GROUP BY date ORDER BY date",
+            sp_daily
+        )
+    else:
+        f_rsic2 = _rsic_filters()
+        rsicw2, rsicp2 = build_where(f_rsic2, date_col='date', prefix='rc')
+        join2 = _rsic_org_join.replace("{alias}", "rc") if _rsic_org_join else ""
+        daily_sales = query(
+            f"SELECT rc.date, COALESCE(SUM(rc.total_sales), 0) AS sales "
+            f"FROM rpt_route_sales_by_item_customer rc {join2}WHERE {rsicw2} "
+            f"GROUP BY rc.date ORDER BY rc.date", _rsic_org_params + rsicp2
+        )
 
     # Fallback: rpt_invoice_totals
     if not daily_sales:
@@ -239,18 +263,31 @@ def get_dashboard(
     # =========================================================
     # WEEK-WISE SALES & COLLECTION
     # =========================================================
-    _weekly_keys = ROUTE_SALES_ITEM_KEYS - {'sales_org'}
-    f_weekly = _filter_keys(filters, _weekly_keys)
-    sw_weekly, sp_weekly = build_where(f_weekly, date_col='date')
-    weekly_sales = query(
-        f"SELECT DATE_TRUNC('week', date)::date AS week_start, "
-        f"  'W' || EXTRACT(WEEK FROM date)::int AS week_label, "
-        f"  COALESCE(SUM(total_sales), 0) AS sales "
-        f"FROM (SELECT DISTINCT ON (route_code, item_code, date) date, total_sales "
-        f"  FROM rpt_route_sales_summary_by_item WHERE {sw_weekly}) t "
-        f"GROUP BY DATE_TRUNC('week', date), EXTRACT(WEEK FROM date) "
-        f"ORDER BY week_start", sp_weekly
-    )
+    if not _has_user_filter:
+        _weekly_keys = ROUTE_SALES_ITEM_KEYS - {'sales_org'}
+        f_weekly = _filter_keys(filters, _weekly_keys)
+        sw_weekly, sp_weekly = build_where(f_weekly, date_col='date')
+        weekly_sales = query(
+            f"SELECT DATE_TRUNC('week', date)::date AS week_start, "
+            f"  'W' || EXTRACT(WEEK FROM date)::int AS week_label, "
+            f"  COALESCE(SUM(total_sales), 0) AS sales "
+            f"FROM (SELECT DISTINCT ON (route_code, item_code, date) date, total_sales "
+            f"  FROM rpt_route_sales_summary_by_item WHERE {sw_weekly}) t "
+            f"GROUP BY DATE_TRUNC('week', date), EXTRACT(WEEK FROM date) "
+            f"ORDER BY week_start", sp_weekly
+        )
+    else:
+        f_rsic3 = _rsic_filters()
+        rsicw3, rsicp3 = build_where(f_rsic3, date_col='date', prefix='rc')
+        join3 = _rsic_org_join.replace("{alias}", "rc") if _rsic_org_join else ""
+        weekly_sales = query(
+            f"SELECT DATE_TRUNC('week', rc.date)::date AS week_start, "
+            f"  'W' || EXTRACT(WEEK FROM rc.date)::int AS week_label, "
+            f"  COALESCE(SUM(rc.total_sales), 0) AS sales "
+            f"FROM rpt_route_sales_by_item_customer rc {join3}WHERE {rsicw3} "
+            f"GROUP BY DATE_TRUNC('week', rc.date), EXTRACT(WEEK FROM rc.date) "
+            f"ORDER BY week_start", _rsic_org_params + rsicp3
+        )
 
     # Fallback: weekly sales from rpt_invoice_totals
     if not weekly_sales:
@@ -404,36 +441,61 @@ def get_dashboard(
     }
 
     # =========================================================
-    # ROUTE-WISE SALES VS COLLECTION
-    # Sales from rpt_route_sales_summary_by_item (consistent with Total Sales KPI)
-    # Collection from rpt_route_sales_collection
+    # ROUTE-WISE SALES VS COLLECTION — same source as Total Sales KPI
     # =========================================================
-    _rt_keys = ROUTE_SALES_ITEM_KEYS - {'sales_org'}
-    f_rt = _filter_keys(filters, _rt_keys)
-    sw_rt, sp_rt = build_where(f_rt, date_col='date', prefix='s')
     f_rsc_rt = _filter_keys(filters, ROUTE_SC_KEYS)
     rw_c, rp_c = build_where(f_rsc_rt, date_col='date', prefix='c')
-    route_sales_target = query(
-        f"SELECT COALESCE(s.route_code, c.route_code) AS route_code, "
-        f"  COALESCE(s.route_name, c.route_name) AS route_name, "
-        f"  COALESCE(s.sales, 0) AS sales, "
-        f"  COALESCE(c.collection, 0) AS collection, "
-        f"  COALESCE(s.target, 0) AS target "
-        f"FROM ( "
-        f"  SELECT route_code, route_name, SUM(total_sales) AS sales, SUM(target_amount) AS target "
-        f"  FROM (SELECT DISTINCT ON (route_code, item_code, date) "
-        f"    route_code, route_name, total_sales, target_amount "
-        f"    FROM rpt_route_sales_summary_by_item s WHERE {sw_rt}) t "
-        f"  GROUP BY route_code, route_name "
-        f") s "
-        f"FULL OUTER JOIN ( "
-        f"  SELECT c.route_code, c.route_name, SUM(c.total_collection) AS collection "
-        f"  FROM rpt_route_sales_collection c WHERE {rw_c} "
-        f"  GROUP BY c.route_code, c.route_name "
-        f") c ON s.route_code = c.route_code "
-        f"ORDER BY sales DESC NULLS LAST",
-        sp_rt + rp_c
-    )
+    if not _has_user_filter:
+        _rt_keys = ROUTE_SALES_ITEM_KEYS - {'sales_org'}
+        f_rt = _filter_keys(filters, _rt_keys)
+        sw_rt, sp_rt = build_where(f_rt, date_col='date', prefix='s')
+        route_sales_target = query(
+            f"SELECT COALESCE(s.route_code, c.route_code) AS route_code, "
+            f"  COALESCE(s.route_name, c.route_name) AS route_name, "
+            f"  COALESCE(s.sales, 0) AS sales, "
+            f"  COALESCE(c.collection, 0) AS collection, "
+            f"  COALESCE(s.target, 0) AS target "
+            f"FROM ( "
+            f"  SELECT route_code, route_name, SUM(total_sales) AS sales, SUM(target_amount) AS target "
+            f"  FROM (SELECT DISTINCT ON (route_code, item_code, date) "
+            f"    route_code, route_name, total_sales, target_amount "
+            f"    FROM rpt_route_sales_summary_by_item s WHERE {sw_rt}) t "
+            f"  GROUP BY route_code, route_name "
+            f") s "
+            f"FULL OUTER JOIN ( "
+            f"  SELECT c.route_code, c.route_name, SUM(c.total_collection) AS collection "
+            f"  FROM rpt_route_sales_collection c WHERE {rw_c} "
+            f"  GROUP BY c.route_code, c.route_name "
+            f") c ON s.route_code = c.route_code "
+            f"ORDER BY sales DESC NULLS LAST",
+            sp_rt + rp_c
+        )
+    else:
+        f_rsic_rt = _rsic_filters()
+        rsicw_rt, rsicp_rt = build_where(f_rsic_rt, date_col='date', prefix='r')
+        join_rt = _rsic_org_join.replace("{alias}", "r") if _rsic_org_join else ""
+        route_sales_target = query(
+            f"SELECT COALESCE(s.route_code, c.route_code) AS route_code, "
+            f"  COALESCE(s.route_name, c.route_name) AS route_name, "
+            f"  COALESCE(s.sales, 0) AS sales, "
+            f"  COALESCE(c.collection, 0) AS collection, "
+            f"  0 AS target "
+            f"FROM ( "
+            f"  SELECT r.route_code, COALESCE(dr.name, r.route_code) AS route_name, "
+            f"    SUM(r.total_sales) AS sales "
+            f"  FROM rpt_route_sales_by_item_customer r "
+            f"  LEFT JOIN dim_route dr ON r.route_code = dr.code "
+            f"  {join_rt}WHERE {rsicw_rt} "
+            f"  GROUP BY r.route_code, COALESCE(dr.name, r.route_code) "
+            f") s "
+            f"FULL OUTER JOIN ( "
+            f"  SELECT c.route_code, c.route_name, SUM(c.total_collection) AS collection "
+            f"  FROM rpt_route_sales_collection c WHERE {rw_c} "
+            f"  GROUP BY c.route_code, c.route_name "
+            f") c ON s.route_code = c.route_code "
+            f"ORDER BY sales DESC NULLS LAST",
+            _rsic_org_params + rsicp_rt + rp_c
+        )
 
     # =========================================================
     # ROUTE-WISE VISITS / COVERAGE
