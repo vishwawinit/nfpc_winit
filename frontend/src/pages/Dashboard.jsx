@@ -280,13 +280,13 @@ export default function Dashboard() {
             <Pill label="Sales" value={aed(dailyMerged.reduce((s, r) => s + (r.sales || 0), 0))} pal={PAL.daySales} />
             <Pill label="Collection" value={aed(dailyMerged.reduce((s, r) => s + (r.collection || 0), 0))} pal={PAL.dayCollection} />
           </SectionHeader>
-          <div className="chart-body overflow-x-auto">
-            <div style={{ minWidth: Math.max(600, dailyMerged.length * 56) }}>
+          <div className="chart-body overflow-x-auto" style={dailyMerged.length > 10 ? { overflowX: 'auto', maxWidth: '100%' } : {}}>
+            <div style={{ minWidth: dailyMerged.length > 10 ? dailyMerged.length * 70 : Math.max(600, dailyMerged.length * 56) }}>
               <ResponsiveContainer width="100%" height={340}>
                 <BarChart data={dailyMerged} barCategoryGap="18%" barGap={3}>
                   <ChartGradients />
                   <CartesianGrid strokeDasharray="3 3" stroke={PAL.grid} vertical={false} />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94a3b8', angle: -35, textAnchor: 'end' }} height={50} axisLine={false} tickLine={false} interval={0} />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94a3b8', angle: dailyMerged.length > 10 ? -45 : -35, textAnchor: 'end' }} height={50} axisLine={false} tickLine={false} interval={0} />
                   <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={yAxisFmt} axisLine={false} tickLine={false} width={50} />
                   <Tooltip content={<ChartTooltip formatter={aed} colorMap={{ Sales: PAL.daySales.solid, Collection: PAL.dayCollection.solid }} />}
                     cursor={{ fill: 'rgba(79, 70, 229, 0.04)', radius: 4 }} />

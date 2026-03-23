@@ -147,21 +147,38 @@ def get_sales_performance(
             return _empty_response()
         base_filters['customer'] = ','.join(r['code'] for r in cust_rows)
 
-    # --- Sales/Returns from rpt_route_sales_by_item_customer ---
-    # Table columns: route_code, user_code, customer_code, item_code, date
+    # --- Sales/Returns from rpt_route_sales_summary_by_item (consistent with Dashboard) ---
+    RSSI_KEYS = {'date_from', 'date_to', 'sales_org', 'route', 'user_code', 'item', 'category', 'brand'}
     RSIC_KEYS = {'date_from', 'date_to', 'route', 'user_code', 'item', 'customer'}
 
     def get_sales_returns(d_start, d_end):
-        f = {k: v for k, v in {**base_filters, 'date_from': d_start, 'date_to': d_end}.items() if k in RSIC_KEYS}
-        sw, sp = build_where(f, date_col='date', prefix='r')
+        f = {k: v for k, v in {**base_filters, 'date_from': d_start, 'date_to': d_end}.items() if k in RSSI_KEYS}
+        if sales_org and 'sales_org' not in f:
+            f['sales_org'] = sales_org
+        sw, sp = build_where(f, date_col='date')
         row = query_one(
-            f"SELECT COALESCE(SUM(r.total_sales),0) AS sales, "
-            f"  COALESCE(SUM(r.total_gr_sales),0) AS gr, "
+            f"SELECT COALESCE(SUM(total_sales),0) AS sales, "
+            f"  COALESCE(SUM(total_wastage),0) AS total_wastage "
+            f"FROM (SELECT DISTINCT ON (route_code, item_code, date) "
+            f"  total_sales, total_wastage "
+            f"  FROM rpt_route_sales_summary_by_item WHERE {sw}) t",
+            sp
+        )
+        # GR/Damage/Expiry breakdown still from rpt_route_sales_by_item_customer
+        RSIC_KEYS = {'date_from', 'date_to', 'route', 'user_code', 'item', 'customer'}
+        f2 = {k: v for k, v in {**base_filters, 'date_from': d_start, 'date_to': d_end}.items() if k in RSIC_KEYS}
+        sw2, sp2 = build_where(f2, date_col='date', prefix='r')
+        row2 = query_one(
+            f"SELECT COALESCE(SUM(r.total_gr_sales),0) AS gr, "
             f"  COALESCE(SUM(r.total_damage_sales),0) AS damage, "
             f"  COALESCE(SUM(r.total_expiry_sales),0) AS expiry "
-            f"FROM rpt_route_sales_by_item_customer r {_org_join}WHERE {sw}", _org_params + sp
+            f"FROM rpt_route_sales_by_item_customer r {_org_join}WHERE {sw2}", _org_params + sp2
         )
-        return row if row else {"sales": 0, "gr": 0, "damage": 0, "expiry": 0}
+        sales = float(row["sales"]) if row else 0
+        gr = float(row2["gr"]) if row2 else 0
+        damage = float(row2["damage"]) if row2 else 0
+        expiry = float(row2["expiry"]) if row2 else 0
+        return {"sales": sales, "gr": gr, "damage": damage, "expiry": expiry}
 
     def get_target(d_start, d_end):
         row = query_one(

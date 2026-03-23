@@ -100,13 +100,12 @@ def get_hos(sales_org: str = None):
 
 @router.get("/filters/asms")
 def get_asms(sales_org: str = None, hos: str = None):
-    """ASMs. When HOS given, use recursive lookup to find all ASMs under HOS (not just direct reports)."""
+    """ASMs. When HOS given, use recursive lookup. Sales org uses dim_user_details for multi-org."""
     asm_ph = ','.join(['%s'] * len(ROLE_CODES_ASM))
     conditions = [f"role_code IN ({asm_ph})", "is_active = true"]
     params = list(ROLE_CODES_ASM)
 
     if hos:
-        # Recursively find all subordinates of HOS, then filter to ASM role
         hos_codes = _split(hos, upper=True)
         all_subs = _get_all_subordinates(hos_codes)
         if not all_subs:
@@ -114,7 +113,10 @@ def get_asms(sales_org: str = None, hos: str = None):
         _in_clause("code", all_subs, conditions, params)
 
     if sales_org:
-        _in_clause("sales_org_code", _split(sales_org), conditions, params)
+        orgs = _split(sales_org)
+        org_ph = ','.join(['%s'] * len(orgs))
+        conditions.append(f"code IN (SELECT DISTINCT user_code FROM dim_user_details WHERE sales_org_code IN ({org_ph}))")
+        params.extend(orgs)
 
     where = " AND ".join(conditions)
     return query(f"SELECT code, name FROM dim_user WHERE {where} ORDER BY name", params)

@@ -128,16 +128,22 @@ def get_daily_sales_overview(
         item_filter_cond = f" AND r.item_code IN ({i_ph})"
         item_filter_params = i_codes
 
-    # --- Total Sales from rpt_route_sales_by_item_customer ---
+    # --- Total Sales from rpt_route_sales_summary_by_item (consistent with Dashboard) ---
+    RSSI_KEYS = {'date_from', 'date_to', 'sales_org', 'route', 'user_code', 'item', 'category', 'brand'}
+    f_rssi = {k: v for k, v in filters.items() if k in RSSI_KEYS}
+    sw_s, sp_s = build_where(f_rssi, date_col='date')
+    sales_total_row = query_one(
+        f"SELECT COALESCE(SUM(total_sales),0) AS total_sales "
+        f"FROM (SELECT DISTINCT ON (route_code, item_code, date) total_sales "
+        f"  FROM rpt_route_sales_summary_by_item WHERE {sw_s}) t",
+        sp_s
+    )
+    total_sales = float(sales_total_row["total_sales"]) if sales_total_row else 0
+
+    # Keep org_join for other queries that still use rpt_route_sales_by_item_customer
     f_rsic = {k: v for k, v in filters.items() if k in RSIC_KEYS}
     rw, rp = build_where(f_rsic, date_col='date', prefix='r')
     org_join = _rsic_org_join.replace("{alias}", "r") if _rsic_org_join else ""
-    sales_total_row = query_one(
-        f"SELECT COALESCE(SUM(r.total_sales),0) AS total_sales "
-        f"FROM rpt_route_sales_by_item_customer r {org_join}WHERE {rw}{channel_cond}{item_filter_cond}",
-        _rsic_org_params + rp + channel_params + item_filter_params
-    )
-    total_sales = float(sales_total_row["total_sales"]) if sales_total_row else 0
 
     # --- Cash/Credit/Discount from rpt_sales_detail ---
     # Deduplicate by trx_code (net_amount is header-level, repeated per detail line)
