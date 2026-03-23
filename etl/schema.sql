@@ -187,6 +187,7 @@ CREATE TABLE rpt_sales_detail (
     gross_amount FLOAT,
     -- Invoice
     invoice_number VARCHAR(50),
+    visit_code VARCHAR(50),
     -- Timestamps
     created_on TIMESTAMP,
     PRIMARY KEY (trx_code, line_no)

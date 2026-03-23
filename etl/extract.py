@@ -510,7 +510,7 @@ def load_sales_detail(ms_conn, pg_conn):
             COALESCE(i.LiterPerUnit, 0) * d.QuantityBU,
             d.BasePrice, h.TotalAmount, d.TotalDiscountAmount, d.TaxAmount,
             d.BasePrice * d.QuantityBU,
-            h.InvoiceNumber, d.CreatedOn
+            h.InvoiceNumber, h.VisitCode, d.CreatedOn
         FROM tblTrxHeader h
         JOIN tblTrxDetail d ON h.TrxCode = d.TrxCode
         LEFT JOIN tblUser u ON h.UserCode = u.Code
@@ -544,7 +544,7 @@ def load_sales_detail(ms_conn, pg_conn):
         'segment_code', 'segment_name', 'base_uom',
         'qty_cases', 'qty_pieces', 'qty_volume',
         'base_price', 'net_amount', 'discount_amount', 'tax_amount', 'gross_amount',
-        'invoice_number', 'created_on'
+        'invoice_number', 'visit_code', 'created_on'
     ]
     # Process in 2-week chunks to avoid MSSQL tempdb overflow
     from datetime import datetime

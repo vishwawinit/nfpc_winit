@@ -52,6 +52,7 @@ def get_dashboard(
     user_code: Optional[str] = None,
     channel: Optional[str] = None,
     brand: Optional[str] = None,
+    category: Optional[str] = None,
     hos: Optional[str] = None,
     depot: Optional[str] = None,
     supervisor: Optional[str] = None,
@@ -60,7 +61,7 @@ def get_dashboard(
     filters = {k: v for k, v in {
         'date_from': date_from, 'date_to': date_to, 'sales_org': sales_org,
         'route': route, 'user_code': user_code, 'channel': channel,
-        'brand': brand,
+        'brand': brand, 'category': category,
     }.items() if v}
 
     # Resolve hierarchy filters (hos/asm/depot/supervisor) to user_codes
@@ -94,6 +95,51 @@ def get_dashboard(
         _rsic_org_join = f"JOIN dim_route _dr ON {{alias}}.route_code = _dr.code AND _dr.sales_org_code IN ({org_ph}) "
         _rsic_org_params = orgs
 
+    # Use RSIC (rpt_route_sales_by_item_customer) when any item/customer-level filter is active.
+    # RSIC has user_code + customer_code + item_code — needed for channel/brand/category filtering.
+    # summary_by_item is used otherwise (pre-aggregated, matches old dashboard SP).
+    _use_rsic = bool(
+        filters.get('user_code') or filters.get('channel') or
+        filters.get('brand') or filters.get('category')
+    )
+
+    # Pre-resolve brand/category → item_codes for RSIC queries
+    # (RSIC table has only item_code; brand/category live in dim_item)
+    _item_filter_cond = ""
+    _item_filter_params = []
+    if filters.get('brand') or filters.get('category'):
+        i_conds, i_params = [], []
+        if filters.get('brand'):
+            b_vals = [v.strip() for v in filters['brand'].split(',') if v.strip()]
+            i_conds.append(f"TRIM(brand_code) IN ({','.join(['%s'] * len(b_vals))})")
+            i_params.extend(b_vals)
+        if filters.get('category'):
+            c_vals = [v.strip() for v in filters['category'].split(',') if v.strip()]
+            i_conds.append(f"category_code IN ({','.join(['%s'] * len(c_vals))})")
+            i_params.extend(c_vals)
+        item_rows = query(f"SELECT DISTINCT code FROM dim_item WHERE {' AND '.join(i_conds)}", i_params)
+        if not item_rows:
+            return _empty_response()
+        i_codes = [r['code'] for r in item_rows]
+        _item_filter_cond = f" AND {{alias}}.item_code IN ({','.join(['%s'] * len(i_codes))})"
+        _item_filter_params = i_codes
+
+    # Channel → EXISTS on dim_customer (joined via dim_route for sales_org matching).
+    # Uses EXISTS instead of JOIN to avoid row multiplication when a customer appears
+    # in multiple sales_orgs in dim_customer.
+    _channel_cond = ""
+    _channel_params = []
+    if filters.get('channel'):
+        ch_vals = [v.strip() for v in filters['channel'].split(',') if v.strip()]
+        ch_ph = ','.join(['%s'] * len(ch_vals))
+        _channel_cond = (
+            f" AND EXISTS (SELECT 1 FROM dim_customer _dc "
+            f"  JOIN dim_route _dr ON _dr.sales_org_code = _dc.sales_org_code "
+            f"  WHERE _dc.code = {{alias}}.customer_code AND _dr.code = {{alias}}.route_code "
+            f"  AND TRIM(_dc.channel_code) IN ({ch_ph}))"
+        )
+        _channel_params = ch_vals
+
     def _rsic_filters():
         """Get RSIC filters (without sales_org since RSIC table lacks it)."""
         return _filter_keys(filters, RSIC_KEYS)
@@ -111,11 +157,10 @@ def get_dashboard(
     # TOTAL SALES — primary: rpt_route_sales_by_item_customer (matches MSSQL exactly)
     # rpt_route_sales_summary_by_item has duplicate rows, so we avoid it for totals
     # =========================================================
-    # Total Sales: use rpt_route_sales_summary_by_item when no user filter (matches old dashboard)
-    # Use rpt_route_sales_by_item_customer when user/hierarchy filter is applied (has user_code)
-    _has_user_filter = bool(filters.get('user_code'))
-    if not _has_user_filter:
-        # No user filter — use summary_by_item (matches old dashboard SP exactly)
+    # Total Sales: use rpt_route_sales_summary_by_item when no user/channel filter
+    # Use rpt_route_sales_by_item_customer (RSIC) when user/channel/brand/category filter active
+    if not _use_rsic:
+        # No user/channel filter — use summary_by_item (matches old dashboard SP exactly)
         _sales_keys = ROUTE_SALES_ITEM_KEYS - {'sales_org'}
         f_rssi = _filter_keys(filters, _sales_keys)
         sw_sales, sp_sales = build_where(f_rssi, date_col='date')
@@ -129,16 +174,18 @@ def get_dashboard(
             sp_sales
         )
     else:
-        # User/hierarchy filter — use by_item_customer (has user_code column)
+        # RSIC path: supports user_code, channel, brand, category filters
         f_rsic = _rsic_filters()
         rsicw, rsicp = build_where(f_rsic, date_col='date', prefix='rc')
         join_clause = _rsic_org_join.replace("{alias}", "rc") if _rsic_org_join else ""
+        ch_cond = _channel_cond.replace("{alias}", "rc") if _channel_cond else ""
+        item_cond = _item_filter_cond.replace("{alias}", "rc") if _item_filter_cond else ""
         sales_row = query_one(
             f"SELECT COALESCE(SUM(rc.total_sales),0) AS total_sales, "
             f"  COALESCE(SUM(rc.total_sales),0) AS total_sales_with_tax, "
             f"  COALESCE(SUM(rc.total_gr_sales + rc.total_damage_sales + rc.total_expiry_sales),0) AS total_wastage "
-            f"FROM rpt_route_sales_by_item_customer rc {join_clause}WHERE {rsicw}",
-            _rsic_org_params + rsicp
+            f"FROM rpt_route_sales_by_item_customer rc {join_clause}WHERE {rsicw}{ch_cond}{item_cond}",
+            _rsic_org_params + rsicp + _channel_params + _item_filter_params
         )
     total_sales = round(float(sales_row["total_sales"]), 2) if sales_row else 0
     total_sales_with_tax = round(float(sales_row["total_sales_with_tax"]), 2) if sales_row else 0
@@ -206,7 +253,7 @@ def get_dashboard(
     # =========================================================
     # DAILY SALES TREND — same source as Total Sales KPI
     # =========================================================
-    if not _has_user_filter:
+    if not _use_rsic:
         _daily_keys = ROUTE_SALES_ITEM_KEYS - {'sales_org'}
         f_daily = _filter_keys(filters, _daily_keys)
         sw_daily, sp_daily = build_where(f_daily, date_col='date')
@@ -221,10 +268,13 @@ def get_dashboard(
         f_rsic2 = _rsic_filters()
         rsicw2, rsicp2 = build_where(f_rsic2, date_col='date', prefix='rc')
         join2 = _rsic_org_join.replace("{alias}", "rc") if _rsic_org_join else ""
+        ch_cond2 = _channel_cond.replace("{alias}", "rc") if _channel_cond else ""
+        item_cond2 = _item_filter_cond.replace("{alias}", "rc") if _item_filter_cond else ""
         daily_sales = query(
             f"SELECT rc.date, COALESCE(SUM(rc.total_sales), 0) AS sales "
-            f"FROM rpt_route_sales_by_item_customer rc {join2}WHERE {rsicw2} "
-            f"GROUP BY rc.date ORDER BY rc.date", _rsic_org_params + rsicp2
+            f"FROM rpt_route_sales_by_item_customer rc {join2}WHERE {rsicw2}{ch_cond2}{item_cond2} "
+            f"GROUP BY rc.date ORDER BY rc.date",
+            _rsic_org_params + rsicp2 + _channel_params + _item_filter_params
         )
 
     # Fallback: rpt_invoice_totals
@@ -263,7 +313,7 @@ def get_dashboard(
     # =========================================================
     # WEEK-WISE SALES & COLLECTION
     # =========================================================
-    if not _has_user_filter:
+    if not _use_rsic:
         _weekly_keys = ROUTE_SALES_ITEM_KEYS - {'sales_org'}
         f_weekly = _filter_keys(filters, _weekly_keys)
         sw_weekly, sp_weekly = build_where(f_weekly, date_col='date')
@@ -280,13 +330,16 @@ def get_dashboard(
         f_rsic3 = _rsic_filters()
         rsicw3, rsicp3 = build_where(f_rsic3, date_col='date', prefix='rc')
         join3 = _rsic_org_join.replace("{alias}", "rc") if _rsic_org_join else ""
+        ch_cond3 = _channel_cond.replace("{alias}", "rc") if _channel_cond else ""
+        item_cond3 = _item_filter_cond.replace("{alias}", "rc") if _item_filter_cond else ""
         weekly_sales = query(
             f"SELECT DATE_TRUNC('week', rc.date)::date AS week_start, "
             f"  'W' || EXTRACT(WEEK FROM rc.date)::int AS week_label, "
             f"  COALESCE(SUM(rc.total_sales), 0) AS sales "
-            f"FROM rpt_route_sales_by_item_customer rc {join3}WHERE {rsicw3} "
+            f"FROM rpt_route_sales_by_item_customer rc {join3}WHERE {rsicw3}{ch_cond3}{item_cond3} "
             f"GROUP BY DATE_TRUNC('week', rc.date), EXTRACT(WEEK FROM rc.date) "
-            f"ORDER BY week_start", _rsic_org_params + rsicp3
+            f"ORDER BY week_start",
+            _rsic_org_params + rsicp3 + _channel_params + _item_filter_params
         )
 
     # Fallback: weekly sales from rpt_invoice_totals
@@ -445,7 +498,7 @@ def get_dashboard(
     # =========================================================
     f_rsc_rt = _filter_keys(filters, ROUTE_SC_KEYS)
     rw_c, rp_c = build_where(f_rsc_rt, date_col='date', prefix='c')
-    if not _has_user_filter:
+    if not _use_rsic:
         _rt_keys = ROUTE_SALES_ITEM_KEYS - {'sales_org'}
         f_rt = _filter_keys(filters, _rt_keys)
         sw_rt, sp_rt = build_where(f_rt, date_col='date', prefix='s')
@@ -474,6 +527,8 @@ def get_dashboard(
         f_rsic_rt = _rsic_filters()
         rsicw_rt, rsicp_rt = build_where(f_rsic_rt, date_col='date', prefix='r')
         join_rt = _rsic_org_join.replace("{alias}", "r") if _rsic_org_join else ""
+        ch_cond_rt = _channel_cond.replace("{alias}", "r") if _channel_cond else ""
+        item_cond_rt = _item_filter_cond.replace("{alias}", "r") if _item_filter_cond else ""
         route_sales_target = query(
             f"SELECT COALESCE(s.route_code, c.route_code) AS route_code, "
             f"  COALESCE(s.route_name, c.route_name) AS route_name, "
@@ -485,7 +540,7 @@ def get_dashboard(
             f"    SUM(r.total_sales) AS sales "
             f"  FROM rpt_route_sales_by_item_customer r "
             f"  LEFT JOIN dim_route dr ON r.route_code = dr.code "
-            f"  {join_rt}WHERE {rsicw_rt} "
+            f"  {join_rt}WHERE {rsicw_rt}{ch_cond_rt}{item_cond_rt} "
             f"  GROUP BY r.route_code, COALESCE(dr.name, r.route_code) "
             f") s "
             f"FULL OUTER JOIN ( "
@@ -494,7 +549,7 @@ def get_dashboard(
             f"  GROUP BY c.route_code, c.route_name "
             f") c ON s.route_code = c.route_code "
             f"ORDER BY sales DESC NULLS LAST",
-            _rsic_org_params + rsicp_rt + rp_c
+            _rsic_org_params + rsicp_rt + _channel_params + _item_filter_params + rp_c
         )
 
     # =========================================================

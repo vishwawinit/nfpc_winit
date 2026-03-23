@@ -4,7 +4,7 @@ import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
 import KpiCard from '../components/KpiCard';
 import DataTable from '../components/DataTable';
-import { Banknote, CreditCard, ShoppingCart, Percent, Phone, Target, Receipt } from 'lucide-react';
+import { Banknote, CreditCard, ShoppingCart, Percent, Phone, Receipt, Clock, FileWarning, Wallet } from 'lucide-react';
 
 const aed = (v) => v != null ? `AED ${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-';
 
@@ -32,8 +32,8 @@ export default function DailySalesOverview() {
     return () => { cancelled = true; };
   }, [filters]);
 
+  const callSummary = data?.call_summary || {};
   const sales = data?.sales_details || {};
-  const calls = data?.call_details || {};
   const items = data?.item_table || [];
 
   return (
@@ -61,60 +61,44 @@ export default function DailySalesOverview() {
         <div className="text-center py-16 text-gray-400 font-medium">No data available</div>
       ) : (
         <>
+          {/* Call Summary */}
+          <div>
+            <h2 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Call Summary</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <KpiCard title="Total Calls" value={callSummary.total_calls ?? '-'} color="blue" icon={Phone} variant="light" />
+              <KpiCard title="Prod. Minutes" value={sales.prod_minutes != null ? Number(sales.prod_minutes).toLocaleString('en-US', { maximumFractionDigits: 0 }) : '-'} color="green" icon={Clock} variant="light" />
+              <KpiCard title="Total Inv." value={callSummary.total_invoices ?? '-'} color="purple" icon={Receipt} variant="light" />
+            </div>
+          </div>
+
           {/* Sales Details */}
           <div>
             <h2 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Sales Details</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <KpiCard title="Cash Sales" value={aed(sales.cash_sales)} color="blue" icon={Banknote} variant="solid" />
-              <KpiCard title="Credit Sales" value={aed(sales.credit_sales)} color="green" icon={CreditCard} variant="solid" />
-              <KpiCard title="Total Sales" value={aed(sales.total_sales)} color="purple" icon={ShoppingCart} variant="solid" />
+              <KpiCard title="Cash Sales" value={aed(sales.cash_sales)} color="green" icon={Banknote} variant="solid" />
+              <KpiCard title="Credit Sales" value={aed(sales.credit_sales)} color="indigo" icon={CreditCard} variant="solid" />
+              <KpiCard title="Daily Sales" value={aed(sales.daily_sales)} color="purple" icon={ShoppingCart} variant="solid" />
               <KpiCard title="Discount" value={aed(sales.discount)} color="yellow" icon={Percent} variant="solid" />
+              <KpiCard title="Invoice Short" value={sales.invoice_short ?? '-'} color="orange" icon={FileWarning} variant="light" />
+              <KpiCard title="Total Cash Due" value={aed(sales.total_cash_due)} color="red" icon={Wallet} variant="solid" />
             </div>
           </div>
 
-          {/* Call Details */}
-          <div>
-            <h2 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Call Details</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <KpiCard
-                title="Total Calls"
-                value={calls.total_calls ?? '-'}
-                color="blue"
-                icon={Phone}
-                variant="light"
-              />
-              <KpiCard
-                title="Selling Calls"
-                value={calls.selling_calls ?? '-'}
-                color="green"
-                icon={Target}
-                variant="light"
-                subtitle={calls.total_calls ? `${((calls.selling_calls / calls.total_calls) * 100).toFixed(1)}% strike rate` : undefined}
-              />
-              <KpiCard
-                title="Total Invoices"
-                value={calls.total_invoices ?? '-'}
-                color="purple"
-                icon={Receipt}
-                variant="light"
-              />
-            </div>
-          </div>
-
-          {/* Brand/Item Table */}
+          {/* Item Performance Table */}
           {items.length > 0 && (
             <div>
-              <h2 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Brand Performance</h2>
+              <h2 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Item Performance</h2>
               <DataTable
                 columns={[
-                  { key: 'brand_code', label: 'Brand Code' },
+                  { key: 'item_code', label: 'Item Code' },
+                  { key: 'item_name', label: 'Item Name' },
                   { key: 'brand_name', label: 'Brand' },
                   { key: 'gross_sales', label: 'Gross Sales', format: 'currency' },
                   { key: 'target_sales', label: 'Target', format: 'currency' },
                   { key: 'variance', label: 'Variance', format: 'currency' },
                   { key: 'mtd_gross_sales', label: 'MTD Gross', format: 'currency' },
                   { key: 'mtd_target_sales', label: 'MTD Target', format: 'currency' },
-                  { key: 'mtd_variance', label: 'MTD Variance', format: 'currency' },
+                  { key: 'mtd_wastage', label: 'MTD Wastage', format: 'currency' },
                 ]}
                 data={items}
                 exportName="daily-sales-overview"

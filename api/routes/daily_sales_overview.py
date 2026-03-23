@@ -1,10 +1,11 @@
 """Daily Sales Overview report endpoint.
-Sources:
-  - Sales: rpt_route_sales_by_item_customer (TotalSales, returns breakdown)
-  - Cash/Credit: rpt_sales_detail (deduplicated by trx_code for header-level amounts)
+Sources (matches SP_SalesOverVieweReport_Part2 + V1):
+  - Cash/Credit/Total Sales: rpt_route_sales_by_item_customer + dim_customer
+  - Discount/Invoices: rpt_sales_detail
   - Calls: rpt_coverage_summary
-  - Invoices: rpt_sales_detail (COUNT DISTINCT trx_code)
-  - Brand table: rpt_route_sales_by_item_customer joined to dim_item
+  - Prod. Minutes: rpt_customer_visits (productive only — joined to invoices)
+  - Total Cash Due: rpt_outstanding (pending_amount)
+  - Item table: rpt_route_sales_by_item_customer + dim_item
 """
 from fastapi import APIRouter, Query
 from typing import Optional
@@ -17,12 +18,17 @@ router = APIRouter()
 RSIC_KEYS = {'date_from', 'date_to', 'route', 'user_code'}
 COVERAGE_KEYS = {'date_from', 'date_to', 'sales_org', 'route', 'user_code'}
 SALES_DETAIL_KEYS = {'date_from', 'date_to', 'sales_org', 'route', 'user_code'}
+VISIT_KEYS = {'date_from', 'date_to', 'sales_org', 'route', 'user_code'}
+OUTSTANDING_KEYS = {'date_from', 'date_to', 'route', 'user_code'}
 
 
 def _empty_response():
     return {
-        "sales_details": {"cash_sales": 0, "credit_sales": 0, "total_sales": 0, "discount": 0},
-        "call_details": {"total_calls": 0, "selling_calls": 0, "total_invoices": 0},
+        "call_summary": {"total_calls": 0, "total_invoices": 0},
+        "sales_details": {
+            "prod_minutes": 0, "cash_sales": 0, "credit_sales": 0,
+            "daily_sales": 0, "discount": 0, "invoice_short": 0, "total_cash_due": 0,
+        },
         "item_table": [],
     }
 
@@ -128,19 +134,7 @@ def get_daily_sales_overview(
         item_filter_cond = f" AND r.item_code IN ({i_ph})"
         item_filter_params = i_codes
 
-    # --- Total Sales from rpt_route_sales_summary_by_item (consistent with Dashboard) ---
-    RSSI_KEYS = {'date_from', 'date_to', 'sales_org', 'route', 'user_code', 'item', 'category', 'brand'}
-    f_rssi = {k: v for k, v in filters.items() if k in RSSI_KEYS}
-    sw_s, sp_s = build_where(f_rssi, date_col='date')
-    sales_total_row = query_one(
-        f"SELECT COALESCE(SUM(total_sales),0) AS total_sales "
-        f"FROM (SELECT DISTINCT ON (route_code, item_code, date) total_sales "
-        f"  FROM rpt_route_sales_summary_by_item WHERE {sw_s}) t",
-        sp_s
-    )
-    total_sales = float(sales_total_row["total_sales"]) if sales_total_row else 0
-
-    # Keep org_join for other queries that still use rpt_route_sales_by_item_customer
+    # org_join for queries on rpt_route_sales_by_item_customer
     f_rsic = {k: v for k, v in filters.items() if k in RSIC_KEYS}
     rw, rp = build_where(f_rsic, date_col='date', prefix='r')
     org_join = _rsic_org_join.replace("{alias}", "r") if _rsic_org_join else ""
@@ -164,63 +158,116 @@ def get_daily_sales_overview(
 
     # Cash/Credit: from rpt_route_sales_by_item_customer joined with dim_customer.customer_type
     # Matches MSSQL SP: SUM(CASE WHEN CD.CustomerType='Cash' THEN TotalSales ELSE 0 END)
-    f_rsic_cc = {k: v for k, v in filters.items() if k in RSIC_KEYS}
-    ccw, ccp = build_where(f_rsic_cc, date_col='date', prefix='r')
-    cc_join = _rsic_org_join.replace("{alias}", "r") if _rsic_org_join else ""
-    cash_credit_row = query_one(
-        f"SELECT "
-        f"  COALESCE(SUM(CASE WHEN dc.customer_type = 'Cash' THEN r.total_sales ELSE 0 END), 0) AS cash_sales, "
-        f"  COALESCE(SUM(CASE WHEN dc.customer_type = 'Credit' THEN r.total_sales ELSE 0 END), 0) AS credit_sales "
-        f"FROM rpt_route_sales_by_item_customer r "
-        f"JOIN dim_route dr ON r.route_code = dr.code "
-        f"JOIN dim_customer dc ON r.customer_code = dc.code AND dc.sales_org_code = dr.sales_org_code "
-        f"{cc_join}"
-        f"WHERE {ccw}",
-        _rsic_org_params + ccp
-    )
-    cash_sales = float(cash_credit_row["cash_sales"]) if cash_credit_row else 0
-    credit_sales = float(cash_credit_row["credit_sales"]) if cash_credit_row else 0
+    try:
+        f_rsic_cc = {k: v for k, v in filters.items() if k in RSIC_KEYS}
+        ccw, ccp = build_where(f_rsic_cc, date_col='date', prefix='r')
+        cc_join = _rsic_org_join.replace("{alias}", "r") if _rsic_org_join else ""
+        cash_credit_row = query_one(
+            f"SELECT "
+            f"  COALESCE(SUM(CASE WHEN dc.customer_type = 'Cash' THEN r.total_sales ELSE 0 END), 0) AS cash_sales, "
+            f"  COALESCE(SUM(CASE WHEN dc.customer_type = 'Credit' THEN r.total_sales ELSE 0 END), 0) AS credit_sales "
+            f"FROM rpt_route_sales_by_item_customer r "
+            f"JOIN dim_route dr ON r.route_code = dr.code "
+            f"JOIN dim_customer dc ON r.customer_code = dc.code AND dc.sales_org_code = dr.sales_org_code "
+            f"{cc_join}"
+            f"WHERE {ccw}",
+            _rsic_org_params + ccp
+        )
+        cash_sales = float(cash_credit_row["cash_sales"]) if cash_credit_row else 0
+        credit_sales = float(cash_credit_row["credit_sales"]) if cash_credit_row else 0
+    except Exception:
+        cash_sales = 0
+        credit_sales = 0
+    # SP Part2: Daily Sales = Cash + Credit (both from rpt_route_sales_by_item_customer)
+    total_sales = cash_sales + credit_sales
 
     # Discount: SUM of line-level discounts (dedup by trx_code+line_no to avoid ETL duplicates)
     # SUM of all detail discounts per trx = header TotalDiscountAmount
     # trx_type IN (1,4) AND trx_status=200 (matches SP)
-    disc_row = query_one(
-        f"SELECT COALESCE(SUM(discount_amount), 0) AS discount "
-        f"FROM (SELECT DISTINCT trx_code, line_no, discount_amount FROM rpt_sales_detail "
-        f"  WHERE trx_type IN (1, 4) AND trx_status = 200 AND {sw}{extra_where}) t",
-        sp + extra_params
-    )
-    discount = float(disc_row["discount"]) if disc_row else 0
+    try:
+        disc_row = query_one(
+            f"SELECT COALESCE(SUM(discount_amount), 0) AS discount "
+            f"FROM (SELECT DISTINCT trx_code, line_no, discount_amount FROM rpt_sales_detail "
+            f"  WHERE trx_type IN (1, 4) AND trx_status = 200 AND {sw}{extra_where}) t",
+            sp + extra_params
+        )
+        discount = float(disc_row["discount"]) if disc_row else 0
+    except Exception:
+        discount = 0
 
-    sales_details = {
-        "cash_sales": round(cash_sales, 2),
-        "credit_sales": round(credit_sales, 2),
-        "total_sales": round(total_sales, 2),
-        "discount": round(discount, 2),
+    # --- Call Summary: Total Calls (rpt_coverage_summary) + Total Invoices (rpt_sales_detail) ---
+    # Matches SP Part2: Call Summary section
+    try:
+        f_cov = {k: v for k, v in filters.items() if k in COVERAGE_KEYS}
+        cw, cp = build_where(f_cov, date_col='visit_date')
+        call_row = query_one(
+            f"SELECT COALESCE(SUM(total_actual_calls), 0) AS total_calls "
+            f"FROM rpt_coverage_summary WHERE {cw}", cp
+        )
+        total_calls = int(call_row["total_calls"]) if call_row else 0
+    except Exception:
+        total_calls = 0
+
+    try:
+        inv_row = query_one(
+            f"SELECT COUNT(DISTINCT trx_code) AS total_invoices "
+            f"FROM rpt_sales_detail "
+            f"WHERE trx_type IN (1, 4) AND trx_status = 200 AND {sw}{extra_where}",
+            sp + extra_params
+        )
+        total_invoices = int(inv_row["total_invoices"]) if inv_row else 0
+    except Exception:
+        total_invoices = 0
+
+    call_summary = {
+        "total_calls": total_calls,
+        "total_invoices": total_invoices,
     }
 
-    # --- Call Details from rpt_coverage_summary ---
-    f_cov = {k: v for k, v in filters.items() if k in COVERAGE_KEYS}
-    cw, cp = build_where(f_cov, date_col='visit_date')
-    call_row = query_one(
-        f"SELECT "
-        f"  COALESCE(SUM(total_actual_calls), 0) AS total_calls, "
-        f"  COALESCE(SUM(selling_calls), 0) AS selling_calls "
-        f"FROM rpt_coverage_summary WHERE {cw}", cp
-    )
+    # --- Prod. Minutes: SUM(total_time_mins) for productive visits (visits with invoices) ---
+    # Matches SP Part2: join tblCustomerVisit with tblTrxHeader on ClientCode+UserCode+VisitDate
+    try:
+        f_vis = {k: v for k, v in filters.items() if k in VISIT_KEYS}
+        vw, vp = build_where(f_vis, date_col='date', prefix='cv')
+        prod_min_row = query_one(
+            f"SELECT COALESCE(SUM(cv.total_time_mins), 0) AS prod_minutes "
+            f"FROM rpt_customer_visits cv "
+            f"WHERE {vw} "
+            f"AND EXISTS ("
+            f"  SELECT 1 FROM rpt_sales_detail sd "
+            f"  WHERE sd.visit_code = cv.visit_id "
+            f"  AND sd.user_code = cv.user_code "
+            f"  AND sd.trx_type IN (1, 4) AND sd.trx_status = 200"
+            f")",
+            vp
+        )
+        prod_minutes = float(prod_min_row["prod_minutes"]) if prod_min_row else 0
+    except Exception:
+        prod_minutes = 0
 
-    # Total invoices: trx_type IN (1,4) AND trx_status=200 (matches SP)
-    inv_row = query_one(
-        f"SELECT COUNT(DISTINCT trx_code) AS total_invoices "
-        f"FROM rpt_sales_detail "
-        f"WHERE trx_type IN (1, 4) AND trx_status = 200 AND {sw}{extra_where}",
-        sp + extra_params
-    )
+    # --- Total Cash Due: SUM(pending_amount) from rpt_outstanding ---
+    # Matches SP Part2: tblMiddlewarePendingInvoice.PendingAmount by date range
+    try:
+        f_out = {k: v for k, v in filters.items() if k in OUTSTANDING_KEYS}
+        ow, op = build_where(f_out, date_col='trx_date')
+        cash_due_row = query_one(
+            f"SELECT COALESCE(SUM(pending_amount), 0) AS total_cash_due "
+            f"FROM rpt_outstanding WHERE {ow}",
+            op
+        )
+        total_cash_due = float(cash_due_row["total_cash_due"]) if cash_due_row else 0
+    except Exception:
+        total_cash_due = 0
 
-    call_details = {
-        "total_calls": int(call_row["total_calls"]) if call_row else 0,
-        "selling_calls": int(call_row["selling_calls"]) if call_row else 0,
-        "total_invoices": int(inv_row["total_invoices"]) if inv_row else 0,
+    # invoice_short: SP Part2 sets @InvoiceShort = COUNT(1) same as @TotalInvoice
+    sales_details = {
+        "prod_minutes": round(prod_minutes, 2),
+        "cash_sales": round(cash_sales, 2),
+        "credit_sales": round(credit_sales, 2),
+        "daily_sales": round(total_sales, 2),
+        "discount": round(discount, 2),
+        "invoice_short": total_invoices,
+        "total_cash_due": round(total_cash_due, 2),
     }
 
     # --- Item Table from rpt_route_sales_by_item_customer + dim_item ---
@@ -241,38 +288,35 @@ def get_daily_sales_overview(
               'date_from': mtd_start, 'date_to': mtd_end}.items() if k in RSIC_KEYS}
     mw, mp = build_where(f_mtd, date_col='date', prefix='r')
 
-    item_table = query(
-        f"SELECT "
-        f"  r.item_code, "
-        f"  COALESCE(di.name, r.item_code) AS item_name, "
-        f"  TRIM(di.brand_code) AS brand_code, "
-        f"  COALESCE(di.brand_name, di.brand_code) AS brand_name, "
-        f"  di.category_code, "
-        f"  COALESCE(di.category_name, di.category_code) AS category_name, "
-        f"  ROUND(SUM(CASE WHEN r.date BETWEEN %s AND %s THEN r.total_sales ELSE 0 END)::numeric, 2) AS gross_sales, "
-        f"  0 AS target_sales, "
-        f"  ROUND(SUM(CASE WHEN r.date BETWEEN %s AND %s THEN r.total_sales ELSE 0 END)::numeric, 2) AS mtd_gross_sales, "
-        f"  0 AS mtd_target_sales, "
-        f"  ROUND(SUM(CASE WHEN r.date BETWEEN %s AND %s "
-        f"    THEN COALESCE(r.total_gr_sales,0) + COALESCE(r.total_damage_sales,0) + COALESCE(r.total_expiry_sales,0) "
-        f"    ELSE 0 END)::numeric, 2) AS mtd_wastage "
-        f"FROM rpt_route_sales_by_item_customer r "
-        f"LEFT JOIN dim_item di ON r.item_code = di.code "
-        f"{org_join}"
-        f"WHERE ({rw2} OR {mw}){channel_cond}{item_filter_cond} "
-        f"GROUP BY r.item_code, COALESCE(di.name, r.item_code), "
-        f"  TRIM(di.brand_code), COALESCE(di.brand_name, di.brand_code), "
-        f"  di.category_code, COALESCE(di.category_name, di.category_code) "
-        f"ORDER BY gross_sales DESC",
-        [date_from, date_to, mtd_start, mtd_end, mtd_start, mtd_end] + _rsic_org_params + rp2 + mp + channel_params + item_filter_params
-    )
-
-    for row in item_table:
-        row["variance"] = float(row["gross_sales"])
-        row["mtd_variance"] = float(row["mtd_gross_sales"])
+    try:
+        item_table = query(
+            f"SELECT "
+            f"  r.item_code, "
+            f"  COALESCE(di.name, r.item_code) AS item_name, "
+            f"  TRIM(COALESCE(di.brand_code, '')) AS brand_code, "
+            f"  COALESCE(di.brand_name, di.brand_code, '') AS brand_name, "
+            f"  ROUND(SUM(CASE WHEN r.date BETWEEN %s AND %s THEN r.total_sales ELSE 0 END)::numeric, 2) AS gross_sales, "
+            f"  0 AS target_sales, "
+            f"  0 AS variance, "
+            f"  ROUND(SUM(CASE WHEN r.date BETWEEN %s AND %s THEN r.total_sales ELSE 0 END)::numeric, 2) AS mtd_gross_sales, "
+            f"  0 AS mtd_target_sales, "
+            f"  ROUND(SUM(CASE WHEN r.date BETWEEN %s AND %s "
+            f"    THEN COALESCE(r.total_gr_sales,0) + COALESCE(r.total_damage_sales,0) + COALESCE(r.total_expiry_sales,0) "
+            f"    ELSE 0 END)::numeric, 2) AS mtd_wastage "
+            f"FROM rpt_route_sales_by_item_customer r "
+            f"LEFT JOIN dim_item di ON r.item_code = di.code "
+            f"{org_join}"
+            f"WHERE ({rw2} OR {mw}){channel_cond}{item_filter_cond} "
+            f"GROUP BY r.item_code, COALESCE(di.name, r.item_code), "
+            f"  TRIM(COALESCE(di.brand_code, '')), COALESCE(di.brand_name, di.brand_code, '') "
+            f"ORDER BY gross_sales DESC",
+            [date_from, date_to, mtd_start, mtd_end, mtd_start, mtd_end] + _rsic_org_params + rp2 + mp + channel_params + item_filter_params
+        )
+    except Exception:
+        item_table = []
 
     return {
+        "call_summary": call_summary,
         "sales_details": sales_details,
-        "call_details": call_details,
         "item_table": item_table,
     }
