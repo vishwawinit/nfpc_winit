@@ -154,7 +154,7 @@ def get_depots(sales_org: str = None, asm: str = None, hos: str = None):
 
 @router.get("/filters/supervisors")
 def get_supervisors(sales_org: str = None, asm: str = None, hos: str = None):
-    """Supervisors. Uses recursive subordinate lookup under HOS/ASM."""
+    """Supervisors. Uses recursive subordinate lookup. Sales org uses dim_user_details."""
     sup_ph = ','.join(['%s'] * len(ROLE_CODES_SUPERVISOR))
     conditions = [f"role_code IN ({sup_ph})", "is_active = true"]
     params = list(ROLE_CODES_SUPERVISOR)
@@ -167,7 +167,10 @@ def get_supervisors(sales_org: str = None, asm: str = None, hos: str = None):
             _in_clause("code", list(all_subs_set), conditions, params)
 
     if sales_org:
-        _in_clause("sales_org_code", _split(sales_org), conditions, params)
+        orgs = _split(sales_org)
+        org_ph = ','.join(['%s'] * len(orgs))
+        conditions.append(f"code IN (SELECT DISTINCT user_code FROM dim_user_details WHERE sales_org_code IN ({org_ph}))")
+        params.extend(orgs)
 
     where = " AND ".join(conditions)
     return query(f"SELECT code, name FROM dim_user WHERE {where} ORDER BY name", params)
@@ -175,7 +178,7 @@ def get_supervisors(sales_org: str = None, asm: str = None, hos: str = None):
 
 @router.get("/filters/users")
 def get_users(sales_org: str = None, supervisor: str = None, depot: str = None, asm: str = None, hos: str = None):
-    """Salesmen only. Uses recursive subordinate lookup for hierarchy filters."""
+    """Salesmen only. Uses recursive subordinate lookup. Sales org uses dim_user_details."""
     salesman_ph = ','.join(['%s'] * len(ROLE_CODES_SALESMAN))
     conditions = ["is_active = true", f"role_code IN ({salesman_ph})"]
     params = list(ROLE_CODES_SALESMAN)
@@ -191,7 +194,10 @@ def get_users(sales_org: str = None, supervisor: str = None, depot: str = None, 
         _in_clause("depot_code", _split(depot), conditions, params)
 
     if sales_org:
-        _in_clause("sales_org_code", _split(sales_org), conditions, params)
+        orgs = _split(sales_org)
+        org_ph = ','.join(['%s'] * len(orgs))
+        conditions.append(f"code IN (SELECT DISTINCT user_code FROM dim_user_details WHERE sales_org_code IN ({org_ph}))")
+        params.extend(orgs)
 
     where = " AND ".join(conditions)
     return query(f"SELECT code, name FROM dim_user WHERE {where} ORDER BY name", params)
