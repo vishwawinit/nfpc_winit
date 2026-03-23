@@ -81,6 +81,10 @@ def get_dashboard(
                 return _empty_response()
             filters['user_code'] = ','.join(intersected)
 
+    # No user role filter for sales — old dashboard SP uses LEFT JOIN (includes all users)
+    _rsic_user_join = ""
+    _rsic_user_params = []
+
     # When sales_org is set, build a JOIN clause for RSIC tables (which lack sales_org_code)
     _rsic_org_join = ""
     _rsic_org_params = []
@@ -107,17 +111,23 @@ def get_dashboard(
     # TOTAL SALES — primary: rpt_route_sales_by_item_customer (matches MSSQL exactly)
     # rpt_route_sales_summary_by_item has duplicate rows, so we avoid it for totals
     # =========================================================
-    f_rsic = _rsic_filters()
-    rsicw, rsicp = build_where(f_rsic, date_col='date', prefix='rc')
-    join_clause = _rsic_org_join.replace("{alias}", "rc") if _rsic_org_join else ""
+    # Total Sales from rpt_route_sales_summary_by_item (matches old dashboard SP exactly)
+    # Old dashboard SP uses LEFT JOIN on routes — sales_org does NOT filter sales total
+    # Uses DISTINCT ON to dedup (table has duplicate rows)
+    _sales_keys = ROUTE_SALES_ITEM_KEYS - {'sales_org'}  # sales_org doesn't filter sales in old SP
+    f_rssi = _filter_keys(filters, _sales_keys)
+    sw_sales, sp_sales = build_where(f_rssi, date_col='date')
     sales_row = query_one(
-        f"SELECT COALESCE(SUM(rc.total_sales),0) AS total_sales, "
-        f"  COALESCE(SUM(rc.total_gr_sales + rc.total_damage_sales + rc.total_expiry_sales),0) AS total_wastage "
-        f"FROM rpt_route_sales_by_item_customer rc {join_clause}WHERE {rsicw}",
-        _rsic_org_params + rsicp
+        f"SELECT COALESCE(SUM(total_sales),0) AS total_sales, "
+        f"  COALESCE(SUM(total_sales_with_tax),0) AS total_sales_with_tax, "
+        f"  COALESCE(SUM(total_wastage),0) AS total_wastage "
+        f"FROM (SELECT DISTINCT ON (route_code, item_code, date) "
+        f"  total_sales, total_sales_with_tax, total_wastage "
+        f"  FROM rpt_route_sales_summary_by_item WHERE {sw_sales}) t",
+        sp_sales
     )
     total_sales = float(sales_row["total_sales"]) if sales_row else 0
-    total_sales_with_tax = total_sales  # same source, tax included
+    total_sales_with_tax = float(sales_row["total_sales_with_tax"]) if sales_row else 0
     total_wastage = float(sales_row["total_wastage"]) if sales_row else 0
 
     # Fallback: rpt_invoice_totals
@@ -185,10 +195,11 @@ def get_dashboard(
     f_rsic2 = _rsic_filters()
     rsicw2, rsicp2 = build_where(f_rsic2, date_col='date', prefix='rc')
     join2 = _rsic_org_join.replace("{alias}", "rc") if _rsic_org_join else ""
+    ujoin2 = _rsic_user_join.replace("{alias}", "rc") if _rsic_user_join else ""
     daily_sales = query(
         f"SELECT rc.date, COALESCE(SUM(rc.total_sales), 0) AS sales "
-        f"FROM rpt_route_sales_by_item_customer rc {join2}WHERE {rsicw2} "
-        f"GROUP BY rc.date ORDER BY rc.date", _rsic_org_params + rsicp2
+        f"FROM rpt_route_sales_by_item_customer rc {ujoin2}{join2}WHERE {rsicw2} "
+        f"GROUP BY rc.date ORDER BY rc.date", _rsic_user_params + _rsic_org_params + rsicp2
     )
 
     # Fallback: rpt_invoice_totals
@@ -230,13 +241,14 @@ def get_dashboard(
     f_rsic3 = _rsic_filters()
     rsicw3, rsicp3 = build_where(f_rsic3, date_col='date', prefix='rc')
     join3 = _rsic_org_join.replace("{alias}", "rc") if _rsic_org_join else ""
+    ujoin3 = _rsic_user_join.replace("{alias}", "rc") if _rsic_user_join else ""
     weekly_sales = query(
         f"SELECT DATE_TRUNC('week', rc.date)::date AS week_start, "
         f"  'W' || EXTRACT(WEEK FROM rc.date)::int AS week_label, "
         f"  COALESCE(SUM(rc.total_sales), 0) AS sales "
-        f"FROM rpt_route_sales_by_item_customer rc {join3}WHERE {rsicw3} "
+        f"FROM rpt_route_sales_by_item_customer rc {ujoin3}{join3}WHERE {rsicw3} "
         f"GROUP BY DATE_TRUNC('week', rc.date), EXTRACT(WEEK FROM rc.date) "
-        f"ORDER BY week_start", _rsic_org_params + rsicp3
+        f"ORDER BY week_start", _rsic_user_params + _rsic_org_params + rsicp3
     )
 
     # Fallback: weekly sales from rpt_invoice_totals
@@ -412,6 +424,7 @@ def get_dashboard(
         f"    SUM(r.total_sales) AS sales "
         f"  FROM rpt_route_sales_by_item_customer r "
         f"  LEFT JOIN dim_route dr ON r.route_code = dr.code "
+        f"  {_rsic_user_join.replace('{alias}', 'r') if _rsic_user_join else ''}"
         f"  {join_rt}"
         f"  WHERE {rsicw_rt} "
         f"  GROUP BY r.route_code, COALESCE(dr.name, r.route_code) "
@@ -422,7 +435,7 @@ def get_dashboard(
         f"  GROUP BY c.route_code, c.route_name "
         f") c ON s.route_code = c.route_code "
         f"ORDER BY sales DESC NULLS LAST",
-        _rsic_org_params + rsicp_rt + rp_c
+        _rsic_user_params + _rsic_org_params + rsicp_rt + rp_c
     )
 
     # =========================================================
