@@ -190,16 +190,17 @@ def get_dashboard(
         total_target = float(tgt_row2["target"]) if tgt_row2 else 0
 
     # =========================================================
-    # DAILY SALES TREND — primary: rpt_route_sales_by_item_customer
+    # DAILY SALES TREND — from rpt_route_sales_summary_by_item (same source as Total Sales KPI)
     # =========================================================
-    f_rsic2 = _rsic_filters()
-    rsicw2, rsicp2 = build_where(f_rsic2, date_col='date', prefix='rc')
-    join2 = _rsic_org_join.replace("{alias}", "rc") if _rsic_org_join else ""
-    ujoin2 = _rsic_user_join.replace("{alias}", "rc") if _rsic_user_join else ""
+    _daily_keys = ROUTE_SALES_ITEM_KEYS - {'sales_org'}
+    f_daily = _filter_keys(filters, _daily_keys)
+    sw_daily, sp_daily = build_where(f_daily, date_col='date')
     daily_sales = query(
-        f"SELECT rc.date, COALESCE(SUM(rc.total_sales), 0) AS sales "
-        f"FROM rpt_route_sales_by_item_customer rc {ujoin2}{join2}WHERE {rsicw2} "
-        f"GROUP BY rc.date ORDER BY rc.date", _rsic_user_params + _rsic_org_params + rsicp2
+        f"SELECT date, COALESCE(SUM(total_sales), 0) AS sales "
+        f"FROM (SELECT DISTINCT ON (route_code, item_code, date) date, total_sales "
+        f"  FROM rpt_route_sales_summary_by_item WHERE {sw_daily}) t "
+        f"GROUP BY date ORDER BY date",
+        sp_daily
     )
 
     # Fallback: rpt_invoice_totals
@@ -238,17 +239,17 @@ def get_dashboard(
     # =========================================================
     # WEEK-WISE SALES & COLLECTION
     # =========================================================
-    f_rsic3 = _rsic_filters()
-    rsicw3, rsicp3 = build_where(f_rsic3, date_col='date', prefix='rc')
-    join3 = _rsic_org_join.replace("{alias}", "rc") if _rsic_org_join else ""
-    ujoin3 = _rsic_user_join.replace("{alias}", "rc") if _rsic_user_join else ""
+    _weekly_keys = ROUTE_SALES_ITEM_KEYS - {'sales_org'}
+    f_weekly = _filter_keys(filters, _weekly_keys)
+    sw_weekly, sp_weekly = build_where(f_weekly, date_col='date')
     weekly_sales = query(
-        f"SELECT DATE_TRUNC('week', rc.date)::date AS week_start, "
-        f"  'W' || EXTRACT(WEEK FROM rc.date)::int AS week_label, "
-        f"  COALESCE(SUM(rc.total_sales), 0) AS sales "
-        f"FROM rpt_route_sales_by_item_customer rc {ujoin3}{join3}WHERE {rsicw3} "
-        f"GROUP BY DATE_TRUNC('week', rc.date), EXTRACT(WEEK FROM rc.date) "
-        f"ORDER BY week_start", _rsic_user_params + _rsic_org_params + rsicp3
+        f"SELECT DATE_TRUNC('week', date)::date AS week_start, "
+        f"  'W' || EXTRACT(WEEK FROM date)::int AS week_label, "
+        f"  COALESCE(SUM(total_sales), 0) AS sales "
+        f"FROM (SELECT DISTINCT ON (route_code, item_code, date) date, total_sales "
+        f"  FROM rpt_route_sales_summary_by_item WHERE {sw_weekly}) t "
+        f"GROUP BY DATE_TRUNC('week', date), EXTRACT(WEEK FROM date) "
+        f"ORDER BY week_start", sp_weekly
     )
 
     # Fallback: weekly sales from rpt_invoice_totals
