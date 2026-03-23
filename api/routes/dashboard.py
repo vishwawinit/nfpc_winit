@@ -405,13 +405,12 @@ def get_dashboard(
 
     # =========================================================
     # ROUTE-WISE SALES VS COLLECTION
-    # Matches: sp_GetSalesmanWiseCollection_Dashboard_Reports_By_Item
-    # Sales from tblRouteSalesSummaryByItem, Collection from tblRouteSalesCollectionSummary
+    # Sales from rpt_route_sales_summary_by_item (consistent with Total Sales KPI)
+    # Collection from rpt_route_sales_collection
     # =========================================================
-    # Route-wise: sales from rpt_route_sales_by_item_customer, collection from rpt_route_sales_collection
-    f_rsic_rt = _rsic_filters()
-    rsicw_rt, rsicp_rt = build_where(f_rsic_rt, date_col='date', prefix='r')
-    join_rt = _rsic_org_join.replace("{alias}", "r") if _rsic_org_join else ""
+    _rt_keys = ROUTE_SALES_ITEM_KEYS - {'sales_org'}
+    f_rt = _filter_keys(filters, _rt_keys)
+    sw_rt, sp_rt = build_where(f_rt, date_col='date', prefix='s')
     f_rsc_rt = _filter_keys(filters, ROUTE_SC_KEYS)
     rw_c, rp_c = build_where(f_rsc_rt, date_col='date', prefix='c')
     route_sales_target = query(
@@ -419,16 +418,13 @@ def get_dashboard(
         f"  COALESCE(s.route_name, c.route_name) AS route_name, "
         f"  COALESCE(s.sales, 0) AS sales, "
         f"  COALESCE(c.collection, 0) AS collection, "
-        f"  0 AS target "
+        f"  COALESCE(s.target, 0) AS target "
         f"FROM ( "
-        f"  SELECT r.route_code, COALESCE(dr.name, r.route_code) AS route_name, "
-        f"    SUM(r.total_sales) AS sales "
-        f"  FROM rpt_route_sales_by_item_customer r "
-        f"  LEFT JOIN dim_route dr ON r.route_code = dr.code "
-        f"  {_rsic_user_join.replace('{alias}', 'r') if _rsic_user_join else ''}"
-        f"  {join_rt}"
-        f"  WHERE {rsicw_rt} "
-        f"  GROUP BY r.route_code, COALESCE(dr.name, r.route_code) "
+        f"  SELECT route_code, route_name, SUM(total_sales) AS sales, SUM(target_amount) AS target "
+        f"  FROM (SELECT DISTINCT ON (route_code, item_code, date) "
+        f"    route_code, route_name, total_sales, target_amount "
+        f"    FROM rpt_route_sales_summary_by_item s WHERE {sw_rt}) t "
+        f"  GROUP BY route_code, route_name "
         f") s "
         f"FULL OUTER JOIN ( "
         f"  SELECT c.route_code, c.route_name, SUM(c.total_collection) AS collection "
@@ -436,7 +432,7 @@ def get_dashboard(
         f"  GROUP BY c.route_code, c.route_name "
         f") c ON s.route_code = c.route_code "
         f"ORDER BY sales DESC NULLS LAST",
-        _rsic_user_params + _rsic_org_params + rsicp_rt + rp_c
+        sp_rt + rp_c
     )
 
     # =========================================================
