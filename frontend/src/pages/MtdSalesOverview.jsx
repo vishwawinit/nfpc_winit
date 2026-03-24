@@ -94,14 +94,13 @@ export default function MtdSalesOverview() {
               columns={[
                 { key: 'date', label: 'Date' },
                 { key: 'day_name', label: 'Day' },
-                { key: 'cash_sales', label: 'Cash Sales', format: 'currency' },
-                { key: 'credit_sales', label: 'Credit Sales', format: 'currency' },
+                { key: 'cash_sales', label: 'Cash Cust Sales', format: 'currency' },
+                { key: 'credit_sales', label: 'Credit Cust Sales', format: 'currency' },
+                { key: 'bill_to_bill_sales', label: 'Bill To Bill Cust Sales', format: 'currency' },
                 { key: 'total_sales', label: 'Total Sales', format: 'currency' },
                 { key: 'target', label: 'Target', format: 'currency' },
                 { key: 'daily_var', label: 'Daily Var', format: 'currency' },
-                { key: 'daily_var_pct', label: 'Var %', format: 'percent' },
-                { key: 'cumulative_sales', label: 'Cum. Sales', format: 'currency' },
-                { key: 'cumulative_target', label: 'Cum. Target', format: 'currency' },
+                { key: 'daily_var_pct', label: 'Daily Var (%)', format: 'percent' },
               ]}
               data={daily}
               exportName="mtd-sales-overview"

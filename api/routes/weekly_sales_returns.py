@@ -151,8 +151,141 @@ def get_weekly_sales_returns(
     }
 
 
+@router.get("/weekly-sales-returns/order-items")
+def get_order_items(order_no: str):
+    rows = query(
+        "SELECT DISTINCT ON (sd.line_no, sd.item_code) "
+        "  sd.line_no, sd.item_code, sd.item_name, "
+        "  COALESCE(TRIM(di.brand_name), sd.brand_name) AS brand_name, "
+        "  COALESCE(di.category_name, sd.category_name) AS category_name, "
+        "  sd.qty_cases, sd.qty_pieces, sd.base_price, "
+        "  sd.gross_amount, sd.discount_amount, "
+        "  (sd.gross_amount - sd.discount_amount) AS net_amount "
+        "FROM rpt_sales_detail sd "
+        "LEFT JOIN dim_item di ON di.code = sd.item_code "
+        "WHERE sd.trx_code = %s "
+        "ORDER BY sd.line_no, sd.item_code",
+        [order_no]
+    )
+    return [
+        {
+            "line_no": r["line_no"],
+            "item_code": r["item_code"],
+            "item_name": r["item_name"],
+            "brand": r["brand_name"] or "",
+            "category": r["category_name"] or "",
+            "qty_cases": float(r["qty_cases"]) if r["qty_cases"] else 0,
+            "qty_pieces": float(r["qty_pieces"]) if r["qty_pieces"] else 0,
+            "base_price": float(r["base_price"]) if r["base_price"] else 0,
+            "gross_amount": float(r["gross_amount"]) if r["gross_amount"] else 0,
+            "discount_amount": float(r["discount_amount"]) if r["discount_amount"] else 0,
+            "net_amount": float(r["net_amount"]) if r["net_amount"] else 0,
+        }
+        for r in rows
+    ]
+
+
 def _empty():
     return {
         "weekly_data": [],
         "totals": {"total_sales": 0, "total_returns": 0, "net_amount": 0, "return_pct": 0},
     }
+
+
+@router.get("/weekly-sales-returns/orders")
+def get_order_details(
+    sales_org: Optional[str] = None,
+    user_code: Optional[str] = None,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    customer: Optional[str] = None,
+    route: Optional[str] = None,
+    channel: Optional[str] = None,
+    category: Optional[str] = None,
+    brand: Optional[str] = None,
+    hos: Optional[str] = None,
+    asm: Optional[str] = None,
+    depot: Optional[str] = None,
+    supervisor: Optional[str] = None,
+):
+    # Resolve hierarchy
+    _hier = {k: v for k, v in {'hos': hos, 'depot': depot, 'supervisor': supervisor, 'asm': asm}.items() if v}
+    if _hier:
+        resolved = resolve_user_codes(_hier)
+        if resolved == "__NO_MATCH__":
+            return []
+        elif resolved:
+            if user_code:
+                existing = set(user_code.split(','))
+                intersected = existing & set(resolved.split(','))
+                user_code = ','.join(intersected) if intersected else "__NO_MATCH__"
+            else:
+                user_code = resolved
+
+    if user_code == "__NO_MATCH__":
+        return []
+
+    today = date.today()
+    d_from = date_from or date(today.year, today.month, 1)
+    d_to = date_to or today
+
+    f = {k: v for k, v in {
+        'route': route, 'user_code': user_code, 'customer': customer,
+        'date_from': d_from, 'date_to': d_to,
+        'channel': channel, 'brand': brand, 'category': category,
+    }.items() if v is not None}
+
+    whr, prms = build_where(f, date_col='trx_date', prefix='sd')
+
+    org_cond = ""
+    org_params = []
+    if sales_org:
+        orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
+        org_ph = ','.join(['%s'] * len(orgs))
+        org_cond = f" AND sd.sales_org_code IN ({org_ph})"
+        org_params = orgs
+
+    rows = query(
+        f"SELECT "
+        f"  sd.trx_code AS order_no, "
+        f"  MAX(sd.user_name) AS salesman, "
+        f"  TRIM(MAX(sd.customer_name)) AS customer, "
+        f"  MAX(sd.trx_date) AS order_date, "
+        f"  MAX(sd.route_name) AS route, "
+        f"  ROUND(SUM(sd.qty_cases)::numeric, 0) AS qty_cases, "
+        f"  ROUND(SUM(sd.qty_pieces)::numeric, 0) AS qty_pieces, "
+        f"  ROUND(SUM(sd.gross_amount)::numeric, 2) AS gross_amount, "
+        f"  ROUND(SUM(sd.discount_amount)::numeric, 2) AS discount_amount, "
+        f"  ROUND(SUM(sd.net_amount)::numeric, 2) AS net_amount, "
+        f"  CASE "
+        f"    WHEN MAX(sd.trx_type) IN (1,3,5) AND MAX(sd.trx_status) = 200 THEN 'Delivered' "
+        f"    WHEN MAX(sd.trx_type) IN (1,3,5) AND MAX(sd.trx_status) = 100 THEN 'Pending' "
+        f"    WHEN MAX(sd.trx_type) = 4 AND MAX(sd.trx_status) = 200 THEN 'Approved' "
+        f"    WHEN MAX(sd.trx_type) = 4 AND MAX(sd.trx_status) = 400 THEN 'Pending' "
+        f"    WHEN MAX(sd.trx_type) = 4 AND MAX(sd.trx_status) = 500 THEN 'Collected' "
+        f"    WHEN MAX(sd.trx_status) = -100 THEN 'Rejected' "
+        f"    ELSE 'Unknown' "
+        f"  END AS action "
+        f"FROM rpt_sales_detail sd "
+        f"WHERE {whr}{org_cond} AND sd.trx_type IN (1,3,4,5) "
+        f"GROUP BY sd.trx_code "
+        f"ORDER BY MAX(sd.trx_date) DESC",
+        prms + org_params
+    )
+
+    return [
+        {
+            "order_no": r["order_no"],
+            "salesman": r["salesman"],
+            "customer": r["customer"],
+            "order_date": str(r["order_date"]),
+            "route": r["route"],
+            "qty_cases": int(r["qty_cases"]) if r["qty_cases"] else 0,
+            "qty_pieces": int(r["qty_pieces"]) if r["qty_pieces"] else 0,
+            "gross_amount": float(r["gross_amount"]) if r["gross_amount"] else 0,
+            "discount_amount": float(r["discount_amount"]) if r["discount_amount"] else 0,
+            "net_amount": float(r["net_amount"]) if r["net_amount"] else 0,
+            "action": r["action"],
+        }
+        for r in rows
+    ]

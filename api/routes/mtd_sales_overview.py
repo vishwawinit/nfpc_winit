@@ -66,23 +66,17 @@ def get_mtd_sales_overview(
         _org_join = f"JOIN dim_route _dr ON r.route_code = _dr.code AND _dr.sales_org_code IN ({org_ph}) "
         _org_params = orgs
 
-    # Channel filter: resolve to customer_codes
+    # Channel filter: applied via EXISTS on dim_customer
     channel_cond = ""
     channel_params = []
     if channel:
         ch_vals = [v.strip() for v in channel.split(',') if v.strip()]
         ch_ph = ','.join(['%s'] * len(ch_vals))
-        cust_rows = query(
-            f"SELECT DISTINCT dc.code FROM dim_customer dc "
-            f"JOIN dim_route dr ON dr.sales_org_code = dc.sales_org_code "
-            f"WHERE TRIM(dc.channel_code) IN ({ch_ph})", ch_vals
+        channel_cond = (
+            f" AND EXISTS (SELECT 1 FROM dim_customer dc "
+            f"  WHERE dc.code = r.customer_code AND TRIM(dc.channel_code) IN ({ch_ph}))"
         )
-        if not cust_rows:
-            return _empty()
-        c_codes = [r['code'] for r in cust_rows]
-        c_ph = ','.join(['%s'] * len(c_codes))
-        channel_cond = f" AND r.customer_code IN ({c_ph})"
-        channel_params = c_codes
+        channel_params = ch_vals
 
     # Item filter (brand/category)
     item_cond = ""
@@ -167,7 +161,10 @@ def get_mtd_sales_overview(
         f"GROUP BY r.date ORDER BY r.date",
         _org_params + rsp + channel_params + item_params
     )
-    cc_map = {str(r["sale_date"]): (round(float(r["cash_sales"]), 2), round(float(r["credit_sales"]), 2)) for r in daily_cc}
+    cc_map = {
+        str(r["sale_date"]): (round(float(r["cash_sales"]), 2), round(float(r["credit_sales"]), 2))
+        for r in daily_cc
+    }
 
     # --- Monthly Target ---
     month_start = date(d_from.year, d_from.month, 1)
@@ -206,8 +203,6 @@ def get_mtd_sales_overview(
 
     # --- Build daily data ---
     DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-    cumulative_sales = 0
-    cumulative_target = 0
 
     all_dates = sorted(set(list(summary_map.keys()) + list(cc_map.keys())))
     daily_data = []
@@ -215,8 +210,6 @@ def get_mtd_sales_overview(
         d_obj = date.fromisoformat(d_str)
         total = summary_map.get(d_str, 0)
         cash, credit = cc_map.get(d_str, (0, 0))
-        cumulative_sales += total
-        cumulative_target += daily_target
 
         daily_var = total - daily_target
         daily_var_pct = round(daily_var / daily_target * 100, 2) if daily_target else 0
@@ -226,20 +219,20 @@ def get_mtd_sales_overview(
             "day_name": DAY_NAMES[d_obj.weekday()],
             "cash_sales": round(cash, 2),
             "credit_sales": round(credit, 2),
+            "bill_to_bill_sales": 0,
             "total_sales": round(total, 2),
             "target": round(daily_target, 2),
             "daily_var": round(daily_var, 2),
             "daily_var_pct": daily_var_pct,
-            "cumulative_sales": round(cumulative_sales, 2),
-            "cumulative_target": round(cumulative_target, 2),
         })
 
+    total_achieved = sum(d["total_sales"] for d in daily_data)
     return {
         "header": header,
         "monthly_target": monthly_target,
         "daily_target": round(daily_target, 2),
-        "total_achieved": round(cumulative_sales, 2),
-        "achievement_pct": round(cumulative_sales / monthly_target * 100, 2) if monthly_target else 0,
+        "total_achieved": round(total_achieved, 2),
+        "achievement_pct": round(total_achieved / monthly_target * 100, 2) if monthly_target else 0,
         "daily_data": daily_data,
     }
 
