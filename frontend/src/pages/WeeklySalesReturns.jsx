@@ -132,7 +132,6 @@ export default function WeeklySalesReturns() {
 
   const [orders, setOrders] = useState(null);
   const [ordersLoading, setOrdersLoading] = useState(false);
-  const hasOrders = useRef(false);
 
   const [filters, setFilters] = useState(() => {
     const now = new Date();
@@ -155,15 +154,13 @@ export default function WeeklySalesReturns() {
   useEffect(() => {
     if (activeTab !== 'orders') return;
     let cancelled = false;
-    if (!hasOrders.current) setOrdersLoading(true);
+    setOrdersLoading(true);
     fetchOrderDetails(filters)
-      .then(res => { if (!cancelled) { setOrders(res); hasOrders.current = true; } })
+      .then(res => { if (!cancelled) setOrders(res); })
       .catch(err => { if (!cancelled) console.error(err); })
       .finally(() => { if (!cancelled) setOrdersLoading(false); });
     return () => { cancelled = true; };
   }, [filters, activeTab]);
-
-  useEffect(() => { hasOrders.current = false; }, [filters]);
 
   const weekly = data?.weekly_data || [];
   const totals = data?.totals || {};
@@ -177,7 +174,7 @@ export default function WeeklySalesReturns() {
       </div>
 
       <FilterPanel filters={filters} onChange={setFilters}
-        showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'category', 'brand']} />
+        showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'channel', 'customer', 'brand', 'category']} />
 
       {loading ? <Loading /> : !data ? (
         <div className="text-center py-16 text-gray-400">No data available</div>

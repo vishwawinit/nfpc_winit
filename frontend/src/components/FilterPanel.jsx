@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchFilters } from '../api';
 import {
   Calendar, Building2, Route, User, Radio, Tag, Layers, Hash, CalendarDays,
-  Warehouse, Users, ChevronDown, X, Check, Shield, Crown, RotateCcw
+  Warehouse, Users, ChevronDown, X, Check, Shield, Crown, RotateCcw, UserCircle
 } from 'lucide-react';
 
 const fieldMeta = {
@@ -18,6 +18,7 @@ const fieldMeta = {
   channel: { label: 'Channel', icon: Radio, multi: true },
   brand: { label: 'Brand', icon: Tag, multi: true },
   category: { label: 'Category', icon: Layers, multi: true },
+  customer: { label: 'Customer', icon: UserCircle, multi: true },
   day: { label: 'Day', icon: Calendar, type: 'day' },
   month: { label: 'Month', icon: CalendarDays, type: 'month' },
   year: { label: 'Year', icon: Hash, type: 'year' },
@@ -27,19 +28,21 @@ const fieldMeta = {
                                        depot ──────┘              │
                                                                    route depends on all above */
 const CHILD_MAP = {
-  sales_org: ['hos', 'asm', 'depot', 'supervisor', 'user_code', 'route'],
-  hos:       ['asm', 'depot', 'supervisor', 'user_code', 'route'],
-  asm:       ['supervisor', 'user_code', 'route'],
-  depot:     ['user_code', 'route'],
-  supervisor:['user_code', 'route'],
-  user_code: ['route'],
+  sales_org: ['hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'customer'],
+  hos:       ['asm', 'depot', 'supervisor', 'user_code', 'route', 'customer'],
+  asm:       ['supervisor', 'user_code', 'route', 'customer'],
+  depot:     ['user_code', 'route', 'customer'],
+  supervisor:['user_code', 'route', 'customer'],
+  user_code: ['route', 'customer'],
+  route:     ['customer'],
 };
 
-function MultiSelect({ options, value, onChange, placeholder = 'All', loading = false }) {
+function MultiSelect({ options, value, onChange, placeholder = 'All', loading = false, onSearch = null }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const btnRef = useRef(null);
   const dropRef = useRef(null);
+  const debounceRef = useRef(null);
   const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
   const selected = value ? value.split(',').filter(Boolean) : [];
 
@@ -86,10 +89,23 @@ function MultiSelect({ options, value, onChange, placeholder = 'All', loading = 
 
   const clear = (e) => { e.stopPropagation(); onChange(undefined); };
 
-  const filtered = search
-    ? options.filter(o => (o.name || o.code || '').toLowerCase().includes(search.toLowerCase())
-        || (o.code || '').toLowerCase().includes(search.toLowerCase()))
-    : options;
+  const handleSearchChange = (val) => {
+    setSearch(val);
+    if (onSearch) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => onSearch(val), 300);
+    }
+  };
+
+  const DISPLAY_LIMIT = 200;
+  const allFiltered = onSearch
+    ? options
+    : search
+      ? options.filter(o => (o.name || o.code || '').toLowerCase().includes(search.toLowerCase())
+          || (o.code || '').toLowerCase().includes(search.toLowerCase()))
+      : options;
+  const filtered = allFiltered.slice(0, DISPLAY_LIMIT);
+  const hasMore = allFiltered.length > DISPLAY_LIMIT;
 
   const displayText = selected.length === 0 ? placeholder
     : selected.length === 1 ? (options.find(o => o.code === selected[0])?.name || selected[0])
@@ -135,7 +151,7 @@ function MultiSelect({ options, value, onChange, placeholder = 'All', loading = 
                 <input
                   type="text"
                   value={search}
-                  onChange={e => setSearch(e.target.value)}
+                  onChange={e => handleSearchChange(e.target.value)}
                   placeholder="Type to search..."
                   className="w-full text-[13px] border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-colors placeholder:text-gray-400"
                   autoFocus
@@ -183,6 +199,11 @@ function MultiSelect({ options, value, onChange, placeholder = 'All', loading = 
                   {options.length === 0 ? 'No data available' : 'No matching results'}
                 </div>
               )}
+              {hasMore && (
+                <div className="px-3 py-2 text-[11px] text-gray-400 text-center border-t border-gray-100 bg-gray-50/60">
+                  Showing {DISPLAY_LIMIT} of {allFiltered.length} — type to search
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -200,6 +221,7 @@ export default function FilterPanel({ filters, onChange, showFields = [] }) {
   const [channels, setChannels] = useState([]);
   const [brands, setBrands] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [depots, setDepots] = useState([]);
   const [supervisors, setSupervisors] = useState([]);
 
@@ -305,6 +327,28 @@ export default function FilterPanel({ filters, onChange, showFields = [] }) {
     );
   }, [filters.sales_org, filters.hos, filters.asm, filters.depot, filters.supervisor, show, abortAndFetch]);
 
+  // ─── Customers: load once from dim_customer, filter client-side by sales_org ───
+  const [allCustomers, setAllCustomers] = useState([]);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
+
+  useEffect(() => {
+    if (!show('customer')) return;
+    abortAndFetch('customer',
+      () => fetchFilters.orderCustomers(),
+      setAllCustomers, setLoadingCustomers
+    );
+  }, [show, abortAndFetch]);
+
+  useEffect(() => {
+    if (!show('customer')) return;
+    if (filters.sales_org) {
+      const orgs = new Set(filters.sales_org.split(',').map(s => s.trim()).filter(Boolean));
+      setCustomers(allCustomers.filter(c => orgs.has(c.sales_org)));
+    } else {
+      setCustomers(allCustomers);
+    }
+  }, [filters.sales_org, allCustomers, show]);
+
   // ─── Cascade clearing: when parent changes, clear all children ───
   const set = (key, value) => {
     const newFilters = { ...filters, [key]: value || undefined };
@@ -362,6 +406,7 @@ export default function FilterPanel({ filters, onChange, showFields = [] }) {
       case 'channel': return channels;
       case 'brand': return brands;
       case 'category': return categories;
+      case 'customer': return customers;
       case 'depot': return depots;
       case 'supervisor': return supervisors;
       default: return [];
@@ -376,6 +421,7 @@ export default function FilterPanel({ filters, onChange, showFields = [] }) {
       case 'user_code': return loadingUsers;
       case 'route': return loadingRoutes;
       case 'depot': return loadingDepots;
+      case 'customer': return loadingCustomers;
       default: return false;
     }
   };
@@ -436,7 +482,7 @@ export default function FilterPanel({ filters, onChange, showFields = [] }) {
       {/* Row 2: All other filters in hierarchy order */}
       {multiFields.length > 0 && (
         <div className={`grid ${multiGridCols} gap-x-3 gap-y-4`}>
-          {['sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'channel', 'brand', 'category'].map(field =>
+          {['sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'channel', 'customer', 'brand', 'category'].map(field =>
             show(field) && (
               <div key={field}>
                 <Label field={field} />
@@ -445,6 +491,7 @@ export default function FilterPanel({ filters, onChange, showFields = [] }) {
                   value={filters[field]}
                   onChange={(val) => set(field, val)}
                   loading={loadingFor(field)}
+                  onSearch={null}
                 />
               </div>
             )

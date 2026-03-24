@@ -1,1252 +1,208 @@
 INFO:     Will watch for changes in these directories: ['D:\\vishwa\\nfpc_winit']
-INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-INFO:     Started reloader process [16684] using WatchFiles
-INFO:     Started server process [19428]
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [19580] using WatchFiles
+INFO:     Started server process [1052]
 INFO:     Waiting for application startup.
 INFO:warmup:Starting cache warmup in background...
 INFO:     Application startup complete.
-INFO:     127.0.0.1:52842 - "GET /api/weekly-sales-returns/orders?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52912 - "GET /api/weekly-sales-returns/orders?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52893 - "GET /api/filters/brands HTTP/1.1" 500 Internal Server Error
-ERROR:    Exception in ASGI application
-Traceback (most recent call last):
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 416, in run_asgi
-    result = await app(  # type: ignore[func-returns-value]
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        self.scope, self.receive, self.send
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 60, in __call__
-    return await self.app(scope, receive, send)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\applications.py", line 1160, in __call__
-    await super().__call__(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\applications.py", line 107, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
-    raise exc
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
-    await self.app(scope, receive, _send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\cors.py", line 87, in __call__
-    await self.app(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
-    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
-    await self.app(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 716, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 736, in app
-    await route.handle(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 290, in handle
-    await self.app(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 130, in app
-    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 116, in app
-    response = await f(request)
-               ^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 670, in app
-    raw_response = await run_endpoint_function(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<3 lines>...
-    )
-    ^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 326, in run_endpoint_function
-    return await run_in_threadpool(dependant.call, **values)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
-    return await anyio.to_thread.run_sync(func)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\to_thread.py", line 56, in run_sync
-    return await get_async_backend().run_sync_in_worker_thread(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 2485, in run_sync_in_worker_thread
-    return await future
-           ^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 976, in run
-    result = context.run(func, *args)
-  File "D:\vishwa\nfpc_winit\api\routes\filters.py", line 278, in get_brands
-    return query("SELECT DISTINCT TRIM(brand_code) as code, brand_name as name FROM dim_item WHERE brand_code IS NOT NULL AND TRIM(brand_code) != '' ORDER BY brand_name")
-  File "D:\vishwa\nfpc_winit\api\database.py", line 98, in query
-    with get_db() as conn:
-         ~~~~~~^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\contextlib.py", line 141, in __enter__
-    return next(self.gen)
-  File "D:\vishwa\nfpc_winit\api\database.py", line 79, in get_db
-    conn = pool.getconn()
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\psycopg2\pool.py", line 169, in getconn
-    return self._getconn(key)
-           ~~~~~~~~~~~~~^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\psycopg2\pool.py", line 92, in _getconn
-    raise PoolError("connection pool exhausted")
-psycopg2.pool.PoolError: connection pool exhausted
-INFO:     127.0.0.1:52892 - "GET /api/filters/sales-orgs HTTP/1.1" 500 Internal Server Error
-ERROR:    Exception in ASGI application
-Traceback (most recent call last):
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 416, in run_asgi
-    result = await app(  # type: ignore[func-returns-value]
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        self.scope, self.receive, self.send
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 60, in __call__
-    return await self.app(scope, receive, send)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\applications.py", line 1160, in __call__
-    await super().__call__(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\applications.py", line 107, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
-    raise exc
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
-    await self.app(scope, receive, _send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\cors.py", line 87, in __call__
-    await self.app(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
-    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
-    await self.app(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 716, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 736, in app
-    await route.handle(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 290, in handle
-    await self.app(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 130, in app
-    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 116, in app
-    response = await f(request)
-               ^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 670, in app
-    raw_response = await run_endpoint_function(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<3 lines>...
-    )
-    ^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 326, in run_endpoint_function
-    return await run_in_threadpool(dependant.call, **values)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
-    return await anyio.to_thread.run_sync(func)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\to_thread.py", line 56, in run_sync
-    return await get_async_backend().run_sync_in_worker_thread(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 2485, in run_sync_in_worker_thread
-    return await future
-           ^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 976, in run
-    result = context.run(func, *args)
-  File "D:\vishwa\nfpc_winit\api\routes\filters.py", line 69, in get_sales_orgs
-    return query("SELECT code, name FROM dim_sales_org WHERE is_active = true ORDER BY name")
-  File "D:\vishwa\nfpc_winit\api\database.py", line 98, in query
-    with get_db() as conn:
-         ~~~~~~^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\contextlib.py", line 141, in __enter__
-    return next(self.gen)
-  File "D:\vishwa\nfpc_winit\api\database.py", line 79, in get_db
-    conn = pool.getconn()
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\psycopg2\pool.py", line 169, in getconn
-    return self._getconn(key)
-           ~~~~~~~~~~~~~^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\psycopg2\pool.py", line 92, in _getconn
-    raise PoolError("connection pool exhausted")
-psycopg2.pool.PoolError: connection pool exhausted
-INFO:     127.0.0.1:52894 - "GET /api/filters/categories HTTP/1.1" 500 Internal Server Error
-ERROR:    Exception in ASGI application
-Traceback (most recent call last):
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 416, in run_asgi
-    result = await app(  # type: ignore[func-returns-value]
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        self.scope, self.receive, self.send
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 60, in __call__
-    return await self.app(scope, receive, send)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\applications.py", line 1160, in __call__
-    await super().__call__(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\applications.py", line 107, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
-    raise exc
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
-    await self.app(scope, receive, _send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\cors.py", line 87, in __call__
-    await self.app(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
-    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
-    await self.app(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 716, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 736, in app
-    await route.handle(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 290, in handle
-    await self.app(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 130, in app
-    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 116, in app
-    response = await f(request)
-               ^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 670, in app
-    raw_response = await run_endpoint_function(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<3 lines>...
-    )
-    ^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 326, in run_endpoint_function
-    return await run_in_threadpool(dependant.call, **values)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
-    return await anyio.to_thread.run_sync(func)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\to_thread.py", line 56, in run_sync
-    return await get_async_backend().run_sync_in_worker_thread(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 2485, in run_sync_in_worker_thread
-    return await future
-           ^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 976, in run
-    result = context.run(func, *args)
-  File "D:\vishwa\nfpc_winit\api\routes\filters.py", line 288, in get_categories
-    return query("SELECT DISTINCT category_code as code, category_name as name FROM dim_item WHERE category_code IS NOT NULL ORDER BY category_name")
-  File "D:\vishwa\nfpc_winit\api\database.py", line 98, in query
-    with get_db() as conn:
-         ~~~~~~^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\contextlib.py", line 141, in __enter__
-    return next(self.gen)
-  File "D:\vishwa\nfpc_winit\api\database.py", line 79, in get_db
-    conn = pool.getconn()
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\psycopg2\pool.py", line 169, in getconn
-    return self._getconn(key)
-           ~~~~~~~~~~~~~^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\psycopg2\pool.py", line 92, in _getconn
-    raise PoolError("connection pool exhausted")
-psycopg2.pool.PoolError: connection pool exhausted
-INFO:     127.0.0.1:52895 - "GET /api/filters/hos HTTP/1.1" 500 Internal Server Error
-ERROR:    Exception in ASGI application
-Traceback (most recent call last):
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 416, in run_asgi
-    result = await app(  # type: ignore[func-returns-value]
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        self.scope, self.receive, self.send
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 60, in __call__
-    return await self.app(scope, receive, send)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\applications.py", line 1160, in __call__
-    await super().__call__(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\applications.py", line 107, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
-    raise exc
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
-    await self.app(scope, receive, _send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\cors.py", line 87, in __call__
-    await self.app(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
-    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
-    await self.app(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 716, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 736, in app
-    await route.handle(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 290, in handle
-    await self.app(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 130, in app
-    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 116, in app
-    response = await f(request)
-               ^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 670, in app
-    raw_response = await run_endpoint_function(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<3 lines>...
-    )
-    ^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 326, in run_endpoint_function
-    return await run_in_threadpool(dependant.call, **values)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
-    return await anyio.to_thread.run_sync(func)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\to_thread.py", line 56, in run_sync
-    return await get_async_backend().run_sync_in_worker_thread(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 2485, in run_sync_in_worker_thread
-    return await future
-           ^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 976, in run
-    result = context.run(func, *args)
-  File "D:\vishwa\nfpc_winit\api\routes\filters.py", line 98, in get_hos
-    return query(f"SELECT code, name FROM dim_user WHERE {base} ORDER BY name", params)
-  File "D:\vishwa\nfpc_winit\api\database.py", line 98, in query
-    with get_db() as conn:
-         ~~~~~~^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\contextlib.py", line 141, in __enter__
-    return next(self.gen)
-  File "D:\vishwa\nfpc_winit\api\database.py", line 79, in get_db
-    conn = pool.getconn()
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\psycopg2\pool.py", line 169, in getconn
-    return self._getconn(key)
-           ~~~~~~~~~~~~~^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\psycopg2\pool.py", line 92, in _getconn
-    raise PoolError("connection pool exhausted")
-psycopg2.pool.PoolError: connection pool exhausted
-INFO:     127.0.0.1:52896 - "GET /api/filters/asms HTTP/1.1" 500 Internal Server Error
-ERROR:    Exception in ASGI application
-Traceback (most recent call last):
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 416, in run_asgi
-    result = await app(  # type: ignore[func-returns-value]
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        self.scope, self.receive, self.send
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 60, in __call__
-    return await self.app(scope, receive, send)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\applications.py", line 1160, in __call__
-    await super().__call__(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\applications.py", line 107, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
-    raise exc
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
-    await self.app(scope, receive, _send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\cors.py", line 87, in __call__
-    await self.app(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
-    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
-    await self.app(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 716, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 736, in app
-    await route.handle(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 290, in handle
-    await self.app(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 130, in app
-    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 116, in app
-    response = await f(request)
-               ^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 670, in app
-    raw_response = await run_endpoint_function(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<3 lines>...
-    )
-    ^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 326, in run_endpoint_function
-    return await run_in_threadpool(dependant.call, **values)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
-    return await anyio.to_thread.run_sync(func)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\to_thread.py", line 56, in run_sync
-    return await get_async_backend().run_sync_in_worker_thread(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 2485, in run_sync_in_worker_thread
-    return await future
-           ^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 976, in run
-    result = context.run(func, *args)
-  File "D:\vishwa\nfpc_winit\api\routes\filters.py", line 122, in get_asms
-    return query(f"SELECT code, name FROM dim_user WHERE {where} ORDER BY name", params)
-  File "D:\vishwa\nfpc_winit\api\database.py", line 98, in query
-    with get_db() as conn:
-         ~~~~~~^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\contextlib.py", line 141, in __enter__
-    return next(self.gen)
-  File "D:\vishwa\nfpc_winit\api\database.py", line 79, in get_db
-    conn = pool.getconn()
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\psycopg2\pool.py", line 169, in getconn
-    return self._getconn(key)
-           ~~~~~~~~~~~~~^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\psycopg2\pool.py", line 92, in _getconn
-    raise PoolError("connection pool exhausted")
-psycopg2.pool.PoolError: connection pool exhausted
-INFO:     127.0.0.1:52897 - "GET /api/filters/supervisors HTTP/1.1" 500 Internal Server Error
-ERROR:    Exception in ASGI application
-Traceback (most recent call last):
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 416, in run_asgi
-    result = await app(  # type: ignore[func-returns-value]
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        self.scope, self.receive, self.send
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 60, in __call__
-    return await self.app(scope, receive, send)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\applications.py", line 1160, in __call__
-    await super().__call__(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\applications.py", line 107, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
-    raise exc
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
-    await self.app(scope, receive, _send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\cors.py", line 87, in __call__
-    await self.app(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
-    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
-    await self.app(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 716, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 736, in app
-    await route.handle(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 290, in handle
-    await self.app(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 130, in app
-    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 116, in app
-    response = await f(request)
-               ^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 670, in app
-    raw_response = await run_endpoint_function(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<3 lines>...
-    )
-    ^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 326, in run_endpoint_function
-    return await run_in_threadpool(dependant.call, **values)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
-    return await anyio.to_thread.run_sync(func)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\to_thread.py", line 56, in run_sync
-    return await get_async_backend().run_sync_in_worker_thread(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 2485, in run_sync_in_worker_thread
-    return await future
-           ^^^^^^^^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 976, in run
-    result = context.run(func, *args)
-  File "D:\vishwa\nfpc_winit\api\routes\filters.py", line 176, in get_supervisors
-    return query(f"SELECT code, name FROM dim_user WHERE {where} ORDER BY name", params)
-  File "D:\vishwa\nfpc_winit\api\database.py", line 98, in query
-    with get_db() as conn:
-         ~~~~~~^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\contextlib.py", line 141, in __enter__
-    return next(self.gen)
-  File "D:\vishwa\nfpc_winit\api\database.py", line 79, in get_db
-    conn = pool.getconn()
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\psycopg2\pool.py", line 169, in getconn
-    return self._getconn(key)
-           ~~~~~~~~~~~~~^^^^^
-  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\psycopg2\pool.py", line 92, in _getconn
-    raise PoolError("connection pool exhausted")
-psycopg2.pool.PoolError: connection pool exhausted
-INFO:     127.0.0.1:52936 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52942 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52945 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52944 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52943 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52946 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52949 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52955 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52959 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52957 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52964 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52966 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52970 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52972 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52975 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52978 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52983 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52985 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52987 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52992 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52994 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52997 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53002 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53003 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53005 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53008 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53012 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53015 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53017 - "GET /api/weekly-sales-returns/orders?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53029 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53032 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53023 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53027 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53024 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53042 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53044 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53043 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53045 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53048 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53052 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53055 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53059 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53061 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53064 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53069 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53072 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53073 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65484 - "GET /api/health HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: dashboard.get_dashboard
-INFO:     127.0.0.1:53083 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53085 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53089 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53088 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53093 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53092 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53096 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53099 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53102 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53105 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-01 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53120 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53123 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53121 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53122 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53124 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53128 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53130 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53134 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53136 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53108 - "GET /api/weekly-sales-returns/orders?date_from=2026-01-01&date_to=2026-03-01 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53144 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53148 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53149 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53156 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53153 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53154 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53160 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53162 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53164 - "GET /api/filters/routes HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: sales_performance.get_sales_performance
 WARNING:warmup:  Skip:  top_customers.get_top_customers - can't adapt type 'Query'
 WARNING:warmup:  Skip:  top_products.get_top_products - can't adapt type 'Query'
 INFO:warmup:  Warmed: market_sales.get_market_sales_performance
-WARNING:  WatchFiles detected changes in 'api\routes\mtd_sales_overview.py'. Reloading...
- INFO:warmup:  Warmed: target_achievement.get_target_vs_achievement
+INFO:warmup:  Warmed: target_achievement.get_target_vs_achievement
+INFO:     127.0.0.1:65516 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65517 - "GET /api/filters/channels HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65518 - "GET /api/filters/brands HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65520 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65519 - "GET /api/filters/categories HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65521 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65532 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49153 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49157 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49159 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49165 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49180 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49182 - "GET /api/filters/channels HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49183 - "GET /api/filters/brands HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49187 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49186 - "GET /api/filters/categories HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49190 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49197 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49199 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49201 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49202 - "GET /api/filters/routes HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: daily_sales_overview.get_daily_sales_overview
+INFO:     127.0.0.1:49161 - "GET /api/filters/order-customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49205 - "GET /api/filters/order-customers HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: mtd_wastage.get_mtd_wastage_summary
 INFO:warmup:  Warmed: weekly_sales_returns.get_weekly_sales_returns
 INFO:warmup:  Warmed: brand_wise_sales.get_brand_wise_sales
-WARNING:warmup:  Skip:  mtd_sales_overview.get_mtd_sales_overview - name 'cumulative_sales' is not defined
+INFO:     127.0.0.1:49210 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49214 - "GET /api/filters/channels HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49222 - "GET /api/filters/brands HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49229 - "GET /api/filters/depots?sales_org=00010 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49238 - "GET /api/filters/categories HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49241 - "GET /api/filters/order-customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49224 - "GET /api/filters/asms?sales_org=00010 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49255 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49258 - "GET /api/filters/channels HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49261 - "GET /api/filters/brands HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49264 - "GET /api/filters/categories HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49267 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49270 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49273 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49276 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49279 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49282 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49285 - "GET /api/filters/order-customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49223 - "GET /api/filters/hos?sales_org=00010 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49225 - "GET /api/filters/supervisors?sales_org=00010 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49232 - "GET /api/filters/users?sales_org=00010 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49237 - "GET /api/filters/routes?sales_org=00010 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49244 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-24&sales_org=00010 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49292 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49303 - "GET /api/filters/order-customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49304 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49306 - "GET /api/filters/brands HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49305 - "GET /api/filters/channels HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49307 - "GET /api/filters/categories HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49310 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49320 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49321 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49322 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49325 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49326 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:warmup:  Warmed: mtd_sales_overview.get_mtd_sales_overview
 INFO:warmup:  Warmed: log_report.get_log_report
 INFO:warmup:  Warmed: time_management.get_time_management
 INFO:warmup:  Warmed: customer_attendance.get_customer_attendance
 INFO:warmup:  Warmed: mtd_attendance.get_mtd_attendance
 INFO:warmup:  Warmed: journey_plan_compliance.get_journey_plan_compliance
+INFO:     127.0.0.1:49364 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49367 - "GET /api/filters/channels HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49369 - "GET /api/filters/brands HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49371 - "GET /api/filters/categories HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49376 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49378 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49380 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49383 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49387 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49392 - "GET /api/filters/order-customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49390 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49404 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49406 - "GET /api/filters/channels HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49410 - "GET /api/filters/brands HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49412 - "GET /api/filters/categories HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49413 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49418 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49421 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49426 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49423 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49431 - "GET /api/filters/order-customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49428 - "GET /api/filters/routes HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: eot_status.get_eot_status
 INFO:warmup:  Warmed: productivity_coverage.get_productivity_coverage
 INFO:warmup:  Warmed: salesman_journey.get_salesman_journey
 INFO:warmup:  Warmed: revenue_dispersion.get_revenue_dispersion
 INFO:warmup:  Warmed: monthly_sales_stock.get_monthly_sales_stock
+INFO:     127.0.0.1:49459 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49461 - "GET /api/filters/channels HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49462 - "GET /api/filters/brands HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49468 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49466 - "GET /api/filters/categories HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49467 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49474 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49471 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49477 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49482 - "GET /api/filters/order-customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49486 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49485 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-24&customer=806356 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49491 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49500 - "GET /api/filters/brands HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49501 - "GET /api/filters/channels HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49502 - "GET /api/filters/categories HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49506 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49504 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49509 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49515 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49517 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49519 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49521 - "GET /api/filters/order-customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49527 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49529 - "GET /api/filters/channels HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49537 - "GET /api/filters/brands HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49538 - "GET /api/filters/categories HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49541 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49542 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49545 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49547 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49550 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49557 - "GET /api/filters/order-customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49554 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49568 - "GET /api/filters/channels HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49564 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49567 - "GET /api/filters/brands HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49578 - "GET /api/filters/categories HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49580 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49579 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49581 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49583 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49588 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49592 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49590 - "GET /api/filters/order-customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49559 - "GET /api/weekly-sales-returns/orders?date_from=2026-01-01&date_to=2026-03-24&customer=806356 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49598 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49600 - "GET /api/filters/brands HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49603 - "GET /api/filters/channels HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49606 - "GET /api/filters/categories HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49609 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49614 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49618 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49620 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49619 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49624 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49626 - "GET /api/filters/order-customers HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: endorsement.get_endorsement
 INFO:warmup:  Warmed: filters.get_sales_orgs
-INFO:warmup:Cache warmup complete: 20 cached, 3 skipped in 147.3s
-INFO:     127.0.0.1:53253 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53252 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53254 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53256 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53257 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53258 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53261 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53268 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53269 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53271 - "GET /api/weekly-sales-returns/orders?date_from=2026-01-01&date_to=2026-03-01&category=C12 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53279 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53283 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53284 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53288 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53287 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53291 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53294 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53297 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53300 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53307 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53310 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53311 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53315 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53313 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53322 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53324 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53326 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53328 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53273 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-01&category=C12 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53333 - "GET /api/weekly-sales-returns/orders?date_from=2026-01-01&date_to=2026-03-01&category=C12,C18 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53339 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53342 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53347 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53346 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53350 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53352 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53357 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53361 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53362 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53330 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-01&category=C12,C18 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53367 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53369 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53371 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53377 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53378 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53381 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53384 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53386 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53389 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53425 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53424 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53426 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53429 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53430 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53431 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53436 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53444 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53446 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53440 - "GET /api/weekly-sales-returns/orders?date_from=2026-01-01&date_to=2026-03-01&category=C12,C18,C04 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53457 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53458 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53461 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53463 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53464 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53467 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53473 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53475 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53476 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53484 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53486 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53492 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53494 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53495 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53500 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53502 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53510 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53513 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53437 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-01&category=C12,C18,C04 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53520 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53521 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53523 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53525 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53528 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53533 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53535 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53539 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53541 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53551 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53553 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53557 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53559 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53563 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53508 - "GET /api/weekly-sales-returns/orders?date_from=2026-01-01&date_to=2026-03-01&category=C12,C18,C04,C24 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53565 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53569 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53573 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53575 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53582 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53583 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53584 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53587 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53593 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53594 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53596 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53600 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53603 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53505 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-01&category=C12,C18,C04,C24 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53547 - "GET /api/weekly-sales-returns/orders?date_from=2026-01-01&date_to=2026-03-01&category=C12,C18,C04,C24,C27 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53608 - "GET /api/weekly-sales-returns/orders?date_from=2026-01-01&date_to=2026-03-01&category=C12,C18,C04,C24,C27,G31 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53614 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53619 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53622 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53623 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53626 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53629 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53632 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53635 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53638 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53544 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-01&category=C12,C18,C04,C24,C27 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53605 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-01&category=C12,C18,C04,C24,C27,G31 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53643 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53648 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53651 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53654 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53655 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53656 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53662 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53664 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53665 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53692 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53691 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53689 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53694 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53690 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53693 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53697 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53702 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53703 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53711 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53716 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53717 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53718 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53719 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53721 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53724 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53727 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53733 - "GET /api/weekly-sales-returns/orders?date_from=2026-01-01&date_to=2026-03-01&category=C12,C18,C04,C24,C27,G31 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53730 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53748 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53747 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53749 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53746 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53750 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53751 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53754 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53758 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53760 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53768 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53772 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53770 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53774 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53778 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53777 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53782 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53784 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53791 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-01 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53789 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53793 - "GET /api/weekly-sales-returns/orders?date_from=2026-01-01&date_to=2026-03-01 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53807 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53808 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53796 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53804 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53806 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53814 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53818 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53820 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53819 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53825 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53828 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53833 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53829 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53836 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53838 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53841 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53845 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53847 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53857 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53856 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53861 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53864 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53863 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53865 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53875 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53876 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53879 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53880 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-01 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53881 - "GET /api/weekly-sales-returns/orders?date_from=2026-01-01&date_to=2026-03-01 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53894 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53895 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53884 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53892 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53896 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53906 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53907 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53908 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53909 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53912 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53915 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53924 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53925 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53926 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53927 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53931 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53933 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53936 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54034 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54036 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54038 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54044 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54042 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54043 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54047 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54050 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54053 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54056 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-01 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54059 - "GET /api/weekly-sales-returns/orders?date_from=2026-01-01&date_to=2026-03-01 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54071 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54069 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54073 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54074 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54072 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54081 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54084 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54085 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54086 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54089 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54094 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54096 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54098 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54102 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54104 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54107 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54110 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54113 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54141 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54142 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54146 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54144 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54143 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54145 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54149 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54157 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54158 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54159 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54161 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54172 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54173 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54174 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54175 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54176 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54179 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54183 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54185 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54188 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54194 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54196 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54199 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54201 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54203 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54214 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54211 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54209 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54215 - "GET /api/weekly-sales-returns/orders?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54219 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54221 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54227 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54228 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54230 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54236 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54238 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54240 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54242 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54253 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54256 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54254 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54255 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54258 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54260 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54263 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54266 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54269 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54282 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54283 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54288 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54289 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54291 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54297 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54294 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54290 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54301 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54303 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54314 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54315 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54316 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54319 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54321 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54320 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54326 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54328 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54330 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54336 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54338 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54344 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54342 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54348 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54346 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54355 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54354 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54357 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54371 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54369 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54368 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54372 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54360 - "GET /api/weekly-sales-returns/orders?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54375 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54385 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54381 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54387 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54383 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54395 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54396 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54398 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54401 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54404 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54407 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54413 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54415 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54417 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54450 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54452 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54451 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54455 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54454 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54453 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54458 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54461 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54465 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54468 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54472 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54474 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54477 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54479 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54486 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54488 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54491 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54492 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54494 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54504 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54506 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54508 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54511 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54513 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54514 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54519 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54522 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54523 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54526 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54537 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54538 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54541 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54540 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54542 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54544 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54549 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54551 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54553 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54560 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54563 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54569 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54567 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54571 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54574 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54579 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54581 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54583 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54597 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54601 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54589 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54593 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54599 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54586 - "GET /api/weekly-sales-returns/orders?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54613 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54609 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54612 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54608 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54626 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54627 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54629 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54628 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54630 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54631 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54636 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54638 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54640 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54672 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54674 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54682 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54680 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54676 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54679 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54689 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54686 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54694 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54695 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54703 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54708 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54709 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54711 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54712 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54713 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54716 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54721 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54722 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54749 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54751 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54756 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54757 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54758 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54759 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54762 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54767 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54769 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54771 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54780 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54783 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54787 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54789 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54784 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54788 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54795 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54792 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54798 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54811 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54814 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54823 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54824 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54825 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54826 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54830 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54832 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54836 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54845 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54842 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54850 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54848 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54853 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54858 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54862 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54861 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54865 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54838 - "GET /api/weekly-sales-returns/orders?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54869 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54879 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54883 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54881 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54882 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54885 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54887 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54892 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54893 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54983 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54985 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54986 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54989 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54992 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54994 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54996 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55000 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55006 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55002 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55008 - "GET /api/weekly-sales-returns/orders?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55020 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55014 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55016 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55017 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55023 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55028 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55031 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55034 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55035 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55038 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55043 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55044 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55047 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55052 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55054 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55056 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55060 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55062 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55073 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55074 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55076 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55080 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55082 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55081 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55085 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55089 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55094 - "GET /api/weekly-sales-returns/order-items?order_no=00020_271009411 HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:55091 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55110 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55109 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55111 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55112 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55114 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55113 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55118 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55120 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55123 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55153 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55155 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55157 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55159 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55161 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55163 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55169 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55171 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55172 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55184 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55186 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55190 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55188 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55194 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55197 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55192 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55204 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55206 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55208 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55218 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55219 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55222 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55223 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55225 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55224 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55229 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55236 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55237 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55239 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55246 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55248 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55250 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55254 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55252 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55256 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55261 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55262 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55267 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55269 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55272 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55274 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55278 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55280 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55283 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55286 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55290 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55294 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55295 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55311 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55314 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55312 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55317 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55318 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55320 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55323 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55329 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55330 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55342 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55343 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55345 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55347 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55332 - "GET /api/weekly-sales-returns/orders?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55340 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55356 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55358 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55350 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55359 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55366 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55367 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55369 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55377 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55378 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55379 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55381 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55385 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55387 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55392 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55394 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55403 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55404 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55405 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55406 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55410 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55412 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55418 - "GET /api/weekly-sales-returns/order-items?order_no=00020_271009410 HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:55416 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55434 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55438 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55439 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55443 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55446 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55445 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55449 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55453 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55455 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55526 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55528 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55530 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55531 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55534 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55548 - "GET /api/weekly-sales-returns/order-items?order_no=00020_109126734 HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:55536 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55543 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55552 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55550 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55558 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55559 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55561 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55564 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55568 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55570 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55573 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55577 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55579 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:warmup:  Warmed: filters.get_order_customers
+INFO:warmup:  Warmed: filters.get_brands
+INFO:warmup:  Warmed: filters.get_categories
+INFO:warmup:  Warmed: filters.get_channels
+INFO:warmup:Cache warmup complete: 25 cached, 2 skipped in 211.3s
+INFO:     127.0.0.1:49630 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49636 - "GET /api/filters/channels HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49637 - "GET /api/filters/brands HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49641 - "GET /api/filters/categories HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49642 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49646 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49652 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49657 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49656 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49658 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49660 - "GET /api/filters/order-customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49663 - "GET /api/weekly-sales-returns?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49985 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49990 - "GET /api/filters/channels HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49992 - "GET /api/filters/brands HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49991 - "GET /api/filters/categories HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49993 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49996 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49999 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50264 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50265 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50271 - "GET /api/filters/order-customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50269 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49978 - "GET /api/weekly-sales-returns/orders?date_from=2026-01-01&date_to=2026-03-24 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50295 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50297 - "GET /api/filters/channels HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50299 - "GET /api/filters/categories HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50298 - "GET /api/filters/brands HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50300 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50301 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50304 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50307 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50312 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50314 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50316 - "GET /api/filters/order-customers HTTP/1.1" 200 OK

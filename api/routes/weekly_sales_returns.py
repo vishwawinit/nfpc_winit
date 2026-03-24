@@ -232,7 +232,6 @@ def get_order_details(
     f = {k: v for k, v in {
         'route': route, 'user_code': user_code, 'customer': customer,
         'date_from': d_from, 'date_to': d_to,
-        'channel': channel, 'brand': brand, 'category': category,
     }.items() if v is not None}
 
     whr, prms = build_where(f, date_col='trx_date', prefix='sd')
@@ -245,6 +244,39 @@ def get_order_details(
         org_cond = f" AND sd.sales_org_code IN ({org_ph})"
         org_params = orgs
 
+    # Channel filter — rpt_sales_detail has channel_code with trailing spaces
+    channel_cond = ""
+    channel_params = []
+    if channel:
+        ch_vals = [v.strip() for v in channel.split(',') if v.strip()]
+        ch_ph = ','.join(['%s'] * len(ch_vals))
+        channel_cond = f" AND TRIM(sd.channel_code) IN ({ch_ph})"
+        channel_params = ch_vals
+
+    # Brand/Category — rpt_sales_detail brand_code is not reliable; resolve via dim_item
+    item_cond = ""
+    item_params = []
+    if brand or category:
+        i_conditions = []
+        i_params = []
+        if brand:
+            b_vals = [v.strip() for v in brand.split(',') if v.strip()]
+            b_ph = ','.join(['%s'] * len(b_vals))
+            i_conditions.append(f"TRIM(brand_code) IN ({b_ph})")
+            i_params.extend(b_vals)
+        if category:
+            c_vals = [v.strip() for v in category.split(',') if v.strip()]
+            c_ph = ','.join(['%s'] * len(c_vals))
+            i_conditions.append(f"category_code IN ({c_ph})")
+            i_params.extend(c_vals)
+        i_rows = query(f"SELECT DISTINCT code FROM dim_item WHERE {' AND '.join(i_conditions)}", i_params)
+        if not i_rows:
+            return []
+        i_codes = [r['code'] for r in i_rows]
+        i_ph = ','.join(['%s'] * len(i_codes))
+        item_cond = f" AND sd.item_code IN ({i_ph})"
+        item_params = i_codes
+
     rows = query(
         f"SELECT "
         f"  sd.trx_code AS order_no, "
@@ -256,7 +288,7 @@ def get_order_details(
         f"  ROUND(SUM(sd.qty_pieces)::numeric, 0) AS qty_pieces, "
         f"  ROUND(SUM(sd.gross_amount)::numeric, 2) AS gross_amount, "
         f"  ROUND(SUM(sd.discount_amount)::numeric, 2) AS discount_amount, "
-        f"  ROUND(SUM(sd.net_amount)::numeric, 2) AS net_amount, "
+        f"  ROUND(SUM(sd.gross_amount - sd.discount_amount)::numeric, 2) AS net_amount, "
         f"  CASE "
         f"    WHEN MAX(sd.trx_type) IN (1,3,5) AND MAX(sd.trx_status) = 200 THEN 'Delivered' "
         f"    WHEN MAX(sd.trx_type) IN (1,3,5) AND MAX(sd.trx_status) = 100 THEN 'Pending' "
@@ -266,11 +298,11 @@ def get_order_details(
         f"    WHEN MAX(sd.trx_status) = -100 THEN 'Rejected' "
         f"    ELSE 'Unknown' "
         f"  END AS action "
-        f"FROM rpt_sales_detail sd "
-        f"WHERE {whr}{org_cond} AND sd.trx_type IN (1,3,4,5) "
+        f"FROM (SELECT DISTINCT ON (trx_code, line_no) * FROM rpt_sales_detail) sd "
+        f"WHERE {whr}{org_cond}{channel_cond}{item_cond} AND sd.trx_type IN (1,3,4,5) "
         f"GROUP BY sd.trx_code "
         f"ORDER BY MAX(sd.trx_date) DESC",
-        prms + org_params
+        prms + org_params + channel_params + item_params
     )
 
     return [

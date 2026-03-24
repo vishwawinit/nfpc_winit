@@ -80,6 +80,10 @@ WARMUP_CALLS = [
     ("endorsement", "get_endorsement", {"date_from": _month_start(), "date_to": _today()}),
     # Filter dropdowns
     ("filters", "get_sales_orgs", {}),
+    ("filters", "get_order_customers", {}),
+    ("filters", "get_brands", {}),
+    ("filters", "get_categories", {}),
+    ("filters", "get_channels", {}),
 ]
 
 

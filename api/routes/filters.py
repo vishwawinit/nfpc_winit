@@ -268,6 +268,19 @@ def get_customers(sales_org: str = None):
     return query("SELECT DISTINCT code, name FROM dim_customer WHERE is_active = true ORDER BY name")
 
 
+@router.get("/filters/order-customers")
+def get_order_customers():
+    """All active customers from dim_customer with sales_org for client-side hierarchy filtering."""
+
+    # Always return from dim_customer with sales_org for client-side hierarchy filtering
+    return query(
+        "SELECT DISTINCT ON (code) code, TRIM(name) AS name, sales_org_code AS sales_org "
+        "FROM dim_customer "
+        "WHERE is_active = true AND name IS NOT NULL "
+        "ORDER BY code"
+    )
+
+
 @router.get("/filters/items")
 def get_items():
     return query("SELECT code, name FROM dim_item WHERE is_active = true ORDER BY name")
