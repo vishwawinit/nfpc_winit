@@ -9,3 +9,8 @@ INFO:     127.0.0.1:62633 - "GET /api/mtd-wastage-summary?date_from=2026-03-01&d
 INFO:     127.0.0.1:62630 - "GET /api/mtd-wastage-summary?date_from=2026-03-01&date_to=2026-03-24&customer=105148,105144 HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: dashboard.get_dashboard
 INFO:     127.0.0.1:62641 - "GET /api/mtd-wastage-summary?date_from=2026-03-01&date_to=2026-03-24 HTTP/1.1" 200 OK
+INFO:warmup:  Warmed: sales_performance.get_sales_performance
+WARNING:warmup:  Skip:  top_customers.get_top_customers - can't adapt type 'Query'
+WARNING:warmup:  Skip:  top_products.get_top_products - can't adapt type 'Query'
+INFO:warmup:  Warmed: market_sales.get_market_sales_performance
+INFO:warmup:  Warmed: target_achievement.get_target_vs_achievement
