@@ -4,7 +4,7 @@ import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
 import KpiCard from '../components/KpiCard';
 import DataTable from '../components/DataTable';
-import { MapPin, User, LogIn, LogOut, Clock, Timer, Users, CheckCircle2 } from 'lucide-react';
+import { Users, CheckCircle2, Target, TrendingUp, TrendingDown } from 'lucide-react';
 
 const aed = (v) => v != null ? `AED ${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-';
 
@@ -57,83 +57,27 @@ export default function Endorsement() {
         <div className="text-center py-16 text-gray-400">No data available</div>
       ) : (
         <>
-          {/* Route Header Info */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Route Information</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5">
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
-                  <MapPin className="w-4 h-4 text-indigo-600" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400 font-medium">Route</div>
-                  <div className="font-semibold text-gray-800 text-sm">{h.route_name || '-'}</div>
-                  <div className="text-xs text-gray-400">{h.route_code || ''}</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-violet-50 flex items-center justify-center flex-shrink-0">
-                  <User className="w-4 h-4 text-violet-600" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400 font-medium">Salesman</div>
-                  <div className="font-semibold text-gray-800 text-sm">{h.user_name || '-'}</div>
-                  <div className="text-xs text-gray-400">{h.user_code || ''}</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
-                  <LogOut className="w-4 h-4 text-emerald-600" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400 font-medium">Depot Out</div>
-                  <div className="font-semibold text-emerald-600 text-sm">{h.depot_out_time || '-'}</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-rose-50 flex items-center justify-center flex-shrink-0">
-                  <LogIn className="w-4 h-4 text-rose-600" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400 font-medium">Depot In</div>
-                  <div className="font-semibold text-rose-600 text-sm">{h.depot_in_time || '-'}</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
-                  <Clock className="w-4 h-4 text-amber-600" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400 font-medium">Total Driving</div>
-                  <div className="font-semibold text-gray-800 text-sm">{h.total_driving_mins != null ? `${h.total_driving_mins} mins` : '-'}</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-                  <Timer className="w-4 h-4 text-blue-600" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400 font-medium">Avg Time/Visit</div>
-                  <div className="font-semibold text-gray-800 text-sm">{h.avg_time_per_visit != null ? `${h.avg_time_per_visit} mins` : '-'}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* KPI Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <KpiCard title="Total Visits" value={h.total_visits ?? '-'} color="blue" icon={Users} variant="solid" />
-            <KpiCard title="Productive Visits" value={h.productive_visits ?? '-'} color="green" icon={CheckCircle2} variant="solid"
+            <KpiCard title="Planned (JP)" value={h.planned_visits ?? '-'} color="indigo" icon={CheckCircle2} variant="solid"
+              subtitle={h.scheduled_calls ? `${h.coverage_pct}% coverage` : undefined} />
+            <KpiCard title="Unplanned" value={h.unplanned_visits ?? '-'} color="yellow" icon={Users} variant="solid" subtitle="Outside JP" />
+            <KpiCard title="Productive" value={h.productive_visits ?? '-'} color="green" icon={TrendingUp} variant="solid"
               subtitle={h.total_visits ? `${((h.productive_visits / h.total_visits) * 100).toFixed(1)}% strike rate` : undefined} />
-            <KpiCard title="Depot Out" value={h.depot_out_time || '-'} color="purple" icon={LogOut} variant="solid" />
-            <KpiCard title="Depot In" value={h.depot_in_time || '-'} color="yellow" icon={LogIn} variant="solid" />
+            <KpiCard title="Non-Productive" value={h.non_productive_visits ?? '-'} color="red" icon={TrendingDown} variant="solid"
+              subtitle={h.total_visits ? `${((h.non_productive_visits / h.total_visits) * 100).toFixed(1)}% of visits` : undefined} />
+            <KpiCard title="Coverage %" value={h.coverage_pct != null ? `${h.coverage_pct}%` : '-'} color="purple" icon={Target} variant="solid"
+              subtitle={h.scheduled_calls ? `${h.planned_visits}/${h.scheduled_calls}` : undefined} />
           </div>
 
           {/* Customer Detail Table */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Customer Visits</h2>
             <DataTable
+              disableSort
               columns={[
+                { key: 'date', label: 'Date' },
                 { key: 'customer_code', label: 'Code' },
                 { key: 'customer_name', label: 'Customer' },
                 { key: 'channel_name', label: 'Channel' },
@@ -150,10 +94,19 @@ export default function Endorsement() {
                     );
                   }
                 },
-                { key: 'visit_type', label: 'Visit Type' },
-                { key: 'arrival_time', label: 'Arrival' },
-                { key: 'out_time', label: 'Departure' },
-                { key: 'time_spent_mins', label: 'Time (mins)', format: 'number' },
+                { key: 'check_in', label: 'Check In', render: (v) => v || '-' },
+                { key: 'check_out', label: 'Check Out', render: (v) => v || '-' },
+                {
+                  key: 'check_in', label: 'Time Spent',
+                  render: (v, row) => {
+                    if (!row.check_in || !row.check_out) return '-';
+                    const toSecs = (t) => { const [h, m, s] = t.split(':').map(Number); return h * 3600 + m * 60 + (s || 0); };
+                    const diff = toSecs(row.check_out) - toSecs(row.check_in);
+                    if (diff <= 0) return '-';
+                    const mins = Math.floor(diff / 60), secs = diff % 60;
+                    return secs > 0 ? `${mins}m ${secs}s` : `${mins} mins`;
+                  }
+                },
                 {
                   key: 'is_productive', label: 'Productive',
                   render: (v) => {

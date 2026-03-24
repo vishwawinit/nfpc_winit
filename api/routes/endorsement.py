@@ -89,20 +89,26 @@ def get_endorsement(
             productive_count += 1
 
         customer_list.append({
+            "date": str(c["date"]) if c["date"] else None,
             "customer_code": c["customer_code"],
             "customer_name": c["customer_name"],
             "channel_name": c["channel_name"],
             "is_planned": is_planned,
-            "visit_type": "JP" if is_planned else "UJP",
-            "arrival_time": str(c["arrival_time"])[11:16] if c["arrival_time"] else None,
-            "out_time": str(c["out_time"])[11:16] if c["out_time"] else None,
-            "time_spent_mins": float(c["total_time_mins"]) if c["total_time_mins"] else 0,
+            "check_in": str(c["arrival_time"])[11:19] if c["arrival_time"] else None,
+            "check_out": str(c["out_time"])[11:19] if c["out_time"] else None,
             "is_productive": is_productive,
             "total_value": float(c["total_value"]) if first_visit else 0,
             "total_returns": float(c["total_returns"]) if first_visit else 0,
             "latitude": float(c["latitude"]) if c["latitude"] else None,
             "longitude": float(c["longitude"]) if c["longitude"] else None,
         })
+
+    # Scheduled calls: from rpt_journey_plan directly (matches dashboard SP)
+    # This includes customers planned but not yet visited, so it's the true denominator
+    jpw, jpp = build_where(filters, date_col='date')
+    jp_row = query_one(f"SELECT COUNT(*) AS scheduled FROM rpt_journey_plan WHERE {jpw}", jpp)
+    scheduled_calls = int(jp_row['scheduled']) if jp_row else 0
+    coverage_pct = round(planned_count / scheduled_calls * 100, 1) if scheduled_calls else 0
 
     # Header from first row or aggregate
     header = {}
@@ -114,9 +120,12 @@ def get_endorsement(
             "user_code": first["user_code"],
             "user_name": first["user_name"],
             "total_visits": total_visits,
-            "scheduled": len(set((c["route_code"], c["customer_code"], str(c["date"])) for c in customers if c["is_planned"])),
+            "scheduled_calls": scheduled_calls,
             "planned_visits": planned_count,
+            "unplanned_visits": max(0, total_visits - planned_count),
             "productive_visits": productive_count,
+            "non_productive_visits": max(0, total_visits - productive_count),
+            "coverage_pct": coverage_pct,
         }
 
     return {

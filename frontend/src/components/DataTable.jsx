@@ -3,7 +3,7 @@ import { Search, Download, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, Chevron
 
 const PAGE_SIZES = [20, 50, 100];
 
-export default function DataTable({ columns, data, onRowClick, exportName, pageSize: defaultPageSize = 20 }) {
+export default function DataTable({ columns, data, onRowClick, exportName, pageSize: defaultPageSize = 20, disableSort = false }) {
   const [sortCol, setSortCol] = useState(null);
   const [sortDir, setSortDir] = useState('asc');
   const [search, setSearch] = useState('');
@@ -113,12 +113,12 @@ export default function DataTable({ columns, data, onRowClick, exportName, pageS
               {columns.map(col => (
                 <th
                   key={col.key}
-                  onClick={() => handleSort(col.key)}
-                  className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 hover:text-gray-600 whitespace-nowrap transition-colors duration-150 select-none bg-gray-50"
+                  onClick={disableSort ? undefined : () => handleSort(col.key)}
+                  className={`px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap transition-colors duration-150 select-none bg-gray-50 ${disableSort ? '' : 'cursor-pointer hover:bg-gray-100 hover:text-gray-600'}`}
                 >
                   <div className="inline-flex items-center gap-1.5">
                     {col.label}
-                    <SortIcon colKey={col.key} />
+                    {!disableSort && <SortIcon colKey={col.key} />}
                   </div>
                 </th>
               ))}

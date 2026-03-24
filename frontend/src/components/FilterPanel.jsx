@@ -270,7 +270,7 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
     if (show('channel'))   fetchFilters.channels().then(setChannels);
     if (show('brand'))     fetchFilters.brands().then(setBrands);
     if (show('category'))  fetchFilters.categories().then(setCategories);
-  }, [show]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Items depend on: brand + category + sales_org ───
   useEffect(() => {
@@ -283,7 +283,7 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
       }),
       setItems, setLoadingItems
     );
-  }, [filters.brand, filters.category, filters.sales_org, show, abortAndFetch]);
+  }, [filters.brand, filters.category, filters.sales_org]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── HOS depend on: sales_org ───
   useEffect(() => {
@@ -292,7 +292,7 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
       () => fetchFilters.hos({ sales_org: filters.sales_org }),
       setHosList, setLoadingHos
     );
-  }, [filters.sales_org, show, abortAndFetch]);
+  }, [filters.sales_org]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── ASMs depend on: sales_org + hos ───
   useEffect(() => {
@@ -301,7 +301,7 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
       () => fetchFilters.asms({ sales_org: filters.sales_org, hos: filters.hos }),
       setAsms, setLoadingAsms
     );
-  }, [filters.sales_org, filters.hos, show, abortAndFetch]);
+  }, [filters.sales_org, filters.hos]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Supervisors depend on: sales_org + hos + asm ───
   useEffect(() => {
@@ -310,7 +310,7 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
       () => fetchFilters.supervisors({ sales_org: filters.sales_org, asm: filters.asm, hos: filters.hos }),
       setSupervisors, setLoadingSupervisors
     );
-  }, [filters.sales_org, filters.hos, filters.asm, show, abortAndFetch]);
+  }, [filters.sales_org, filters.hos, filters.asm]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Depots depend on: sales_org + asm ───
   useEffect(() => {
@@ -319,7 +319,7 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
       () => fetchFilters.depots({ sales_org: filters.sales_org, asm: filters.asm }),
       setDepots, setLoadingDepots
     );
-  }, [filters.sales_org, filters.asm, show, abortAndFetch]);
+  }, [filters.sales_org, filters.asm]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Users depend on: sales_org + hos + asm + supervisor + depot ───
   useEffect(() => {
@@ -331,7 +331,7 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
       }),
       setUsers, setLoadingUsers
     );
-  }, [filters.sales_org, filters.hos, filters.asm, filters.supervisor, filters.depot, show, abortAndFetch]);
+  }, [filters.sales_org, filters.hos, filters.asm, filters.supervisor, filters.depot]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Routes depend on: sales_org + hos + asm + depot + supervisor ───
   useEffect(() => {
@@ -343,7 +343,7 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
       }),
       setRoutes, setLoadingRoutes
     );
-  }, [filters.sales_org, filters.hos, filters.asm, filters.depot, filters.supervisor, show, abortAndFetch]);
+  }, [filters.sales_org, filters.hos, filters.asm, filters.depot, filters.supervisor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Customers: load once from dim_customer, filter client-side by sales_org ───
   const [allCustomers, setAllCustomers] = useState([]);
@@ -355,7 +355,7 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
       () => fetchFilters.orderCustomers(),
       setAllCustomers, setLoadingCustomers
     );
-  }, [show, abortAndFetch]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!show('customer')) return;
@@ -365,7 +365,7 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
     } else {
       setCustomers(allCustomers);
     }
-  }, [filters.sales_org, allCustomers, show]);
+  }, [filters.sales_org, allCustomers]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Cascade clearing: when parent changes, clear all children ───
   const set = (key, value) => {

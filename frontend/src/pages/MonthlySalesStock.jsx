@@ -6,6 +6,7 @@ import { Package, Layers, Search, Download, ChevronLeft, ChevronRight } from 'lu
 
 const aed = (v) => v != null ? `AED ${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-';
 const PAGE_SIZES = [20, 50, 100, 200];
+const SHOW_FIELDS = ['date_from', 'date_to', 'sales_org', 'category', 'brand', 'channel', 'item'];
 
 function exportToExcel(items, channels, filename) {
   const header = ['Item Code', 'Item Name', ...channels.flatMap(ch => [`${ch} MTD`, `${ch} YTD`])].join('\t');
@@ -108,7 +109,7 @@ export default function MonthlySalesStock() {
       </div>
 
       <FilterPanel filters={filters} onChange={setFilters}
-        showFields={['date_from', 'date_to', 'sales_org', 'category', 'brand', 'channel', 'item']} />
+        showFields={SHOW_FIELDS} />
 
       {loading ? <Loading /> : items.length === 0 ? (
         <div className="text-center py-16 text-gray-400">No data available</div>

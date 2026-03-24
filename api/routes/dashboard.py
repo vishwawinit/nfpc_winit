@@ -392,11 +392,10 @@ def get_dashboard(
     #         a journey plan entry
     # =========================================================
 
-    # Primary: use rpt_coverage_summary (pre-computed, matches MSSQL tblRouteCoverageSummary)
-    # When no hierarchy/user filter: restrict to routes with active user-location assignments
-    # When specific users are filtered: show all their routes (already scoped by user_code)
-    _has_user_filter = bool(filters.get('user_code'))
-    _cov_route_join = "" if _has_user_filter else "JOIN dim_route r ON c.route_code = r.code AND r.has_active_assignment = true "
+    # Primary: use rpt_coverage_summary filtered to routes with active user assignments
+    # (matches MSSQL SP_CoverageReport_ForDashboard_Reports_V1_NEW_OPTS which JOINs
+    # tblRouteCoverageSummary to udf_GetAllChildRoutesForFilter → tblUserLocations)
+    # dim_route.has_active_assignment = routes in tblUserLocations (synced by ETL)
     f_cov = _filter_keys(filters, COVERAGE_KEYS)
     covw, covp = build_where(f_cov, date_col='visit_date', prefix='c')
     cov_row = query_one(
@@ -406,7 +405,7 @@ def get_dashboard(
         f"  COALESCE(SUM(c.selling_calls),0) AS selling, "
         f"  COALESCE(SUM(c.planned_selling_calls),0) AS planned_selling "
         f"FROM rpt_coverage_summary c "
-        f"{_cov_route_join}"
+        f"JOIN dim_route _dr ON c.route_code = _dr.code AND _dr.has_active_assignment = true "
         f"WHERE {covw}", covp
     )
     scheduled = int(cov_row["scheduled"]) if cov_row else 0
@@ -560,14 +559,13 @@ def get_dashboard(
     # =========================================================
     f_cov2 = _filter_keys(filters, COVERAGE_KEYS)
     vw2, vp2 = build_where(f_cov2, date_col='visit_date', prefix='c')
-    _cov2_join = "" if _has_user_filter else "JOIN dim_route r ON c.route_code = r.code AND r.has_active_assignment = true "
     route_visits = query(
         f"SELECT c.route_code, c.route_name, "
         f"  COALESCE(SUM(c.scheduled_calls),0) AS scheduled, "
         f"  COALESCE(SUM(c.planned_calls),0) AS actual, "
         f"  COALESCE(SUM(c.selling_calls),0) AS selling "
         f"FROM rpt_coverage_summary c "
-        f"{_cov2_join}"
+        f"JOIN dim_route _dr ON c.route_code = _dr.code AND _dr.has_active_assignment = true "
         f"WHERE {vw2} "
         f"GROUP BY c.route_code, c.route_name ORDER BY c.route_name", vp2
     )

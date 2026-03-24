@@ -321,6 +321,23 @@ def load_dimensions(ms_conn, pg_conn):
         pg_conn.commit()
         total += len(rows)
         log(f"    {name}: {len(rows)} rows")
+
+    # Set dim_route.has_active_assignment from tblUserLocations
+    # Routes in tblUserLocations = routes with active salesman assignments
+    # This matches the filter used by MSSQL coverage dashboard SPs
+    ms_cur.execute("""
+        SELECT DISTINCT RouteCode FROM tblUserLocations
+        WHERE IsActive = 1 AND RouteCode IS NOT NULL AND RouteCode != ''
+    """)
+    active_route_codes = [r[0] for r in ms_cur.fetchall()]
+    pg_cur.execute("UPDATE dim_route SET has_active_assignment = false")
+    if active_route_codes:
+        ph = ','.join(['%s'] * len(active_route_codes))
+        pg_cur.execute(f"UPDATE dim_route SET has_active_assignment = true WHERE code IN ({ph})",
+                       active_route_codes)
+    pg_conn.commit()
+    log(f"    dim_route.has_active_assignment: {len(active_route_codes)} active routes")
+
     progress.finish_step(total)
 
     # dim_user (flat join across tblUser + tblUserRole + tblUserDetails + DepotMaster + tblUserLocations)
