@@ -17,6 +17,8 @@ import time
 import json
 import logging
 import argparse
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -693,7 +695,8 @@ def load_customer_visits(ms_conn, pg_conn):
             cv.ArrivalTime, cv.OutTime, cv.TotalTimeInMins,
             CAST(CASE WHEN cv.IsProductive = 1 THEN 1 ELSE 0 END AS BIT),
             CAST(CASE WHEN cv.TypeOfCall = 'Planned' THEN 1 ELSE 0 END AS BIT),
-            cv.Latitude, cv.Longitude, cv.JourneyCode
+            cv.Latitude, cv.Longitude, cv.JourneyCode,
+            cv.VisitCode
         FROM tblCustomerVisit cv
         LEFT JOIN tblUser u ON cv.UserCode = u.Code
         LEFT JOIN tblRoute rt ON cv.RouteCode = rt.Code
@@ -710,7 +713,8 @@ def load_customer_visits(ms_conn, pg_conn):
         'sales_org_code', 'sales_org_name', 'customer_code', 'customer_name',
         'channel_name', 'city_name', 'region_name',
         'arrival_time', 'out_time', 'total_time_mins',
-        'is_productive', 'is_planned', 'latitude', 'longitude', 'journey_code'
+        'is_productive', 'is_planned', 'latitude', 'longitude', 'journey_code',
+        'visit_code'
     ]
     total = extract_batch(ms_cur, query, (DATE_FROM, DATE_TO), pg_conn, 'rpt_customer_visits', columns)
     pg_cur.close()
@@ -848,7 +852,13 @@ def load_outstanding(ms_conn, pg_conn):
 
     ms_cur = ms_conn.cursor()
     # Simplified query: pull raw JDE dates, convert in Python
-    query = """
+    # Filter by TrxDateTime to only load data within the ETL date range
+    date_filter = ""
+    if DATE_FROM:
+        date_filter += f" AND mpi.TrxDateTime >= '{DATE_FROM}'"
+    if DATE_TO:
+        date_filter += f" AND mpi.TrxDateTime < DATEADD(day, 1, '{DATE_TO}')"
+    query = f"""
         SELECT mpi.MiddleWarePendingInvoiceId, mpi.TrxCode,
             mpi.OrgCode, so.Description, mpi.ClientCode, c.Description, ch.Description,
             mpi.TrxDate, mpi.DueDate,
@@ -861,7 +871,7 @@ def load_outstanding(ms_conn, pg_conn):
         LEFT JOIN tblChannel ch ON cd.ChannelCode = ch.Code
         LEFT JOIN tblUser u ON mpi.UserCode = u.Code
         LEFT JOIN tblRoute rt ON mpi.RouteCode = rt.Code
-        WHERE mpi.BalanceAmount != 0
+        WHERE mpi.BalanceAmount != 0{date_filter}
     """
     log_debug(f"  SQL: {query[:200]}...")
     log(f"  Querying MSSQL (this may take a while for large tables)...")
@@ -1169,6 +1179,8 @@ def main():
     parser.add_argument('--dry-run', action='store_true', help='Show plan without executing')
     parser.add_argument('--from-date', default=DATE_FROM, help=f'Start date (default: {DATE_FROM})')
     parser.add_argument('--to-date', default=DATE_TO, help=f'End date (default: {DATE_TO})')
+    parser.add_argument('--parallel', action='store_true', help='Run fact tables in parallel')
+    parser.add_argument('--workers', type=int, default=4, help='Number of parallel workers (default: 4)')
     args = parser.parse_args()
 
     DATE_FROM = args.from_date
@@ -1177,6 +1189,7 @@ def main():
     log(f"{'═' * 60}")
     log(f"  NFPC Reports ETL")
     log(f"  Date range: {DATE_FROM} to {DATE_TO}")
+    log(f"  Mode: {'parallel (workers=' + str(args.workers) + ')' if args.parallel else 'sequential'}")
     log(f"  Log file:   {log_file}")
     log(f"{'═' * 60}")
 
@@ -1197,40 +1210,85 @@ def main():
 
     progress.start_etl(len(steps))
 
-    ms_conn = get_mssql_conn()
-    pg_conn = get_pg_conn()
-
     failed = []
-    for name, loader_fn in steps:
-        try:
-            loader_fn(ms_conn, pg_conn)
-        except Exception as e:
-            log_error(f"FAILED on {name}: {e}")
-            log_debug(f"Traceback:", exc_info=True)
-            progress.finish_step(0, error=str(e))
-            failed.append(name)
-            # Recover PG connection
+
+    if args.parallel and not args.table:
+        # Dimensions first (sequential, fast, needed by fact tables)
+        DIM_STEPS = ['dimensions', 'holidays', 'targets', 'coverage_summary']
+        dim_steps = [(n, f) for n, f in steps if n in DIM_STEPS]
+        fact_steps = [(n, f) for n, f in steps if n not in DIM_STEPS]
+
+        log(f"\n  [Phase 1] Loading {len(dim_steps)} dimension tables sequentially...")
+        ms_conn = get_mssql_conn()
+        pg_conn = get_pg_conn()
+        for name, loader_fn in dim_steps:
             try:
-                pg_conn.rollback()
-            except Exception:
+                loader_fn(ms_conn, pg_conn)
+            except Exception as e:
+                log_error(f"FAILED on {name}: {e}")
+                progress.finish_step(0, error=str(e))
+                failed.append(name)
+        ms_conn.close()
+        pg_conn.close()
+
+        log(f"\n  [Phase 2] Loading {len(fact_steps)} fact tables in parallel (workers={args.workers})...")
+
+        def run_table(name, loader_fn):
+            ms_c = get_mssql_conn()
+            pg_c = get_pg_conn()
+            try:
+                loader_fn(ms_c, pg_c)
+                return name, None
+            except Exception as e:
+                log_error(f"FAILED on {name}: {e}")
+                progress.finish_step(0, error=str(e))
+                return name, str(e)
+            finally:
+                try: ms_c.close()
+                except Exception: pass
+                try: pg_c.close()
+                except Exception: pass
+
+        with ThreadPoolExecutor(max_workers=args.workers) as executor:
+            futures = {executor.submit(run_table, name, fn): name for name, fn in fact_steps}
+            for future in as_completed(futures):
+                name, err = future.result()
+                if err:
+                    failed.append(name)
+    else:
+        ms_conn = get_mssql_conn()
+        pg_conn = get_pg_conn()
+
+        for name, loader_fn in steps:
+            try:
+                loader_fn(ms_conn, pg_conn)
+            except Exception as e:
+                log_error(f"FAILED on {name}: {e}")
+                log_debug(f"Traceback:", exc_info=True)
+                progress.finish_step(0, error=str(e))
+                failed.append(name)
+                # Recover PG connection
                 try:
-                    pg_conn = get_pg_conn()
+                    pg_conn.rollback()
+                except Exception:
+                    try:
+                        pg_conn = get_pg_conn()
+                    except Exception:
+                        pass
+                # Recover MSSQL connection (likely dropped after long query)
+                try:
+                    ms_conn.close()
                 except Exception:
                     pass
-            # Recover MSSQL connection (likely dropped after long query)
-            try:
-                ms_conn.close()
-            except Exception:
-                pass
-            try:
-                log("  Reconnecting to MSSQL...")
-                ms_conn = get_mssql_conn()
-                log("  MSSQL reconnected")
-            except Exception as re:
-                log_error(f"  MSSQL reconnect failed: {re}")
+                try:
+                    log("  Reconnecting to MSSQL...")
+                    ms_conn = get_mssql_conn()
+                    log("  MSSQL reconnected")
+                except Exception as re:
+                    log_error(f"  MSSQL reconnect failed: {re}")
 
-    ms_conn.close()
-    pg_conn.close()
+        ms_conn.close()
+        pg_conn.close()
 
     progress.finish_etl()
 

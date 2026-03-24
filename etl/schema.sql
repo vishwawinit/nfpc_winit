@@ -271,7 +271,8 @@ CREATE TABLE rpt_customer_visits (
     is_planned BOOLEAN,
     latitude FLOAT,
     longitude FLOAT,
-    journey_code VARCHAR(50)
+    journey_code VARCHAR(50),
+    visit_code VARCHAR(100)
 );
 
 -- Journey/attendance flat

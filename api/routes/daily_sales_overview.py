@@ -224,22 +224,47 @@ def get_daily_sales_overview(
         "total_invoices": total_invoices,
     }
 
-    # --- Prod. Minutes: SUM(total_time_mins) for productive visits (visits with invoices) ---
-    # Matches SP Part2: join tblCustomerVisit with tblTrxHeader on ClientCode+UserCode+VisitDate
+    # --- Prod. Minutes: SUM(total_time_mins) for productive visits ---
+    # Matches SP Part2: JOIN tblCustomerVisit with DISTINCT(ClientCode,UserCode,VisitCode,TrxCode)
+    # The SP uses DISTINCT TrxDate (datetime) so one visit with multiple invoices is counted N times.
+    # We replicate this by joining on DISTINCT trx_code — each matching invoice counts the visit once.
     try:
         f_vis = {k: v for k, v in filters.items() if k in VISIT_KEYS}
         vw, vp = build_where(f_vis, date_col='date', prefix='cv')
+        # Build matching date filter for rpt_sales_detail
+        sd_date_conds = []
+        sd_date_params = []
+        if filters.get('date_from'):
+            sd_date_conds.append("sd.trx_date::date >= %s")
+            sd_date_params.append(filters['date_from'])
+        if filters.get('date_to'):
+            sd_date_conds.append("sd.trx_date::date <= %s")
+            sd_date_params.append(filters['date_to'])
+        if filters.get('user_code'):
+            u_vals = [v.strip() for v in str(filters['user_code']).split(',') if v.strip()]
+            sd_date_conds.append(f"sd.user_code IN ({','.join(['%s']*len(u_vals))})")
+            sd_date_params.extend(u_vals)
+        if filters.get('route'):
+            r_vals = [v.strip() for v in str(filters['route']).split(',') if v.strip()]
+            sd_date_conds.append(f"sd.route_code IN ({','.join(['%s']*len(r_vals))})")
+            sd_date_params.extend(r_vals)
+        if filters.get('sales_org'):
+            o_vals = [v.strip() for v in str(filters['sales_org']).split(',') if v.strip()]
+            sd_date_conds.append(f"sd.sales_org_code IN ({','.join(['%s']*len(o_vals))})")
+            sd_date_params.extend(o_vals)
+        sd_where = (" AND " + " AND ".join(sd_date_conds)) if sd_date_conds else ""
         prod_min_row = query_one(
             f"SELECT COALESCE(SUM(cv.total_time_mins), 0) AS prod_minutes "
             f"FROM rpt_customer_visits cv "
-            f"WHERE {vw} "
-            f"AND EXISTS ("
-            f"  SELECT 1 FROM rpt_sales_detail sd "
-            f"  WHERE sd.visit_code = cv.visit_id "
-            f"  AND sd.user_code = cv.user_code "
-            f"  AND sd.trx_type IN (1, 4) AND sd.trx_status = 200"
-            f")",
-            vp
+            f"JOIN ("
+            f"  SELECT DISTINCT sd.visit_code, sd.user_code, sd.trx_code "
+            f"  FROM rpt_sales_detail sd "
+            f"  WHERE sd.trx_type IN (1, 4) AND sd.trx_status = 200 "
+            f"  AND sd.visit_code IS NOT NULL AND sd.visit_code != '' "
+            f"  {sd_where}"
+            f") sd ON sd.visit_code = cv.visit_code AND sd.user_code = cv.user_code "
+            f"WHERE {vw}",
+            sd_date_params + vp
         )
         prod_minutes = float(prod_min_row["prod_minutes"]) if prod_min_row else 0
     except Exception:
