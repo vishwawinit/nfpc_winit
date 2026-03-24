@@ -50,7 +50,7 @@ export default function MtdSalesOverview() {
       ) : (
         <>
           {/* Route & Salesman Info */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          {/* <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Route & Salesman</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-6">
               {[
@@ -73,7 +73,7 @@ export default function MtdSalesOverview() {
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
 
           {/* Target & Achievement KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

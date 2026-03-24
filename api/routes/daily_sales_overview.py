@@ -82,12 +82,11 @@ def get_daily_sales_overview(
         _rsic_org_join = f"JOIN dim_route _dr ON {{alias}}.route_code = _dr.code AND _dr.sales_org_code IN ({org_ph}) "
         _rsic_org_params = orgs
 
-    # Channel filter: resolve to customer_codes via dim_customer
-    # rpt_route_sales_by_item_customer has customer_code but no channel_code
     # Channel/SubChannel filter: applied via EXISTS on dim_customer
-    # Must match customer_code + sales_org (through route) like MSSQL does
+    # rpt_route_sales_by_item_customer has customer_code but no channel_code
     channel_cond = ""
     channel_params = []
+    sd_channel_cond = ""  # for rpt_sales_detail (discount/invoice queries)
     if channel or sub_channel:
         ch_conditions = []
         if channel:
@@ -103,9 +102,11 @@ def get_daily_sales_overview(
         ch_where = " AND ".join(ch_conditions)
         channel_cond = (
             f" AND EXISTS (SELECT 1 FROM dim_customer dc "
-            f"  JOIN dim_route dr ON dr.sales_org_code = dc.sales_org_code "
-            f"  WHERE dc.code = r.customer_code AND dr.code = r.route_code "
-            f"  AND {ch_where})"
+            f"  WHERE dc.code = r.customer_code AND {ch_where})"
+        )
+        sd_channel_cond = (
+            f" AND EXISTS (SELECT 1 FROM dim_customer dc "
+            f"  WHERE dc.code = customer_code AND {ch_where})"
         )
 
     # Brand/Category filter: resolve to item_codes via dim_item
@@ -133,6 +134,7 @@ def get_daily_sales_overview(
         i_ph = ','.join(['%s'] * len(i_codes))
         item_filter_cond = f" AND r.item_code IN ({i_ph})"
         item_filter_params = i_codes
+    sd_item_cond = f" AND item_code IN ({','.join(['%s'] * len(item_filter_params))})" if item_filter_params else ""
 
     # org_join for queries on rpt_route_sales_by_item_customer
     f_rsic = {k: v for k, v in filters.items() if k in RSIC_KEYS}
@@ -170,8 +172,8 @@ def get_daily_sales_overview(
             f"JOIN dim_route dr ON r.route_code = dr.code "
             f"JOIN dim_customer dc ON r.customer_code = dc.code AND dc.sales_org_code = dr.sales_org_code "
             f"{cc_join}"
-            f"WHERE {ccw}",
-            _rsic_org_params + ccp
+            f"WHERE {ccw}{channel_cond}{item_filter_cond}",
+            _rsic_org_params + ccp + channel_params + item_filter_params
         )
         cash_sales = float(cash_credit_row["cash_sales"]) if cash_credit_row else 0
         credit_sales = float(cash_credit_row["credit_sales"]) if cash_credit_row else 0
@@ -188,8 +190,8 @@ def get_daily_sales_overview(
         disc_row = query_one(
             f"SELECT COALESCE(SUM(discount_amount), 0) AS discount "
             f"FROM (SELECT DISTINCT trx_code, line_no, discount_amount FROM rpt_sales_detail "
-            f"  WHERE trx_type IN (1, 4) AND trx_status = 200 AND {sw}{extra_where}) t",
-            sp + extra_params
+            f"  WHERE trx_type IN (1, 4) AND trx_status = 200 AND {sw}{extra_where}{sd_channel_cond}{sd_item_cond}) t",
+            sp + extra_params + channel_params + item_filter_params
         )
         discount = float(disc_row["discount"]) if disc_row else 0
     except Exception:
@@ -212,8 +214,8 @@ def get_daily_sales_overview(
         inv_row = query_one(
             f"SELECT COUNT(DISTINCT trx_code) AS total_invoices "
             f"FROM rpt_sales_detail "
-            f"WHERE trx_type IN (1, 4) AND trx_status = 200 AND {sw}{extra_where}",
-            sp + extra_params
+            f"WHERE trx_type IN (1, 4) AND trx_status = 200 AND {sw}{extra_where}{sd_channel_cond}{sd_item_cond}",
+            sp + extra_params + channel_params + item_filter_params
         )
         total_invoices = int(inv_row["total_invoices"]) if inv_row else 0
     except Exception:
