@@ -282,8 +282,20 @@ def get_order_customers():
 
 
 @router.get("/filters/items")
-def get_items():
-    return query("SELECT code, name FROM dim_item WHERE is_active = true ORDER BY name")
+def get_items(brand: str = None, category: str = None, sales_org: str = None):
+    conditions = ["is_active = true"]
+    params = []
+    if brand:
+        b_vals = _split(brand)
+        _in_clause("TRIM(brand_code)", b_vals, conditions, params)
+    if category:
+        c_vals = _split(category)
+        _in_clause("category_code", c_vals, conditions, params)
+    if sales_org:
+        o_vals = _split(sales_org)
+        _in_clause("sales_org_code", o_vals, conditions, params)
+    where = " AND ".join(conditions)
+    return query(f"SELECT code, name FROM dim_item WHERE {where} ORDER BY name", params)
 
 
 @router.get("/filters/brands")

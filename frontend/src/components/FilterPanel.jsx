@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchFilters } from '../api';
 import {
   Calendar, Building2, Route, User, Radio, Tag, Layers, Hash, CalendarDays,
-  Warehouse, Users, ChevronDown, X, Check, Shield, Crown, RotateCcw, UserCircle
+  Warehouse, Users, ChevronDown, X, Check, Shield, Crown, RotateCcw, UserCircle, Package
 } from 'lucide-react';
 
 const fieldMeta = {
@@ -19,6 +19,7 @@ const fieldMeta = {
   brand: { label: 'Brand', icon: Tag, multi: true },
   category: { label: 'Category', icon: Layers, multi: true },
   customer: { label: 'Customer', icon: UserCircle, multi: true },
+  item: { label: 'Item', icon: Package, multi: true },
   day: { label: 'Day', icon: Calendar, type: 'day' },
   month: { label: 'Month', icon: CalendarDays, type: 'month' },
   year: { label: 'Year', icon: Hash, type: 'year' },
@@ -28,16 +29,18 @@ const fieldMeta = {
                                        depot ──────┘              │
                                                                    route depends on all above */
 const CHILD_MAP = {
-  sales_org: ['hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'customer'],
+  sales_org: ['hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'customer', 'item'],
   hos:       ['asm', 'depot', 'supervisor', 'user_code', 'route', 'customer'],
   asm:       ['supervisor', 'user_code', 'route', 'customer'],
   depot:     ['user_code', 'route', 'customer'],
   supervisor:['user_code', 'route', 'customer'],
   user_code: ['route', 'customer'],
   route:     ['customer'],
+  brand:     ['item'],
+  category:  ['item'],
 };
 
-function MultiSelect({ options, value, onChange, placeholder = 'All', loading = false, onSearch = null }) {
+function MultiSelect({ options, value, onChange, placeholder = 'All', loading = false, onSearch = null, searchByCode = false }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const btnRef = useRef(null);
@@ -152,7 +155,7 @@ function MultiSelect({ options, value, onChange, placeholder = 'All', loading = 
                   type="text"
                   value={search}
                   onChange={e => handleSearchChange(e.target.value)}
-                  placeholder="Type to search..."
+                  placeholder={searchByCode ? 'Search by name or code...' : 'Type to search...'}
                   className="w-full text-[13px] border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-colors placeholder:text-gray-400"
                   autoFocus
                 />
@@ -212,7 +215,7 @@ function MultiSelect({ options, value, onChange, placeholder = 'All', loading = 
   );
 }
 
-export default function FilterPanel({ filters, onChange, showFields = [] }) {
+export default function FilterPanel({ filters, onChange, showFields = [], onReset }) {
   const [salesOrgs, setSalesOrgs] = useState([]);
   const [hosList, setHosList] = useState([]);
   const [asms, setAsms] = useState([]);
@@ -224,6 +227,8 @@ export default function FilterPanel({ filters, onChange, showFields = [] }) {
   const [customers, setCustomers] = useState([]);
   const [depots, setDepots] = useState([]);
   const [supervisors, setSupervisors] = useState([]);
+  const [items, setItems] = useState([]);
+  const [loadingItems, setLoadingItems] = useState(false);
 
   const [loadingHos, setLoadingHos] = useState(false);
   const [loadingAsms, setLoadingAsms] = useState(false);
@@ -266,6 +271,19 @@ export default function FilterPanel({ filters, onChange, showFields = [] }) {
     if (show('brand'))     fetchFilters.brands().then(setBrands);
     if (show('category'))  fetchFilters.categories().then(setCategories);
   }, [show]);
+
+  // ─── Items depend on: brand + category + sales_org ───
+  useEffect(() => {
+    if (!show('item')) return;
+    abortAndFetch('item',
+      () => fetchFilters.items({
+        brand: filters.brand,
+        category: filters.category,
+        sales_org: filters.sales_org,
+      }),
+      setItems, setLoadingItems
+    );
+  }, [filters.brand, filters.category, filters.sales_org, show, abortAndFetch]);
 
   // ─── HOS depend on: sales_org ───
   useEffect(() => {
@@ -409,6 +427,7 @@ export default function FilterPanel({ filters, onChange, showFields = [] }) {
       case 'customer': return customers;
       case 'depot': return depots;
       case 'supervisor': return supervisors;
+      case 'item': return items;
       default: return [];
     }
   };
@@ -422,6 +441,7 @@ export default function FilterPanel({ filters, onChange, showFields = [] }) {
       case 'route': return loadingRoutes;
       case 'depot': return loadingDepots;
       case 'customer': return loadingCustomers;
+      case 'item': return loadingItems;
       default: return false;
     }
   };
@@ -482,7 +502,7 @@ export default function FilterPanel({ filters, onChange, showFields = [] }) {
       {/* Row 2: All other filters in hierarchy order */}
       {multiFields.length > 0 && (
         <div className={`grid ${multiGridCols} gap-x-3 gap-y-4`}>
-          {['sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'channel', 'customer', 'brand', 'category'].map(field =>
+          {['sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'channel', 'customer', 'brand', 'category', 'item'].map(field =>
             show(field) && (
               <div key={field}>
                 <Label field={field} />
@@ -492,6 +512,7 @@ export default function FilterPanel({ filters, onChange, showFields = [] }) {
                   onChange={(val) => set(field, val)}
                   loading={loadingFor(field)}
                   onSearch={null}
+                  searchByCode={field === 'item' || field === 'customer'}
                 />
               </div>
             )
@@ -552,6 +573,20 @@ export default function FilterPanel({ filters, onChange, showFields = [] }) {
                 <option value="2025">2025</option>
                 <option value="2024">2024</option>
               </select>
+            </div>
+          )}
+
+          {onReset && !hasDateFrom && !hasDateTo && (
+            <div className="flex items-end">
+              <button
+                type="button"
+                onClick={onReset}
+                className="flex items-center gap-1.5 px-3 py-[7px] text-[13px] font-medium text-gray-500 bg-gray-100 hover:bg-red-50 hover:text-red-600 rounded-lg border border-gray-200/80 transition-all duration-150"
+                title="Reset all filters"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Reset
+              </button>
             </div>
           )}
         </div>

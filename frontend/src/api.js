@@ -10,7 +10,7 @@ export const fetchFilters = {
   users: (params) => api.get('/filters/users', { params }).then(r => r.data),
   customers: (salesOrg) => api.get('/filters/customers', { params: { sales_org: salesOrg } }).then(r => r.data),
   orderCustomers: () => api.get('/filters/order-customers').then(r => r.data),
-  items: () => api.get('/filters/items').then(r => r.data),
+  items: (params) => api.get('/filters/items', { params }).then(r => r.data),
   brands: () => api.get('/filters/brands').then(r => r.data),
   channels: () => api.get('/filters/channels').then(r => r.data),
   categories: () => api.get('/filters/categories').then(r => r.data),

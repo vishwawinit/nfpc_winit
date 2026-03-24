@@ -108,7 +108,7 @@ export default function MonthlySalesStock() {
       </div>
 
       <FilterPanel filters={filters} onChange={setFilters}
-        showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'category', 'brand']} />
+        showFields={['date_from', 'date_to', 'sales_org', 'category', 'brand', 'channel', 'item']} />
 
       {loading ? <Loading /> : items.length === 0 ? (
         <div className="text-center py-16 text-gray-400">No data available</div>

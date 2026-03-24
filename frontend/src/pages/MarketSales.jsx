@@ -10,12 +10,14 @@ import {
 const aed = (v) => `AED ${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+const DEFAULT_FILTERS = { year: new Date().getFullYear() };
+
 export default function MarketSales() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const hasData = useRef(false);
-  const [filters, setFilters] = useState({ year: new Date().getFullYear() });
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
   useEffect(() => {
     let cancelled = false;
@@ -70,11 +72,9 @@ export default function MarketSales() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="text-[22px] font-bold text-gray-900 tracking-tight">Market Sales Performance</h1>
-          <p className="text-[13px] text-gray-400 mt-0.5 font-medium">Year-over-year comparison by month</p>
-        </div>
+      <div>
+        <h1 className="text-[22px] font-bold text-gray-900 tracking-tight">Market Sales Performance</h1>
+        <p className="text-[13px] text-gray-400 mt-0.5 font-medium">Year-over-year comparison by month</p>
       </div>
 
       {/* Filters — always mounted */}
@@ -82,6 +82,7 @@ export default function MarketSales() {
         filters={filters}
         onChange={setFilters}
         showFields={['year', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route']}
+        onReset={() => { hasData.current = false; setFilters(DEFAULT_FILTERS); }}
       />
 
       {/* Refreshing indicator */}

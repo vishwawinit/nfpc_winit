@@ -22,6 +22,8 @@ def get_monthly_sales_stock(
     route: Optional[str] = None,
     brand: Optional[str] = None,
     category: Optional[str] = None,
+    channel: Optional[str] = None,
+    item: Optional[str] = None,
     user_code: Optional[str] = None,
     hos: Optional[str] = None,
     asm: Optional[str] = None,
@@ -59,10 +61,10 @@ def get_monthly_sales_stock(
         _org_join = f"JOIN dim_route _dr ON r.route_code = _dr.code AND _dr.sales_org_code IN ({org_ph}) "
         _org_params = orgs
 
-    # Brand/Category → item_codes
+    # Brand/Category/Item → item_codes
     item_cond = ""
     item_params = []
-    if brand or category:
+    if brand or category or item:
         i_conditions = []
         i_params = []
         if brand:
@@ -75,14 +77,35 @@ def get_monthly_sales_stock(
             c_ph = ','.join(['%s'] * len(c_vals))
             i_conditions.append(f"category_code IN ({c_ph})")
             i_params.extend(c_vals)
+        if item:
+            item_vals = [v.strip() for v in item.split(',') if v.strip()]
+            item_ph = ','.join(['%s'] * len(item_vals))
+            i_conditions.append(f"code IN ({item_ph})")
+            i_params.extend(item_vals)
         i_where = " AND ".join(i_conditions)
         i_rows = query(f"SELECT DISTINCT code FROM dim_item WHERE {i_where}", i_params)
         if not i_rows:
-            return {"items": []}
+            return {"items": [], "all_channels": []}
         i_codes = [r['code'] for r in i_rows]
         i_ph = ','.join(['%s'] * len(i_codes))
         item_cond = f" AND r.item_code IN ({i_ph})"
         item_params = i_codes
+
+    # Channel → customer codes
+    channel_cond = ""
+    channel_params = []
+    if channel:
+        ch_vals = [v.strip() for v in channel.split(',') if v.strip()]
+        ch_ph = ','.join(['%s'] * len(ch_vals))
+        cust_rows = query(
+            f"SELECT DISTINCT code FROM dim_customer WHERE TRIM(channel_code) IN ({ch_ph})", ch_vals
+        )
+        if not cust_rows:
+            return {"items": [], "all_channels": []}
+        c_codes = [r['code'] for r in cust_rows]
+        c_ph = ','.join(['%s'] * len(c_codes))
+        channel_cond = f" AND r.customer_code IN ({c_ph})"
+        channel_params = c_codes
 
     # YTD query (widest range needed)
     ytd_filters = {**base_filters, 'date_from': ytd_start, 'date_to': ref_date}
@@ -103,11 +126,11 @@ def get_monthly_sales_stock(
         f"LEFT JOIN dim_route dr ON r.route_code = dr.code "
         f"LEFT JOIN dim_customer dc ON r.customer_code = dc.code AND dr.sales_org_code = dc.sales_org_code "
         f"{_org_join}"
-        f"WHERE {rw}{item_cond} "
+        f"WHERE {rw}{item_cond}{channel_cond} "
         f"GROUP BY r.item_code, COALESCE(di.name, r.item_code), "
         f"  COALESCE(TRIM(dc.channel_name), 'Unknown') "
         f"ORDER BY COALESCE(di.name, r.item_code), channel_name",
-        [mtd_start, ref_date] + _org_params + rp + item_params
+        [mtd_start, ref_date] + _org_params + rp + item_params + channel_params
     )
 
     # Pivot: group by item, nest channels
