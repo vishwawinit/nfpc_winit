@@ -1,10 +1,11 @@
 """Brand Wise Sales report endpoint.
 Matches: sp_BrandsSale_Search_Report (brand list) + sp_tblItemDateBasedOnBrand (item drill-down)
+         sp_GetBrandWiseTargetandSaleAmount (brand targets from rpt_targets via dim_item join)
 
 Sources:
   - Brand sales: rpt_route_sales_by_item_customer joined to dim_item (brand = GroupLevel2 → Level 1)
   - Item drill: same source filtered by brand_code
-  - Targets: rpt_targets
+  - Targets: rpt_targets joined to dim_item to resolve brand; summed by month/year in date range
 """
 from fastapi import APIRouter, Query
 from typing import Optional
@@ -96,6 +97,72 @@ def _resolve_filters(sales_org, user_code, route, channel, category, brand,
     return base, extra_cond, extra_params, org_join, org_params
 
 
+def _get_brand_targets(date_from, date_to, sales_org=None, user_code=None, route=None):
+    """Fetch brand-level targets from rpt_targets via dim_item join.
+    Mirrors sp_GetBrandWiseTargetandSaleAmount: tblCurrentTarget WHERE Month IN(...) AND Year IN(...)
+    Joined to dim_item to resolve item_key → brand_code.
+    Returns dict: {brand_code: target_amount}
+    """
+    if not date_from or not date_to:
+        return {}
+
+    # Build month/year range from date span (like SP's #Month CTE)
+    from datetime import date as dt
+    months = []
+    y, m = date_from.year, date_from.month
+    while (y, m) <= (date_to.year, date_to.month):
+        months.append((y, m))
+        m += 1
+        if m > 12:
+            m = 1
+            y += 1
+
+    if not months:
+        return {}
+
+    years = list(set(y for y, _ in months))
+    month_nums = list(set(m for _, m in months))
+
+    conditions = ["rt.is_active = true"]
+    params = []
+
+    y_ph = ','.join(['%s'] * len(years))
+    m_ph = ','.join(['%s'] * len(month_nums))
+    conditions.append(f"rt.year IN ({y_ph})")
+    params.extend(years)
+    conditions.append(f"rt.month IN ({m_ph})")
+    params.extend(month_nums)
+
+    if sales_org:
+        orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
+        o_ph = ','.join(['%s'] * len(orgs))
+        conditions.append(f"rt.sales_org_code IN ({o_ph})")
+        params.extend(orgs)
+
+    if route:
+        routes = [v.strip() for v in route.split(',') if v.strip()]
+        r_ph = ','.join(['%s'] * len(routes))
+        conditions.append(f"rt.route_code IN ({r_ph})")
+        params.extend(routes)
+
+    if user_code and user_code != '__NO_MATCH__':
+        ucodes = [v.strip() for v in user_code.split(',') if v.strip()]
+        u_ph = ','.join(['%s'] * len(ucodes))
+        conditions.append(f"rt.salesman_code IN ({u_ph})")
+        params.extend(ucodes)
+
+    where = " AND ".join(conditions)
+    rows = query(
+        f"SELECT TRIM(di.brand_code) AS brand_code, COALESCE(SUM(rt.amount), 0) AS target "
+        f"FROM rpt_targets rt "
+        f"JOIN dim_item di ON di.code = rt.item_key "
+        f"WHERE {where} AND di.brand_code IS NOT NULL AND TRIM(di.brand_code) != '' "
+        f"GROUP BY TRIM(di.brand_code)",
+        params
+    )
+    return {r['brand_code']: float(r['target']) for r in rows}
+
+
 @router.get("/brand-wise-sales")
 def get_brand_wise_sales(
     sales_org: Optional[str] = None,
@@ -140,24 +207,32 @@ def get_brand_wise_sales(
 
     total_sales = sum(float(r["sales"]) for r in brand_rows)
 
+    # Fetch brand targets — mirrors sp_GetBrandWiseTargetandSaleAmount
+    resolved_user = base.get('user_code')
+    brand_targets = _get_brand_targets(date_from, date_to, sales_org=sales_org,
+                                       user_code=resolved_user, route=route)
+
     brands = []
     for row in brand_rows:
         sales = float(row["sales"])
+        bcode = row["brand_code"]
+        target = brand_targets.get(bcode, 0)
         brands.append({
-            "brand_code": row["brand_code"],
-            "brand_name": row["brand_name"].strip() if row["brand_name"] else row["brand_code"],
-            "target": 0,
+            "brand_code": bcode,
+            "brand_name": row["brand_name"].strip() if row["brand_name"] else bcode,
+            "target": round(target, 2),
             "sales": sales,
             "qty": float(row["qty"]),
-            "achieved_pct": 0,
+            "achieved_pct": round(sales / target * 100, 2) if target else 0,
             "pct_of_total": round(sales / total_sales * 100, 2) if total_sales else 0,
         })
 
+    total_target = sum(b["target"] for b in brands)
     return {
         "summary": {
-            "total_brand_target": 0,
+            "total_brand_target": round(total_target, 2),
             "total_brand_achieved": round(total_sales, 2),
-            "brand_achieved_pct": 0,
+            "brand_achieved_pct": round(total_sales / total_target * 100, 2) if total_target else 0,
         },
         "brands": brands,
     }
