@@ -18,3 +18,6 @@ INFO:warmup:  Warmed: daily_sales_overview.get_daily_sales_overview
 INFO:warmup:  Warmed: mtd_wastage.get_mtd_wastage_summary
 INFO:warmup:  Warmed: weekly_sales_returns.get_weekly_sales_returns
 INFO:warmup:  Warmed: brand_wise_sales.get_brand_wise_sales
+INFO:warmup:  Warmed: mtd_sales_overview.get_mtd_sales_overview
+INFO:warmup:  Warmed: log_report.get_log_report
+INFO:warmup:  Warmed: time_management.get_time_management
