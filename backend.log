@@ -1,32 +1,36 @@
 INFO:     Will watch for changes in these directories: ['D:\\vishwa\\nfpc_winit']
 INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-INFO:     Started reloader process [14280] using WatchFiles
-INFO:     Started server process [26816]
+INFO:     Started reloader process [17872] using WatchFiles
+INFO:     Started server process [27492]
 INFO:     Waiting for application startup.
 INFO:warmup:Starting cache warmup in background...
 INFO:     Application startup complete.
-INFO:     127.0.0.1:59513 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59514 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59521 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59519 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59522 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59516 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59544 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59548 - "GET /api/journey-plan-compliance?date_from=2026-03-01&date_to=2026-03-25 HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: dashboard.get_dashboard
 INFO:warmup:  Warmed: sales_performance.get_sales_performance
 WARNING:warmup:  Skip:  top_customers.get_top_customers - can't adapt type 'Query'
 WARNING:warmup:  Skip:  top_products.get_top_products - can't adapt type 'Query'
 INFO:warmup:  Warmed: market_sales.get_market_sales_performance
+INFO:     127.0.0.1:60157 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: target_achievement.get_target_vs_achievement
 INFO:warmup:  Warmed: daily_sales_overview.get_daily_sales_overview
 INFO:warmup:  Warmed: mtd_wastage.get_mtd_wastage_summary
+INFO:     127.0.0.1:60169 - "GET /api/salesman-journey?date_from=2026-03-01&date_to=2026-03-01 HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: weekly_sales_returns.get_weekly_sales_returns
 INFO:warmup:  Warmed: brand_wise_sales.get_brand_wise_sales
+INFO:     127.0.0.1:60190 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60192 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60195 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60196 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60198 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60216 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60200 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60214 - "GET /api/filters/routes HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: mtd_sales_overview.get_mtd_sales_overview
 INFO:warmup:  Warmed: log_report.get_log_report
 INFO:warmup:  Warmed: time_management.get_time_management
+INFO:     127.0.0.1:60222 - "GET /api/salesman-journey/detail?date_from=2026-03-07&date_to=2026-03-07&user_code=178472 HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: customer_attendance.get_customer_attendance
+INFO:     127.0.0.1:60235 - "GET /api/salesman-journey/detail?date_from=2026-03-07&date_to=2026-03-07&user_code=332231 HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: mtd_attendance.get_mtd_attendance
 INFO:warmup:  Warmed: journey_plan_compliance.get_journey_plan_compliance
 INFO:warmup:  Warmed: eot_status.get_eot_status
@@ -38,6 +42,236 @@ INFO:warmup:  Warmed: endorsement.get_endorsement
 INFO:warmup:  Warmed: filters.get_sales_orgs
 INFO:warmup:  Warmed: filters.get_order_customers
 INFO:warmup:  Warmed: filters.get_brands
+INFO:     127.0.0.1:60260 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: filters.get_categories
 INFO:warmup:  Warmed: filters.get_channels
-INFO:warmup:Cache warmup complete: 25 cached, 2 skipped in 129.9s
+INFO:warmup:Cache warmup complete: 25 cached, 2 skipped in 139.1s
+INFO:     127.0.0.1:60265 - "GET /api/salesman-journey/detail?date_from=2026-03-07&date_to=2026-03-07&user_code=187938 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60272 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60284 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60316 - "GET /api/salesman-journey/detail?date_from=2026-03-07&date_to=2026-03-07&user_code=178472 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60352 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60360 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60364 - "GET /api/salesman-journey/detail?date_from=2026-03-07&date_to=2026-03-07&user_code=172315 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60392 - "GET /api/salesman-journey/detail?date_from=2026-03-07&date_to=2026-03-07&user_code=176203 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60411 - "GET /api/salesman-journey/detail?date_from=2026-03-07&date_to=2026-03-07&user_code=369546 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60613 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60615 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60619 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60629 - "GET /api/log-report?date_from=2026-03-01&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60626 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60627 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60622 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60632 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60638 - "GET /api/log-report?date_from=2026-03-01&date_to=2026-03-01 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60893 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60894 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60895 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60896 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60899 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60900 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60911 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60925 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60928 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60931 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60934 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60937 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60940 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60943 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60946 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60919 - "GET /api/log-report?date_from=2026-03-01&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60992 - "GET /api/log-report?date_from=2026-03-01&date_to=2026-03-01 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61015 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61019 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61018 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61021 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61027 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61026 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61029 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61033 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61035 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61039 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61041 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61044 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61047 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61050 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61053 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61056 - "GET /api/log-report?date_from=2026-03-01&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61187 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61189 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61193 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61199 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61191 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61197 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61216 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61219 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61220 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61225 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61226 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61227 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61229 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61232 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61238 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61241 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61244 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61247 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61250 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61253 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61258 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61261 - "GET /api/log-report?date_from=2026-03-01&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61289 - "GET /api/salesman-journey/detail?date_from=2026-03-07&date_to=2026-03-07&user_code=178472 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61304 - "GET /api/salesman-journey/detail?date_from=2026-03-07&date_to=2026-03-07&user_code=332231 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61480 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61486 - "GET /api/salesman-journey/detail?date_from=2026-03-07&date_to=2026-03-07&user_code=178472 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61495 - "GET /api/salesman-journey/detail?date_from=2026-03-07&date_to=2026-03-07&user_code=144550 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61594 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61595 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61597 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61598 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61596 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61599 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61602 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61606 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61619 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61621 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61625 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61623 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61628 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61629 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61635 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61633 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61643 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61646 - "GET /api/salesman-journey/detail?date_from=2026-03-07&date_to=2026-03-07&user_code=178472 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61652 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61667 - "GET /api/salesman-journey/detail?date_from=2026-03-07&date_to=2026-03-07&user_code=178472 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61668 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61677 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61682 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61683 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61687 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61688 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61692 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61693 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61696 - "GET /api/salesman-journey/detail?date_from=2026-03-07&date_to=2026-03-07&user_code=178472 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61698 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61764 - "GET /api/salesman-journey/detail?date_from=2026-03-07&date_to=2026-03-07&user_code=127940 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61787 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61788 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61790 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61789 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61791 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61792 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61806 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61810 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61832 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61834 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61838 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61842 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61843 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61844 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61845 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61848 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61868 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61869 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61867 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61871 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61872 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61870 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61878 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61879 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61889 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61894 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61893 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61892 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61895 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61897 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61901 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61903 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61952 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61961 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61967 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61971 - "GET /api/salesman-journey/detail?date_from=2026-03-07&date_to=2026-03-07&user_code=178472 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61979 - "GET /api/salesman-journey/detail?date_from=2026-03-07&date_to=2026-03-07&user_code=146163 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61987 - "GET /api/salesman-journey/detail?date_from=2026-03-07&date_to=2026-03-07&user_code=171490 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62024 - "GET /api/salesman-journey/detail?date_from=2026-03-07&date_to=2026-03-07&user_code=178472 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62026 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62038 - "GET /api/salesman-journey/detail?date_from=2026-03-07&date_to=2026-03-07&user_code=178472 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62039 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62049 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62074 - "GET /api/salesman-journey/detail?date_from=2026-03-07&date_to=2026-03-07&user_code=178472 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62075 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62115 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62116 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62121 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62123 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62122 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62130 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62129 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62124 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62148 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62150 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62155 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62156 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62158 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62162 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62157 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62164 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62169 - "GET /api/salesman-journey?date_from=2026-03-25&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62174 - "GET /api/salesman-journey?date_from=2026-03-01&date_to=2026-03-01 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62184 - "GET /api/salesman-journey/detail?date_from=2026-03-01&date_to=2026-03-01&user_code=145606 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62213 - "GET /api/salesman-journey?date_from=2026-03-01&date_to=2026-03-01 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62220 - "GET /api/salesman-journey/detail?date_from=2026-03-01&date_to=2026-03-01&user_code=185523 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62223 - "GET /api/salesman-journey/detail?date_from=2026-03-01&date_to=2026-03-01&user_code=144640 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62231 - "GET /api/salesman-journey?date_from=2026-03-01&date_to=2026-03-01 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62239 - "GET /api/salesman-journey?date_from=2026-03-01&date_to=2026-03-01 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62329 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62332 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62333 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62341 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62338 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62342 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62345 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62348 - "GET /api/log-report?date_from=2026-03-01&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62351 - "GET /api/log-report?date_from=2026-03-01&date_to=2026-03-01 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62482 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62485 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62486 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62488 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62492 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62497 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62500 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62494 - "GET /api/time-management?date_from=2026-03-01&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62667 - "GET /api/filters/depots?sales_org=00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62663 - "GET /api/filters/hos?sales_org=00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62668 - "GET /api/filters/supervisors?sales_org=00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62666 - "GET /api/filters/asms?sales_org=00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62665 - "GET /api/time-management?date_from=2026-03-01&date_to=2026-03-25&sales_org=00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62669 - "GET /api/filters/users?sales_org=00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62672 - "GET /api/filters/routes?sales_org=00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62681 - "GET /api/time-management?date_from=2026-03-01&date_to=2026-03-01&sales_org=00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62827 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62825 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62826 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62830 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62832 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62846 - "GET /api/log-report?date_from=2026-03-01&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62831 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62841 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62872 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62875 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62874 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62876 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62877 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62878 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62883 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62884 - "GET /api/time-management?date_from=2026-03-01&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63094 - "GET /api/time-management?date_from=2026-03-01&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63202 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63203 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63205 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63206 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63204 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63207 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63212 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63213 - "GET /api/time-management?date_from=2026-03-01&date_to=2026-03-25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63258 - "GET /api/time-management?date_from=2026-03-01&date_to=2026-03-25 HTTP/1.1" 200 OK

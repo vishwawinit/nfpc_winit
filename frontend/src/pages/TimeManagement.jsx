@@ -67,15 +67,19 @@ export default function TimeManagement() {
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Daily Time Records</h2>
             <DataTable
               columns={[
-                { key: 'date', label: 'Date' },
-                { key: 'user_code', label: 'User Code' },
-                { key: 'user_name', label: 'Salesman' },
-                { key: 'eot_start_time', label: 'EOT Start' },
-                { key: 'eot_end_time', label: 'EOT End' },
-                { key: 'first_checkin', label: 'First Check-in' },
-                { key: 'last_checkout', label: 'Last Checkout' },
-                { key: 'total_working_hours', label: 'Working Hours', format: 'number' },
-                { key: 'productive_time', label: 'Productive Time', format: 'number' },
+                { key: 'date',                label: 'Date',             align: 'center' },
+                { key: 'user_code',           label: 'User Code',        align: 'left'   },
+                { key: 'user_name',           label: 'Salesman',         align: 'left'   },
+                { key: 'route_code',          label: 'Route Code',       align: 'center' },
+                { key: 'route_name',          label: 'Route Name',       align: 'left'   },
+                { key: 'journey_start',       label: 'EOT Start',        align: 'center' },
+                { key: 'journey_end',         label: 'EOT End',          align: 'center' },
+                { key: 'first_checkin',       label: 'First Check-in',   align: 'center' },
+                { key: 'last_checkout',       label: 'Last Checkout',    align: 'center' },
+                { key: 'total_working_hours', label: 'Working Hrs',      align: 'right',  format: 'number' },
+                { key: 'productive_time',     label: 'Productive Hrs',   align: 'right',  format: 'number' },
+                { key: 'idle_time',           label: 'Idle Hrs',         align: 'right',  format: 'number' },
+                { key: 'total_visits',        label: 'Visits',           align: 'right',  format: 'number' },
               ]}
               data={rows}
               exportName="time-management"

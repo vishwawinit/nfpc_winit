@@ -86,7 +86,12 @@ def get_salesman_journey(
         vp + rp
     )
 
-    return {"users": users, "detail": None}
+    return {
+        "users": users,
+        "detail": None,
+        "effective_date_from": str(filters.get('date_from', date_from or '')),
+        "effective_date_to": str(filters.get('date_to', date_to or '')),
+    }
 
 
 @router.get("/salesman-journey/detail")

@@ -110,18 +110,23 @@ export default function DataTable({ columns, data, onRowClick, exportName, pageS
         <table className="w-full text-[13px]">
           <thead className="sticky top-0 z-10">
             <tr className="bg-gray-50 border-b border-gray-100/80">
-              {columns.map(col => (
-                <th
-                  key={col.key}
-                  onClick={disableSort ? undefined : () => handleSort(col.key)}
-                  className={`px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap transition-colors duration-150 select-none bg-gray-50 ${disableSort ? '' : 'cursor-pointer hover:bg-gray-100 hover:text-gray-600'}`}
-                >
-                  <div className="inline-flex items-center gap-1.5">
-                    {col.label}
-                    {!disableSort && <SortIcon colKey={col.key} />}
-                  </div>
-                </th>
-              ))}
+              {columns.map(col => {
+                const isNumeric = col.format === 'number' || col.format === 'currency' || col.format === 'percent';
+                const align = col.align || (isNumeric ? 'right' : 'left');
+                const alignCls = align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left';
+                return (
+                  <th
+                    key={col.key}
+                    onClick={disableSort ? undefined : () => handleSort(col.key)}
+                    className={`px-4 py-3 ${alignCls} text-[11px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap transition-colors duration-150 select-none bg-gray-50 ${disableSort ? '' : 'cursor-pointer hover:bg-gray-100 hover:text-gray-600'}`}
+                  >
+                    <div className={`inline-flex items-center gap-1.5 ${align === 'right' ? 'flex-row-reverse' : ''}`}>
+                      {col.label}
+                      {!disableSort && <SortIcon colKey={col.key} />}
+                    </div>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50/80">
@@ -133,18 +138,19 @@ export default function DataTable({ columns, data, onRowClick, exportName, pageS
                   (startIdx + i) % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'
                 } hover:bg-indigo-50/40 ${onRowClick ? 'cursor-pointer' : ''}`}
               >
-                {columns.map(col => (
-                  <td
-                    key={col.key}
-                    className={`px-4 py-2.5 whitespace-nowrap text-gray-700 ${
-                      col.format === 'number' || col.format === 'currency' || col.format === 'percent'
-                        ? 'text-right tabular-nums font-medium'
-                        : ''
-                    }`}
-                  >
-                    {col.render ? col.render(row[col.key], row) : fmt(row[col.key], col)}
-                  </td>
-                ))}
+                {columns.map(col => {
+                  const isNumeric = col.format === 'number' || col.format === 'currency' || col.format === 'percent';
+                  const align = col.align || (isNumeric ? 'right' : 'left');
+                  const alignCls = align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left';
+                  return (
+                    <td
+                      key={col.key}
+                      className={`px-4 py-2.5 whitespace-nowrap text-gray-700 ${alignCls} ${isNumeric ? 'tabular-nums font-medium' : ''}`}
+                    >
+                      {col.render ? col.render(row[col.key], row) : fmt(row[col.key], col)}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
             {paged.length === 0 && (
