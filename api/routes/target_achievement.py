@@ -87,14 +87,15 @@ def get_target_vs_achievement(
 
     filters = {**base_filters, 'date_from': month_start, 'date_to': month_end}
 
-    # Route-level: Sales + Target from rpt_route_sales_by_item_customer
-    f_rsic = {k: v for k, v in filters.items() if k in RSIC_KEYS}
-    rw, rp = build_where(f_rsic, date_col='date', prefix='r')
+    # Route-level: Sales + Target from rpt_route_sales_summary_by_item (matches MSSQL SP source)
+    f_rssi = {k: v for k, v in filters.items() if k in RSSI_KEYS}
+    rw, rp = build_where(f_rssi, date_col='date', prefix='r')
 
     route_rows = query(
         f"SELECT r.route_code, COALESCE(dr.name, r.route_code) AS route_name, "
-        f"  ROUND(COALESCE(SUM(r.total_sales), 0)::numeric, 2) AS achieved "
-        f"FROM rpt_route_sales_by_item_customer r "
+        f"  ROUND(COALESCE(SUM(r.total_sales), 0)::numeric, 2) AS achieved, "
+        f"  ROUND(COALESCE(SUM(r.target_amount), 0)::numeric, 2) AS target "
+        f"FROM rpt_route_sales_summary_by_item r "
         f"LEFT JOIN dim_route dr ON r.route_code = dr.code "
         f"{_org_join}"
         f"WHERE {rw}{item_cond} "
@@ -103,16 +104,7 @@ def get_target_vs_achievement(
         _org_params + rp + item_params
     )
 
-    # Targets from rpt_route_sales_summary_by_item (has TargetAmount per route)
-    f_rssi = {k: v for k, v in filters.items() if k in RSSI_KEYS}
-    tw, tp = build_where(f_rssi, date_col='date')
-    target_rows = query(
-        f"SELECT route_code, ROUND(COALESCE(SUM(target_amount), 0)::numeric, 2) AS target "
-        f"FROM rpt_route_sales_summary_by_item WHERE {tw} "
-        f"GROUP BY route_code",
-        tp
-    )
-    target_map = {r["route_code"]: float(r["target"]) for r in target_rows}
+    target_map = {r["route_code"]: float(r["target"]) for r in route_rows}
 
     # Build route data
     total_target = 0
@@ -120,7 +112,7 @@ def get_target_vs_achievement(
     route_data = []
     for row in route_rows:
         ach = float(row["achieved"])
-        tgt = target_map.get(row["route_code"], 0)
+        tgt = float(row["target"])
         total_achieved += ach
         total_target += tgt
         route_data.append({
@@ -130,18 +122,6 @@ def get_target_vs_achievement(
             "achieved": ach,
             "achieved_pct": min(100.0, round(ach / tgt * 100, 2)) if tgt else 0,
         })
-
-    # Add routes with target but no sales
-    for rc, tgt in target_map.items():
-        if not any(r["route_code"] == rc for r in route_data) and tgt > 0:
-            total_target += tgt
-            route_data.append({
-                "route_code": rc,
-                "route_name": rc,
-                "target": tgt,
-                "achieved": 0,
-                "achieved_pct": 0,
-            })
 
     route_data.sort(key=lambda r: r["achieved"], reverse=True)
     achieved_pct = min(100.0, round(total_achieved / total_target * 100, 2)) if total_target else 0

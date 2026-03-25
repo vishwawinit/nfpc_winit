@@ -868,8 +868,8 @@ def load_outstanding(ms_conn, pg_conn):
     pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
-    # Simplified query: pull raw JDE dates, convert in Python
-    # Filter by TrxDateTime to only load data within the ETL date range
+    # Filter by TrxDateTime to keep within the ETL date range (table has 22M+ rows total)
+    # Aging buckets are computed from due_date relative to today
     date_filter = ""
     if DATE_FROM:
         date_filter += f" AND mpi.TrxDateTime >= '{DATE_FROM}'"
@@ -925,7 +925,8 @@ def load_outstanding(ms_conn, pg_conn):
 
             trx_date = jde_to_date(trx_date_jde)
             due_date = jde_to_date(due_date_jde)
-            days_overdue = (today - trx_date).days if trx_date else 0
+            ref_date = due_date if due_date else trx_date
+            days_overdue = (today - ref_date).days if ref_date else 0
 
             if days_overdue <= 0:
                 aging = 'Current'
@@ -964,22 +965,36 @@ def load_outstanding(ms_conn, pg_conn):
 def load_eot(ms_conn, pg_conn):
     progress.start_step('rpt_eot', expected_rows=80_000)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("TRUNCATE rpt_eot")
+    pg_cur.execute("""
+        TRUNCATE rpt_eot;
+        ALTER TABLE rpt_eot
+            ADD COLUMN IF NOT EXISTS route_start_datetime TIMESTAMP,
+            ADD COLUMN IF NOT EXISTS unload_datetime TIMESTAMP,
+            ADD COLUMN IF NOT EXISTS eot_status VARCHAR(50)
+    """)
     pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
     query = """
         SELECT e.EOTId, e.UserCode, u.Description,
             e.RouteCode, rt.Name, e.SalesOrgCode,
-            e.EOTType, e.EOTTime, CAST(e.TripDate AS DATE)
+            e.EOTType, e.EOTTime, CAST(e.TripDate AS DATE),
+            j.Date AS RouteStartDatetime,
+            rud.CreatedOn AS UnloadDatetime,
+            CASE WHEN e.EOTTime IS NOT NULL THEN 'Submitted' ELSE 'Pending' END AS EotStatus
         FROM tblEOT e
         LEFT JOIN tblUser u ON e.UserCode = u.Code
         LEFT JOIN tblRoute rt ON e.RouteCode = rt.Code
+        LEFT JOIN tblJourney j ON j.UserCode = e.UserCode
+            AND CAST(j.Date AS DATE) = CAST(e.TripDate AS DATE)
+        LEFT JOIN tblRouteUnloadData rud ON rud.RouteCode = e.RouteCode
+            AND CAST(rud.TripDate AS DATE) = CAST(e.TripDate AS DATE)
         WHERE e.TripDate >= %s AND e.TripDate < %s
     """
     columns = [
         'eot_id', 'user_code', 'user_name', 'route_code', 'route_name',
-        'sales_org_code', 'eot_type', 'eot_time', 'trip_date'
+        'sales_org_code', 'eot_type', 'eot_time', 'trip_date',
+        'route_start_datetime', 'unload_datetime', 'eot_status'
     ]
     total = extract_batch(ms_cur, query, (DATE_FROM, DATE_TO), pg_conn, 'rpt_eot', columns)
     pg_cur.close()
@@ -1102,7 +1117,7 @@ def load_route_sales_summary_by_item(ms_conn, pg_conn):
         FROM tblRouteSalesSummaryByItem R WITH(NOLOCK)
         LEFT JOIN tblRoute RR ON RR.Code = R.RouteCode
         LEFT JOIN tblUser U ON R.UserCode = U.Code
-        LEFT JOIN tblItem I ON R.ItemCode = I.Code
+        LEFT JOIN (SELECT Code, MIN(Description) AS Description, MIN(GroupLevel3) AS GroupLevel3, MIN(GroupLevel1) AS GroupLevel1 FROM tblItem GROUP BY Code) I ON R.ItemCode = I.Code
         WHERE R.Date >= %s AND R.Date < %s
     """
     columns = [

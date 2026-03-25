@@ -25,26 +25,25 @@ export default function KpiCard({ title, value, subtitle, color = 'blue', icon: 
     : (lightColors[color] || lightColors.blue);
 
   const bgClass = isSolid ? `${palette.bg} border ${palette.border}` : 'bg-white border border-gray-100/80';
-  const titleClass = isSolid ? `${palette.title}` : 'text-gray-500';
+  const titleClass = isSolid ? palette.title : 'text-gray-500';
   const valueClass = isSolid ? palette.value : palette.text;
 
   return (
-    <div className={`kpi-card ${bgClass} rounded-2xl shadow-sm p-5 relative overflow-hidden`}>
-      {/* Subtle top accent line */}
+    <div className={`kpi-card ${bgClass} rounded-2xl shadow-sm p-4 relative overflow-hidden flex flex-col`}>
+      {/* Top accent line */}
       <div className={`absolute top-0 left-0 right-0 h-[2px] ${palette.accent} opacity-40 rounded-t-2xl`} />
 
-      <div className="flex items-center gap-4">
-        {Icon && (
-          <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center ${palette.icon} shadow-sm`}>
-            <Icon className="w-5 h-5" strokeWidth={1.75} />
-          </div>
-        )}
-        <div className="min-w-0 flex-1">
-          <div className={`text-[11px] font-semibold uppercase tracking-wider ${titleClass}`}>{title}</div>
-          <div className={`text-[22px] font-bold mt-0.5 tracking-tight ${valueClass}`}>{value}</div>
-          {subtitle && <div className="text-[11px] text-gray-400 mt-0.5 truncate font-medium">{subtitle}</div>}
-        </div>
+      {/* Icon + Label — same line, same visual weight */}
+      <div className="flex items-center gap-1.5 mb-1.5">
+        {Icon && <Icon className={`w-3 h-3 flex-shrink-0 ${isSolid ? palette.title : 'text-gray-400'}`} strokeWidth={2} />}
+        <span className={`text-[10px] font-semibold uppercase tracking-wide leading-tight ${titleClass}`}>{title}</span>
       </div>
+
+      {/* Value — single line, scales with screen */}
+      <div className={`text-[15px] sm:text-[17px] md:text-[19px] lg:text-[21px] font-bold mt-1 tracking-tight whitespace-nowrap ${valueClass}`}>{value}</div>
+
+      {/* Subtitle */}
+      {subtitle && <div className="text-[10px] sm:text-[11px] text-gray-400 mt-0.5 font-medium">{subtitle}</div>}
     </div>
   );
 }

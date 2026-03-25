@@ -90,7 +90,7 @@ export default function MtdWastage() {
                   {summary.total_returns_pct != null ? `${summary.total_returns_pct}% of sales` : ''}
                 </span>
               </div>
-              <div className="text-[26px] font-bold text-violet-700 tracking-tight">{aed(summary.total_returns_value)}</div>
+              <div className="text-[15px] sm:text-[20px] md:text-[23px] font-bold text-violet-700 tracking-tight whitespace-nowrap">{aed(summary.total_returns_value)}</div>
               <div className="mt-2 flex items-center gap-4 text-[12px] text-violet-500/70 font-medium">
                 <span>Qty: <span className="font-bold text-violet-700">{summary.total_returns_qty?.toLocaleString() ?? '-'}</span></span>
                 <span>Sales: <span className="font-bold text-violet-700">{aed(summary.total_sales)}</span></span>
@@ -111,7 +111,7 @@ export default function MtdWastage() {
                   {summary.gr_pct != null ? `${summary.gr_pct}% of returns` : ''}
                 </span>
               </div>
-              <div className="text-[26px] font-bold text-teal-700 tracking-tight">{aed(summary.gr_value)}</div>
+              <div className="text-[15px] sm:text-[20px] md:text-[23px] font-bold text-teal-700 tracking-tight whitespace-nowrap">{aed(summary.gr_value)}</div>
               <div className="mt-2 flex items-center gap-4 text-[12px] text-teal-500/70 font-medium">
                 <span>Qty: <span className="font-bold text-teal-700">{summary.gr_qty?.toLocaleString() ?? '-'}</span></span>
                 <span className="text-teal-400/60 text-[11px]">Normal customer returns</span>
@@ -132,7 +132,7 @@ export default function MtdWastage() {
                   {summary.bad_returns_pct != null ? `${summary.bad_returns_pct}% of returns` : ''}
                 </span>
               </div>
-              <div className="text-[26px] font-bold text-rose-700 tracking-tight">{aed(summary.bad_returns_value)}</div>
+              <div className="text-[15px] sm:text-[20px] md:text-[23px] font-bold text-rose-700 tracking-tight whitespace-nowrap">{aed(summary.bad_returns_value)}</div>
               <div className="mt-2 flex items-center gap-4 text-[12px] text-rose-500/70 font-medium">
                 <span>Qty: <span className="font-bold text-rose-700">{summary.bad_returns_qty?.toLocaleString() ?? '-'}</span></span>
               </div>

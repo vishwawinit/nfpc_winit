@@ -1,14 +1,21 @@
-INFO:     Started server process [22896]
+INFO:     Started server process [2060]
 INFO:     Waiting for application startup.
 INFO:warmup:Starting cache warmup in background...
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     127.0.0.1:62622 - "GET /api/mtd-wastage-summary?date_from=2026-03-01&date_to=2026-03-24&customer=134434 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:62626 - "GET /api/mtd-wastage-summary?date_from=2026-03-01&date_to=2026-03-24&customer=105148 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:62633 - "GET /api/mtd-wastage-summary?date_from=2026-03-01&date_to=2026-03-24&customer=105148,105144,105145 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:62630 - "GET /api/mtd-wastage-summary?date_from=2026-03-01&date_to=2026-03-24&customer=105148,105144 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65249 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65256 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65251 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65288 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65292 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65291 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65295 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65296 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65306 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65298 - "GET /api/filters/routes HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: dashboard.get_dashboard
-INFO:     127.0.0.1:62641 - "GET /api/mtd-wastage-summary?date_from=2026-03-01&date_to=2026-03-24 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65309 - "GET /api/eot-status?date_from=2026-03-01&date_to=2026-03-01 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65302 - "GET /api/eot-status?date_from=2026-03-01&date_to=2026-03-25 HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: sales_performance.get_sales_performance
 WARNING:warmup:  Skip:  top_customers.get_top_customers - can't adapt type 'Query'
 WARNING:warmup:  Skip:  top_products.get_top_products - can't adapt type 'Query'
@@ -21,3 +28,18 @@ INFO:warmup:  Warmed: brand_wise_sales.get_brand_wise_sales
 INFO:warmup:  Warmed: mtd_sales_overview.get_mtd_sales_overview
 INFO:warmup:  Warmed: log_report.get_log_report
 INFO:warmup:  Warmed: time_management.get_time_management
+INFO:warmup:  Warmed: customer_attendance.get_customer_attendance
+INFO:warmup:  Warmed: mtd_attendance.get_mtd_attendance
+INFO:warmup:  Warmed: journey_plan_compliance.get_journey_plan_compliance
+INFO:warmup:  Warmed: eot_status.get_eot_status
+INFO:warmup:  Warmed: productivity_coverage.get_productivity_coverage
+INFO:warmup:  Warmed: salesman_journey.get_salesman_journey
+INFO:warmup:  Warmed: revenue_dispersion.get_revenue_dispersion
+INFO:warmup:  Warmed: monthly_sales_stock.get_monthly_sales_stock
+INFO:warmup:  Warmed: endorsement.get_endorsement
+INFO:warmup:  Warmed: filters.get_sales_orgs
+INFO:warmup:  Warmed: filters.get_order_customers
+INFO:warmup:  Warmed: filters.get_brands
+INFO:warmup:  Warmed: filters.get_categories
+INFO:warmup:  Warmed: filters.get_channels
+INFO:warmup:Cache warmup complete: 25 cached, 2 skipped in 108.7s

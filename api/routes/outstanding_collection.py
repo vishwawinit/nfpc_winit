@@ -12,6 +12,9 @@ router = APIRouter()
 def _build_where(filters: dict):
     conditions = ["balance_amount != 0"]
     params = []
+    if filters.get('year'):
+        conditions.append("EXTRACT(YEAR FROM trx_date) = %s")
+        params.append(int(filters['year']))
     if filters.get('sales_org'):
         vals = [v.strip() for v in filters['sales_org'].split(',') if v.strip()]
         ph = ','.join(['%s'] * len(vals))
@@ -38,6 +41,7 @@ def get_outstanding_collection(
     user_code: Optional[str] = None,
     route: Optional[str] = None,
     bucket: Optional[str] = None,
+    year: Optional[int] = None,
     hos: Optional[str] = None,
     asm: Optional[str] = None,
     depot: Optional[str] = None,
@@ -57,7 +61,7 @@ def get_outstanding_collection(
 
     filters = {k: v for k, v in {
         'customer': customer, 'sales_org': sales_org,
-        'user_code': user_code, 'route': route,
+        'user_code': user_code, 'route': route, 'year': year,
     }.items() if v is not None}
 
     w, p = _build_where(filters)
@@ -66,7 +70,7 @@ def get_outstanding_collection(
     aging_buckets = query(
         f"SELECT aging_bucket AS bucket, "
         f"  ROUND(COALESCE(SUM(balance_amount), 0)::numeric, 2) AS amount, "
-        f"  COUNT(DISTINCT customer_code) AS count "
+        f"  COUNT(DISTINCT customer_code) AS customer_count "
         f"FROM rpt_outstanding WHERE {w} "
         f"GROUP BY aging_bucket "
         f"ORDER BY CASE aging_bucket "
@@ -84,6 +88,7 @@ def get_outstanding_collection(
 
     customers = query(
         f"SELECT customer_code, customer_name, "
+        f"  COUNT(*) AS invoice_count, "
         f"  ROUND(COALESCE(SUM(balance_amount), 0)::numeric, 2) AS pending_amount "
         f"FROM rpt_outstanding WHERE {w}{bucket_cond} "
         f"GROUP BY customer_code, customer_name "

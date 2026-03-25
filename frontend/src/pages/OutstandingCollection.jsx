@@ -91,7 +91,7 @@ export default function OutstandingCollection() {
                 </div>
                 <div>
                   <div className="text-[11px] font-semibold text-indigo-500/80 uppercase tracking-wider">Total Outstanding</div>
-                  <div className="text-[22px] font-bold text-indigo-700 tracking-tight tabular-nums">{aed(totalOutstanding)}</div>
+                  <div className="text-[13px] sm:text-[17px] md:text-[20px] font-bold text-indigo-700 tracking-tight tabular-nums whitespace-nowrap">{aed(totalOutstanding)}</div>
                 </div>
               </div>
             </div>
@@ -103,7 +103,7 @@ export default function OutstandingCollection() {
                 </div>
                 <div>
                   <div className="text-[11px] font-semibold text-violet-500/80 uppercase tracking-wider">Total Customers</div>
-                  <div className="text-[22px] font-bold text-violet-700 tracking-tight tabular-nums">{totalCustomers.toLocaleString()}</div>
+                  <div className="text-[13px] sm:text-[17px] md:text-[20px] font-bold text-violet-700 tracking-tight tabular-nums whitespace-nowrap">{totalCustomers.toLocaleString()}</div>
                 </div>
               </div>
             </div>
@@ -115,7 +115,7 @@ export default function OutstandingCollection() {
                 </div>
                 <div>
                   <div className="text-[11px] font-semibold text-emerald-500/80 uppercase tracking-wider">Aging Buckets</div>
-                  <div className="text-[22px] font-bold text-emerald-700 tracking-tight tabular-nums">{buckets.length}</div>
+                  <div className="text-[13px] sm:text-[17px] md:text-[20px] font-bold text-emerald-700 tracking-tight tabular-nums whitespace-nowrap">{buckets.length}</div>
                 </div>
               </div>
             </div>

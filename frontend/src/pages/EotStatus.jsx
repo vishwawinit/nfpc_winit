@@ -4,11 +4,24 @@ import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
 import KpiCard from '../components/KpiCard';
 import {
-  ShoppingCart, Banknote, Wallet, CheckCircle2, XCircle,
-  Eye, X, MapPin, Clock, Phone, BarChart3, User, ChevronRight, Download
+  ShoppingCart, Banknote, Wallet,
+  MapPin, BarChart3, ChevronRight, Search, ChevronLeft
 } from 'lucide-react';
 
 const aed = (v) => v != null ? `AED ${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-';
+const fmtDateTime = (dt) => {
+  if (!dt) return '-';
+  const [date, time] = dt.split(' ');
+  if (!time) return date;
+  return `${date} ${time.substring(0, 5)}`;
+};
+const fmtDateTimeFull = (dt) => {
+  if (!dt) return '-';
+  // Remove microseconds if present (e.g. .213000)
+  return dt.replace(/\.\d+$/, '');
+};
+
+const PAGE_SIZE = 20;
 
 export default function EotStatus() {
   const [data, setData] = useState(null);
@@ -22,12 +35,15 @@ export default function EotStatus() {
     const d = String(now.getDate()).padStart(2, '0');
     return { date_from: `${y}-${m}-01`, date_to: `${y}-${m}-${d}` };
   });
-  const [modalUser, setModalUser] = useState(null);
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     let cancelled = false;
     if (!hasData.current) setLoading(true);
     else setRefreshing(true);
+    setPage(1);
+    setSearch('');
     fetchEotStatus(filters)
       .then(res => { if (!cancelled) { setData(res); hasData.current = true; } })
       .catch(err => { if (!cancelled) console.error(err); })
@@ -39,17 +55,18 @@ export default function EotStatus() {
   const callMetrics = data?.call_metrics || {};
   const users = data?.users || [];
 
-  const exportStops = (user) => {
-    const header = ['#', 'Customer Code', 'Customer Name', 'Arrival', 'Departure', 'Duration (min)', 'Productive'].join('\t');
-    const rows = user.stops.map(s =>
-      [s.sequence, s.customer_code, s.customer_name, s.arrival_time || '', s.departure_time || '', s.duration_mins || 0, s.productive ? 'Yes' : 'No'].join('\t')
-    );
-    const blob = new Blob([header + '\n' + rows.join('\n')], { type: 'application/vnd.ms-excel' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `journey-stops-${user.user_code}.xls`; a.click();
-    URL.revokeObjectURL(url);
-  };
+  const q = search.toLowerCase();
+  const filteredUsers = q
+    ? users.filter(u =>
+        u.user_name?.toLowerCase().includes(q) ||
+        u.user_code?.toLowerCase().includes(q) ||
+        u.route_name?.toLowerCase().includes(q) ||
+        u.route_code?.toLowerCase().includes(q)
+      )
+    : users;
+  const totalPages = Math.ceil(filteredUsers.length / PAGE_SIZE);
+  const pagedUsers = filteredUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
 
   return (
     <div className="space-y-6">
@@ -61,24 +78,15 @@ export default function EotStatus() {
       <FilterPanel filters={filters} onChange={setFilters}
         showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route']} />
 
-      {loading ? <Loading /> : !data ? (
+      {loading ? <Loading /> : !data || !data.users?.length ? (
         <div className="text-center py-20">
           <MapPin className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-          <p className="text-gray-400 font-medium">No data available</p>
+          <p className="text-gray-400 font-medium">No EOT submissions found for this period</p>
         </div>
       ) : (
         <>
-          {/* Compliance + KPIs */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className={`rounded-2xl border p-4 flex items-center gap-3 ${data.route_plan_followed ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
-              {data.route_plan_followed ? <CheckCircle2 className="w-6 h-6 text-emerald-500" /> : <XCircle className="w-6 h-6 text-rose-500" />}
-              <div>
-                <div className="text-xs text-gray-500 uppercase font-medium">Route Plan</div>
-                <div className={`text-lg font-bold ${data.route_plan_followed ? 'text-emerald-700' : 'text-rose-700'}`}>
-                  {data.route_plan_followed ? 'Followed' : 'Not Followed'}
-                </div>
-              </div>
-            </div>
+          {/* KPIs */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <KpiCard title="Orders" value={kpis.order_count ?? '-'} color="blue" icon={ShoppingCart} />
             <KpiCard title="Sales" value={aed(kpis.sales_amount)} color="green" icon={Banknote} />
             <KpiCard title="Collection" value={aed(kpis.collection_amount)} color="purple" icon={Wallet} />
@@ -105,154 +113,96 @@ export default function EotStatus() {
             </div>
           </div>
 
-          {/* Users List */}
+          {/* EOT Users Table */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100">
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
-                Journey Stops by Salesman ({users.length} users)
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-4">
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                EOT Users ({filteredUsers.length}{filteredUsers.length !== users.length ? ` / ${users.length}` : ''})
               </h2>
+              <div className="relative max-w-xs w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={e => { setSearch(e.target.value); setPage(1); }}
+                  placeholder="Search name, code, route…"
+                  className="w-full pl-8 pr-3 py-1.5 text-[13px] rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400"
+                />
+              </div>
             </div>
-            <div className="divide-y divide-gray-50">
-              {users.map((u, i) => {
-                const prodPct = u.total_visits ? Math.round(u.productive_visits / u.total_visits * 100) : 0;
-                return (
-                  <div key={i} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center text-sm font-bold shadow-sm">
-                        {(u.user_name || '?')[0].toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="font-semibold text-gray-900 truncate">{u.user_name}</div>
-                        <div className="text-xs text-gray-400 mt-0.5">
-                          {u.route_name} &bull; {u.user_code}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-center hidden md:block">
-                        <div className="text-xs text-gray-400 uppercase">Visits</div>
-                        <div className="text-sm font-bold text-gray-800">{u.total_visits}</div>
-                      </div>
-                      <div className="text-center hidden md:block">
-                        <div className="text-xs text-gray-400 uppercase">Productive</div>
-                        <div className="text-sm font-bold text-emerald-600">{u.productive_visits}</div>
-                      </div>
-                      <div className="text-center hidden md:block">
-                        <div className="text-xs text-gray-400 uppercase">Time</div>
-                        <div className="text-sm font-bold text-gray-600">{u.total_time_mins}m</div>
-                      </div>
-                      <div className="text-center hidden lg:block w-16">
-                        <div className="text-xs text-gray-400 uppercase">Prod %</div>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                          prodPct >= 80 ? 'bg-emerald-50 text-emerald-700' :
-                          prodPct >= 50 ? 'bg-amber-50 text-amber-700' :
-                          'bg-rose-50 text-rose-700'
-                        }`}>{prodPct}%</span>
-                      </div>
-                      <button
-                        onClick={() => setModalUser(u)}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors"
-                      >
-                        <Eye className="w-4 h-4" /> View
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-[13px]">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-100">
+                    {['EOT Date & Time', 'User Code', 'User Name', 'Route Code', 'Route Start', 'Unload Date & Time', 'EOT Status'].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {pagedUsers.map((u, i) => (
+                    <tr key={i} className="hover:bg-gray-50/60 transition-colors">
+                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap tabular-nums">{fmtDateTime(u.eot_time)}</td>
+                      <td className="px-4 py-3 font-mono text-gray-500 whitespace-nowrap">{u.user_code}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{u.user_name}</td>
+                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{u.route_code}</td>
+                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap tabular-nums">{fmtDateTimeFull(u.route_start_datetime)}</td>
+                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap tabular-nums">{fmtDateTimeFull(u.unload_datetime)}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                          u.eot_status === 'Submitted'
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-amber-50 text-amber-700'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${u.eot_status === 'Submitted' ? 'bg-emerald-500' : 'bg-amber-400'}`} />
+                          {u.eot_status || 'Submitted'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredUsers.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-16 text-center text-gray-400">
+                        {search ? `No users matching "${search}"` : 'No EOT data found'}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between">
+                <span className="text-[12px] text-gray-400">
+                  Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filteredUsers.length)} of {filteredUsers.length}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const pg = totalPages <= 5 ? i + 1 : page <= 3 ? i + 1 : page >= totalPages - 2 ? totalPages - 4 + i : page - 2 + i;
+                    return (
+                      <button key={pg} onClick={() => setPage(pg)}
+                        className={`w-7 h-7 rounded-lg text-[12px] font-medium transition-colors ${pg === page ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}>
+                        {pg}
                       </button>
-                    </div>
-                  </div>
-                );
-              })}
-              {users.length === 0 && (
-                <div className="px-6 py-16 text-center text-gray-400">No journey data found</div>
-              )}
-            </div>
+                    );
+                  })}
+                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}
 
-      {/* Modal - Journey Stops */}
-      {modalUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setModalUser(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center text-sm font-bold">
-                  {(modalUser.user_name || '?')[0].toUpperCase()}
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900">{modalUser.user_name}</h2>
-                  <p className="text-sm text-gray-500">
-                    {modalUser.route_name} &bull; {modalUser.total_visits} stops &bull; {modalUser.productive_visits} productive
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button onClick={() => exportStops(modalUser)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
-                  <Download className="w-3.5 h-3.5" /> Export
-                </button>
-                <button onClick={() => setModalUser(null)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Modal Body - Timeline */}
-            <div className="flex-1 overflow-auto px-6 py-4">
-              <div className="relative">
-                {/* Timeline line */}
-                <div className="absolute left-[18px] top-0 bottom-0 w-0.5 bg-gray-200" />
-
-                {modalUser.stops.map((stop, i) => (
-                  <div key={i} className="relative flex gap-4 pb-4 last:pb-0">
-                    {/* Timeline dot */}
-                    <div className={`relative z-10 flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shadow-sm ${
-                      stop.productive
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-gray-300 text-white'
-                    }`}>
-                      {stop.sequence}
-                    </div>
-
-                    {/* Stop card */}
-                    <div className={`flex-1 rounded-xl border p-3 ${
-                      stop.productive ? 'bg-emerald-50/30 border-emerald-100' : 'bg-gray-50/50 border-gray-100'
-                    }`}>
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <div className="font-semibold text-gray-900 text-sm">{stop.customer_name}</div>
-                          <div className="text-xs text-gray-400 mt-0.5">{stop.customer_code}</div>
-                        </div>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                          stop.productive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'
-                        }`}>
-                          {stop.productive ? 'Productive' : 'Non-Productive'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                        {stop.arrival_time && (
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {stop.arrival_time.split(' ')[1]?.substring(0, 5) || stop.arrival_time}
-                          </span>
-                        )}
-                        {stop.departure_time && (
-                          <span className="flex items-center gap-1">
-                            <ChevronRight className="w-3 h-3" />
-                            {stop.departure_time.split(' ')[1]?.substring(0, 5) || stop.departure_time}
-                          </span>
-                        )}
-                        {stop.duration_mins != null && (
-                          <span className="font-medium text-gray-700">{stop.duration_mins} min</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

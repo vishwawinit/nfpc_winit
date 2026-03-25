@@ -4,7 +4,7 @@ import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
 import KpiCard from '../components/KpiCard';
 import DataTable from '../components/DataTable';
-import { CalendarCheck, Users, Target, TrendingUp, MapPin, Navigation, Zap } from 'lucide-react';
+import { Users, Target, TrendingUp, MapPin, Navigation, Zap, CalendarCheck } from 'lucide-react';
 
 export default function ProductivityCoverage() {
   const [data, setData] = useState(null);
