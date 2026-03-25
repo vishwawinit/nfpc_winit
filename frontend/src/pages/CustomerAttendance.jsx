@@ -44,7 +44,7 @@ export default function CustomerAttendance() {
       </div>
 
       <FilterPanel filters={filters} onChange={setFilters}
-        showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'channel', 'category', 'brand']} />
+        showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'customer', 'channel']} />
 
       {loading ? <Loading /> : rows.length === 0 ? (
         <div className="text-center py-16 text-gray-400">No data available</div>
@@ -62,9 +62,10 @@ export default function CustomerAttendance() {
           <div>
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Visit Records</h2>
             <DataTable
+              disableSort
               columns={[
                 { key: 'date', label: 'Date' },
-                { key: 'area', label: 'Area' },
+                { key: 'area', label: 'Route' },
                 { key: 'user_name', label: 'Salesman' },
                 { key: 'customer_code', label: 'Customer Code' },
                 { key: 'customer_name', label: 'Customer Name' },

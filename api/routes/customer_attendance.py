@@ -15,6 +15,8 @@ def get_customer_attendance(
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
     sales_org: Optional[str] = None,
+    route: Optional[str] = None,
+    channel: Optional[str] = None,
     hos: Optional[str] = None,
     asm: Optional[str] = None,
     depot: Optional[str] = None,
@@ -37,10 +39,23 @@ def get_customer_attendance(
     filters = {k: v for k, v in {
         'user_code': user_code, 'customer': customer,
         'date_from': date_from, 'date_to': date_to,
-        'sales_org': sales_org,
+        'sales_org': sales_org, 'route': route,
     }.items() if v is not None}
 
     w, p = build_where(filters, date_col='date')
+
+    # channel filter: rpt_customer_visits has channel_name, not channel_code
+    if channel:
+        codes = [c.strip() for c in channel.split(',') if c.strip()]
+        ph = ','.join(['%s'] * len(codes))
+        ch_rows = query(f"SELECT name FROM dim_channel WHERE code IN ({ph})", codes)
+        ch_names = [r['name'] for r in ch_rows]
+        if ch_names:
+            ch_ph = ','.join(['%s'] * len(ch_names))
+            w += f" AND channel_name IN ({ch_ph})"
+            p.extend(ch_names)
+        else:
+            w += " AND 1=0"
 
     rows = query(
         f"""

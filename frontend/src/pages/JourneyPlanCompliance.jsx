@@ -68,13 +68,16 @@ export default function JourneyPlanCompliance() {
   // Modal drill-down data
   const drillForDate = useMemo(() => {
     if (!modalDate) return [];
-    let rows = drillDown.filter(d => String(d.date).substring(0, 10) === modalDate);
+    let rows = drillDown
+      .filter(d => String(d.date).substring(0, 10) === modalDate)
+      .map(r => ({ ...r }));
     if (drillSearch) {
       const s = drillSearch.toLowerCase();
       rows = rows.filter(r =>
         r.user_code?.toLowerCase().includes(s) ||
         r.user_name?.toLowerCase().includes(s) ||
-        r.route_code?.toLowerCase().includes(s)
+        r.route_code?.toLowerCase().includes(s) ||
+        r.route_name?.toLowerCase().includes(s)
       );
     }
     return rows;
@@ -90,12 +93,13 @@ export default function JourneyPlanCompliance() {
   const drillColumns = [
     { key: 'user_code', label: 'User Code' },
     { key: 'user_name', label: 'Salesman' },
-    { key: 'route_code', label: 'Route' },
-    { key: 'scheduled', label: 'Scheduled' },
-    { key: 'actual', label: 'Actual' },
-    { key: 'planned', label: 'Planned' },
-    { key: 'selling', label: 'Selling' },
+    { key: 'route_code', label: 'Route Code' },
+    { key: 'route_name', label: 'Route Name' },
+    { key: 'actual', label: 'Total Calls' },
+    { key: 'scheduled', label: 'Scheduled Calls' },
+    { key: 'planned', label: 'Planned Calls' },
     { key: 'unplanned', label: 'Unplanned' },
+    { key: 'selling', label: 'Selling' },
     { key: 'coverage_pct', label: 'Coverage %' },
   ];
 
@@ -130,9 +134,11 @@ export default function JourneyPlanCompliance() {
           <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Daily Summary</h2>
-              <button onClick={() => exportToExcel(summary,
+              <button onClick={() => exportToExcel(
+                summary,
                 [{ key: 'date', label: 'Date' }, { key: 'num_users', label: 'Users' },
-                 { key: 'scheduled_calls', label: 'Scheduled' }, { key: 'planned_calls', label: 'Planned' },
+                 { key: 'actual_calls', label: 'Total Calls' }, { key: 'scheduled_calls', label: 'Scheduled Calls' },
+                 { key: 'planned_calls', label: 'Planned Calls' },
                  { key: 'unplanned', label: 'Unplanned' }, { key: 'coverage_pct', label: 'Coverage %' }],
                 'journey-plan-compliance')}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
@@ -146,8 +152,9 @@ export default function JourneyPlanCompliance() {
                     <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Date</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Day</th>
                     <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Users</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Scheduled</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Planned</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Total Calls</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Scheduled Calls</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Planned Calls</th>
                     <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Unplanned</th>
                     <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Coverage</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Action</th>
@@ -159,9 +166,10 @@ export default function JourneyPlanCompliance() {
                       <td className="px-5 py-3 font-medium text-gray-800">{String(row.date).substring(0, 10)}</td>
                       <td className="px-4 py-3 text-gray-500 text-xs">{dayName(row.date)}</td>
                       <td className="px-4 py-3 text-right tabular-nums">{row.num_users ?? '-'}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-blue-600">{row.actual_calls?.toLocaleString() ?? '-'}</td>
                       <td className="px-4 py-3 text-right tabular-nums font-medium">{row.scheduled_calls?.toLocaleString() ?? '-'}</td>
                       <td className="px-4 py-3 text-right tabular-nums text-emerald-700 font-medium">{row.planned_calls?.toLocaleString() ?? '-'}</td>
-                      <td className="px-4 py-3 text-right tabular-nums text-amber-600">{row.unplanned?.toLocaleString() ?? '-'}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-amber-600">{Number(row.unplanned).toLocaleString()}</td>
                       <td className="px-4 py-3 text-right">
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${coverageColor(row.coverage_pct)}`}>
                           {row.coverage_pct != null ? `${Number(row.coverage_pct).toFixed(1)}%` : '-'}
@@ -176,7 +184,7 @@ export default function JourneyPlanCompliance() {
                     </tr>
                   ))}
                   {summary.length === 0 && (
-                    <tr><td colSpan={8} className="px-4 py-12 text-center text-gray-400">No data available</td></tr>
+                    <tr><td colSpan={9} className="px-4 py-12 text-center text-gray-400">No data available</td></tr>
                   )}
                 </tbody>
               </table>
@@ -231,11 +239,13 @@ export default function JourneyPlanCompliance() {
                   <tr className="bg-gray-50 border-b border-gray-100">
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">User Code</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Salesman</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Route</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Scheduled</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Planned</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Selling</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Route Code</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Route Name</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Total Calls</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Scheduled Calls</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Planned Calls</th>
                     <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Unplanned</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Selling</th>
                     <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Coverage</th>
                   </tr>
                 </thead>
@@ -245,10 +255,12 @@ export default function JourneyPlanCompliance() {
                       <td className="px-4 py-2.5 font-mono text-xs text-gray-500">{r.user_code}</td>
                       <td className="px-4 py-2.5 font-medium text-gray-800">{r.user_name}</td>
                       <td className="px-4 py-2.5 font-mono text-xs text-gray-500">{r.route_code}</td>
+                      <td className="px-4 py-2.5 text-xs text-gray-600">{r.route_name}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums text-blue-600">{r.actual}</td>
                       <td className="px-4 py-2.5 text-right tabular-nums">{r.scheduled}</td>
                       <td className="px-4 py-2.5 text-right tabular-nums text-emerald-700 font-medium">{r.planned}</td>
-                      <td className="px-4 py-2.5 text-right tabular-nums text-blue-600">{r.selling}</td>
                       <td className="px-4 py-2.5 text-right tabular-nums text-amber-600">{r.unplanned}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums text-blue-600">{r.selling}</td>
                       <td className="px-4 py-2.5 text-right">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${coverageColor(r.coverage_pct)}`}>
                           {r.coverage_pct != null ? `${Number(r.coverage_pct).toFixed(1)}%` : '-'}
@@ -257,7 +269,7 @@ export default function JourneyPlanCompliance() {
                     </tr>
                   ))}
                   {drillPaged.length === 0 && (
-                    <tr><td colSpan={8} className="px-4 py-12 text-center text-gray-400">No matching records</td></tr>
+                    <tr><td colSpan={10} className="px-4 py-12 text-center text-gray-400">No matching records</td></tr>
                   )}
                 </tbody>
               </table>

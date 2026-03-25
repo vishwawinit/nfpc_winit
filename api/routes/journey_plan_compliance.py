@@ -52,20 +52,22 @@ def get_journey_plan_compliance(
     }.items() if v is not None}
 
     # Try rpt_coverage_summary first (fast, pre-computed)
-    cw, cp = build_where(filters, date_col='visit_date')
+    # Filter to active routes only (matches dashboard behaviour)
+    cw, cp = build_where(filters, date_col='visit_date', prefix='rc')
+    active_join = "JOIN dim_route dr ON rc.route_code = dr.code AND dr.has_active_assignment = true "
     summary = query(
-        f"SELECT visit_date AS date, "
-        f"  COUNT(DISTINCT user_code) AS num_users, "
-        f"  COALESCE(SUM(scheduled_calls), 0) AS scheduled_calls, "
-        f"  COALESCE(SUM(total_actual_calls), 0) AS actual_calls, "
-        f"  COALESCE(SUM(planned_calls), 0) AS planned_calls, "
-        f"  COALESCE(SUM(selling_calls), 0) AS selling_calls, "
-        f"  COALESCE(SUM(scheduled_calls - planned_calls), 0) AS unplanned, "
-        f"  CASE WHEN SUM(scheduled_calls) > 0 "
-        f"    THEN ROUND(SUM(total_actual_calls)::numeric / SUM(scheduled_calls) * 100, 2) "
+        f"SELECT rc.visit_date AS date, "
+        f"  COUNT(DISTINCT rc.user_code) AS num_users, "
+        f"  COALESCE(SUM(rc.scheduled_calls), 0) AS scheduled_calls, "
+        f"  COALESCE(SUM(rc.total_actual_calls), 0) AS actual_calls, "
+        f"  COALESCE(SUM(rc.planned_calls), 0) AS planned_calls, "
+        f"  COALESCE(SUM(rc.selling_calls), 0) AS selling_calls, "
+        f"  CASE WHEN SUM(rc.total_actual_calls) = 0 THEN 0 ELSE ABS(SUM(rc.total_actual_calls) - SUM(rc.scheduled_calls)) END AS unplanned, "
+        f"  CASE WHEN SUM(rc.scheduled_calls) > 0 "
+        f"    THEN LEAST(ROUND(SUM(rc.planned_calls)::numeric / SUM(rc.scheduled_calls) * 100, 2), 100) "
         f"    ELSE 0 END AS coverage_pct "
-        f"FROM rpt_coverage_summary WHERE {cw} "
-        f"GROUP BY visit_date ORDER BY visit_date DESC",
+        f"FROM rpt_coverage_summary rc {active_join}WHERE {cw} "
+        f"GROUP BY rc.visit_date ORDER BY rc.visit_date DESC",
         cp
     )
 
@@ -109,20 +111,21 @@ def get_journey_plan_compliance(
             jp + jp + jp
         )
 
-    # Drill-down: per user per date from coverage summary
+    # Drill-down: per user per route per date (sp_GetJourneyPlanComplianceReportNew_Mapping logic)
+    # SP: Planned=ScheduledCalls, Actual=ActualCalls, WithoutJPActual=ABS(TotalActualCalls-ActualCalls)
     drill_down = query(
-        f"SELECT visit_date AS date, user_code, user_name, route_code, "
-        f"  COALESCE(SUM(scheduled_calls), 0) AS scheduled, "
-        f"  COALESCE(SUM(total_actual_calls), 0) AS actual, "
-        f"  COALESCE(SUM(planned_calls), 0) AS planned, "
-        f"  COALESCE(SUM(selling_calls), 0) AS selling, "
-        f"  COALESCE(SUM(scheduled_calls - planned_calls), 0) AS unplanned, "
-        f"  CASE WHEN SUM(scheduled_calls) > 0 "
-        f"    THEN ROUND(SUM(total_actual_calls)::numeric / SUM(scheduled_calls) * 100, 2) "
+        f"SELECT rc.visit_date AS date, rc.user_code, rc.user_name, rc.route_code, rc.route_name, "
+        f"  COALESCE(SUM(rc.scheduled_calls), 0) AS scheduled, "
+        f"  COALESCE(SUM(rc.total_actual_calls), 0) AS actual, "
+        f"  COALESCE(SUM(rc.planned_calls), 0) AS planned, "
+        f"  COALESCE(SUM(rc.selling_calls), 0) AS selling, "
+        f"  CASE WHEN SUM(rc.total_actual_calls) = 0 THEN 0 ELSE ABS(SUM(rc.total_actual_calls) - SUM(rc.scheduled_calls)) END AS unplanned, "
+        f"  CASE WHEN SUM(rc.scheduled_calls) > 0 "
+        f"    THEN LEAST(ROUND(SUM(rc.planned_calls)::numeric / SUM(rc.scheduled_calls) * 100, 2), 100) "
         f"    ELSE 0 END AS coverage_pct "
-        f"FROM rpt_coverage_summary WHERE {cw} "
-        f"GROUP BY visit_date, user_code, user_name, route_code "
-        f"ORDER BY visit_date DESC, user_name",
+        f"FROM rpt_coverage_summary rc {active_join}WHERE {cw} "
+        f"GROUP BY rc.visit_date, rc.user_code, rc.user_name, rc.route_code, rc.route_name "
+        f"ORDER BY rc.visit_date DESC, rc.user_name",
         cp
     )
 
