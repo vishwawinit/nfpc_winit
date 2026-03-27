@@ -75,27 +75,38 @@ def get_sales_performance(
     last_month_day = min(display_end.day, last_month_max.day)
     last_month_end = date(last_month_start.year, last_month_start.month, last_month_day)
 
-    # ── MTD / LMTD KPIs are independent of the day filter ──────────────────────
-    # Always use today's day-of-month so selecting day=1 doesn't change the KPI.
-    eff_month = month if month else today.month
-    eff_year  = year  if year  else today.year
-    mtd_kpi_start        = date(eff_year, eff_month, 1)
-    _, month_last        = _month_range(eff_year, eff_month)
-    is_current_month     = (eff_year == today.year and eff_month == today.month)
-    # Current month → end at today; past/future month → use full month
-    mtd_kpi_display = min(date(eff_year, eff_month, today.day), month_last) \
-                      if is_current_month else month_last
-    mtd_kpi_end     = min(mtd_kpi_display, latest_data)
+    # ── MTD / LMTD KPIs ──────────────────────────────────────────────────────────
+    # When date_from/date_to are explicitly provided, use them as-is for KPIs.
+    # When month/year picker is used, MTD = month-start to today (day-filter independent).
+    eff_month = month if month else (date_from.month if date_from else today.month)
+    eff_year  = year  if year  else (date_from.year if date_from else today.year)
+
+    if date_from and date_to:
+        # Explicit date range: use exactly as selected
+        mtd_kpi_start   = cur_start
+        mtd_kpi_end     = cur_end
+        mtd_kpi_display = cur_end
+    elif day and month and year:
+        # Day selected: MTD = month-start to selected day
+        mtd_kpi_start   = cur_start
+        mtd_kpi_end     = cur_end
+        mtd_kpi_display = display_end
+    else:
+        # Month/year only: full month to today
+        mtd_kpi_start    = date(eff_year, eff_month, 1)
+        _, month_last    = _month_range(eff_year, eff_month)
+        is_current_month = (eff_year == today.year and eff_month == today.month)
+        mtd_kpi_display  = min(date(eff_year, eff_month, today.day), month_last) \
+                           if is_current_month else month_last
+        mtd_kpi_end      = min(mtd_kpi_display, latest_data)
 
     if mtd_kpi_start.month == 1:
         lmtd_kpi_start = date(mtd_kpi_start.year - 1, 12, 1)
     else:
         lmtd_kpi_start = date(mtd_kpi_start.year, mtd_kpi_start.month - 1, 1)
-    lmtd_month_last = (mtd_kpi_start - timedelta(days=1))  # last day of lmtd month
-    # Current month → LMTD ends on same day-of-month; past month → full lmtd month
+    lmtd_month_last = (mtd_kpi_start - timedelta(days=1))
     lmtd_kpi_end = date(lmtd_kpi_start.year, lmtd_kpi_start.month,
-                        min(today.day, lmtd_month_last.day)) \
-                   if is_current_month else lmtd_month_last
+                        min(mtd_kpi_end.day, lmtd_month_last.day))
 
     # Year-to-date
     ytd_start = date(cur_start.year, 1, 1)
@@ -154,62 +165,79 @@ def get_sales_performance(
         item_filter_codes = ','.join(r['code'] for r in item_rows)
         base_filters['item'] = item_filter_codes
 
-    # Resolve channel to customer_codes (table has customer_code but no channel column)
+    # Channel filter — use JOIN for best performance (avoids correlated subquery over 39k+ rows)
+    _channel_join = ""
+    _channel_join_params = []
+    _ch_dc_join_cond = ""   # extra condition on existing dim_customer dc join (sku_count only)
     if channel:
-        from api.database import query as db_query
         ch_vals = [v.strip() for v in channel.split(',') if v.strip()]
-        ch_ph = ','.join(['%s'] * len(ch_vals))
-        cust_rows = db_query(
-            f"SELECT DISTINCT code FROM dim_customer WHERE TRIM(channel_code) IN ({ch_ph})",
-            ch_vals
-        )
-        if not cust_rows:
-            return _empty_response()
-        base_filters['customer'] = ','.join(r['code'] for r in cust_rows)
+        if ch_vals:
+            ch_ph = ','.join(['%s'] * len(ch_vals))
+            _channel_join = f"JOIN dim_customer _chdc ON _chdc.code = r.customer_code AND TRIM(_chdc.channel_code) IN ({ch_ph}) "
+            _channel_join_params = ch_vals
+            _ch_dc_join_cond = f" AND TRIM(dc.channel_code) IN ({ch_ph})"
 
     # --- Sales/Returns from rpt_route_sales_summary_by_item (consistent with Dashboard) ---
     RSSI_KEYS = {'date_from', 'date_to', 'sales_org', 'route', 'user_code', 'item', 'category', 'brand'}
     RSIC_KEYS = {'date_from', 'date_to', 'route', 'user_code', 'item', 'customer'}
 
     def get_sales_returns(d_start, d_end):
-        f = {k: v for k, v in {**base_filters, 'date_from': d_start, 'date_to': d_end}.items() if k in RSSI_KEYS}
-        if sales_org and 'sales_org' not in f:
-            f['sales_org'] = sales_org
-        sw, sp = build_where(f, date_col='date')
-        row = query_one(
-            f"SELECT COALESCE(SUM(total_sales),0) AS sales, "
-            f"  COALESCE(SUM(total_wastage),0) AS total_wastage "
-            f"FROM (SELECT DISTINCT ON (route_code, item_code, date) "
-            f"  total_sales, total_wastage "
-            f"  FROM rpt_route_sales_summary_by_item WHERE {sw}) t",
-            sp
-        )
-        # GR/Damage/Expiry breakdown still from rpt_route_sales_by_item_customer
-        RSIC_KEYS = {'date_from', 'date_to', 'route', 'user_code', 'item', 'customer'}
-        f2 = {k: v for k, v in {**base_filters, 'date_from': d_start, 'date_to': d_end}.items() if k in RSIC_KEYS}
+        RSIC_KEYS_LOCAL = {'date_from', 'date_to', 'route', 'user_code', 'item', 'customer'}
+        f2 = {k: v for k, v in {**base_filters, 'date_from': d_start, 'date_to': d_end}.items() if k in RSIC_KEYS_LOCAL}
         sw2, sp2 = build_where(f2, date_col='date', prefix='r')
-        row2 = query_one(
-            f"SELECT COALESCE(SUM(r.total_gr_sales),0) AS gr, "
-            f"  COALESCE(SUM(r.total_damage_sales),0) AS damage, "
-            f"  COALESCE(SUM(r.total_expiry_sales),0) AS expiry "
-            f"FROM rpt_route_sales_by_item_customer r {_org_join}WHERE {sw2}", _org_params + sp2
-        )
-        sales = float(row["sales"]) if row else 0
-        gr = float(row2["gr"]) if row2 else 0
-        damage = float(row2["damage"]) if row2 else 0
-        expiry = float(row2["expiry"]) if row2 else 0
-        return {"sales": sales, "gr": gr, "damage": damage, "expiry": expiry}
+
+        # When item/brand/channel filter is active, use RSIC for total_sales.
+        # Otherwise use RSSI (pre-aggregated, matches dashboard).
+        if base_filters.get('item') or base_filters.get('customer') or _channel_join:
+            # Single query for sales + returns (saves one round-trip to remote DB)
+            row = query_one(
+                f"SELECT COALESCE(SUM(r.total_sales),0) AS sales, "
+                f"  COALESCE(SUM(r.total_gr_sales),0) AS gr, "
+                f"  COALESCE(SUM(r.total_damage_sales),0) AS damage, "
+                f"  COALESCE(SUM(r.total_expiry_sales),0) AS expiry "
+                f"FROM rpt_route_sales_by_item_customer r {_org_join}{_channel_join}WHERE {sw2}",
+                _org_params + _channel_join_params + sp2
+            )
+            return {
+                "sales": float(row["sales"]) if row else 0,
+                "gr": float(row["gr"]) if row else 0,
+                "damage": float(row["damage"]) if row else 0,
+                "expiry": float(row["expiry"]) if row else 0,
+            }
+        else:
+            f = {k: v for k, v in {**base_filters, 'date_from': d_start, 'date_to': d_end}.items() if k in RSSI_KEYS}
+            if sales_org and 'sales_org' not in f:
+                f['sales_org'] = sales_org
+            sw, sp = build_where(f, date_col='date')
+            row = query_one(
+                f"SELECT COALESCE(SUM(total_sales),0) AS sales, "
+                f"  COALESCE(SUM(total_wastage),0) AS total_wastage "
+                f"FROM (SELECT DISTINCT ON (route_code, item_code, date) "
+                f"  total_sales, total_wastage "
+                f"  FROM rpt_route_sales_summary_by_item WHERE {sw}) t",
+                sp
+            )
+            # Returns always from RSIC
+            f3 = {k: v for k, v in {**base_filters, 'date_from': d_start, 'date_to': d_end}.items() if k in RSIC_KEYS_LOCAL}
+            sw3, sp3 = build_where(f3, date_col='date', prefix='r')
+            row2 = query_one(
+                f"SELECT COALESCE(SUM(r.total_gr_sales),0) AS gr, "
+                f"  COALESCE(SUM(r.total_damage_sales),0) AS damage, "
+                f"  COALESCE(SUM(r.total_expiry_sales),0) AS expiry "
+                f"FROM rpt_route_sales_by_item_customer r {_org_join}WHERE {sw3}",
+                _org_params + sp3
+            )
+            return {
+                "sales": float(row["sales"]) if row else 0,
+                "gr": float(row2["gr"]) if row2 else 0,
+                "damage": float(row2["damage"]) if row2 else 0,
+                "expiry": float(row2["expiry"]) if row2 else 0,
+            }
 
     def get_unfiltered_sales(d_start, d_end):
-        """MTD/LMTD KPIs: date range only, no org/user/item filters."""
-        row = query_one(
-            "SELECT COALESCE(SUM(total_sales),0) AS sales "
-            "FROM (SELECT DISTINCT ON (route_code, item_code, date) total_sales "
-            "  FROM rpt_route_sales_summary_by_item "
-            "  WHERE date BETWEEN %s AND %s) t",
-            [d_start, d_end]
-        )
-        return float(row["sales"]) if row else 0
+        """MTD/LMTD KPIs: independent of day selection but respects non-date filters."""
+        data = get_sales_returns(d_start, d_end)
+        return data["sales"]
 
     def get_target(d_start, d_end):
         row = query_one(
@@ -222,15 +250,9 @@ def get_sales_performance(
 
     # Use exact selected period (respects day selection) — for ROS / SKU
     cur_data = get_sales_returns(cur_start, cur_end)
-    last_data = get_sales_returns(last_month_start, last_month_end)
-    # MTD/LMTD KPIs: company-wide, day-filter independent
-    cur_sales  = get_unfiltered_sales(mtd_kpi_start, mtd_kpi_end)
+    # MTD/LMTD KPIs: respects non-date filters; cur_data already covers MTD period
+    cur_sales  = cur_data["sales"]   # same date range as cur_data → reuse, no extra query
     last_sales = get_unfiltered_sales(lmtd_kpi_start, lmtd_kpi_end)
-    cur_target = get_target(cur_start, cur_end)
-    last_target = get_target(last_month_start, last_month_end)
-
-    cur_achievement = round(cur_sales / cur_target * 100, 2) if cur_target else 0
-    last_achievement = round(last_sales / last_target * 100, 2) if last_target else 0
 
     # --- Return on Sales ---
     # Matches: sp_DashboardSales_SalesPercentage
@@ -285,27 +307,29 @@ def get_sales_performance(
     )
     latest_date = latest_row["latest"] if latest_row and latest_row["latest"] else cur_end
 
-    def sku_count(d_from, d_to):
-        f = {**rsic_base, 'date_from': d_from, 'date_to': d_to}
-        sw, sp = build_where(f, date_col='date', prefix='r')
-        # Match sp_GetSKUsSold_Formula exactly:
-        #   INNER JOIN tblItem + tblCustomerDetail + UserHierarchy (role=C_PRESALES_VANSALES)
-        row = query_one(
-            f"SELECT COUNT(DISTINCT r.item_code) AS cnt "
-            f"FROM rpt_route_sales_by_item_customer r "
-            f"JOIN dim_item di ON di.code = r.item_code "
-            f"JOIN dim_customer dc ON dc.code = r.customer_code "
-            f"JOIN dim_user du ON du.code = r.user_code AND du.role_code = 'C_PRESALES_VANSALES' "
-            f"{_org_join}WHERE {sw}", _org_params + sp
-        )
-        return int(row["cnt"]) if row else 0
-
-    # SP2: Daily = specific day only, MTD = full month (day-filter independent), YTD = full year
+    # SP2: Daily/MTD/YTD SKU counts in a single query (saves 2 round-trips to remote DB)
+    ytd_end = date(cur_end.year, 12, 31)
+    # Build WHERE for the widest range (YTD covers all sub-ranges)
+    sku_wide_f = {k: v for k, v in {**rsic_base, 'date_from': ytd_start, 'date_to': ytd_end}.items()}
+    sw_wide, sp_wide = build_where(sku_wide_f, date_col='date', prefix='r')
+    sku_row = query_one(
+        f"SELECT "
+        f"  COUNT(DISTINCT CASE WHEN r.date = %s THEN r.item_code END) AS today_cnt, "
+        f"  COUNT(DISTINCT CASE WHEN r.date BETWEEN %s AND %s THEN r.item_code END) AS mtd_cnt, "
+        f"  COUNT(DISTINCT CASE WHEN r.date BETWEEN %s AND %s THEN r.item_code END) AS ytd_cnt "
+        f"FROM rpt_route_sales_by_item_customer r "
+        f"JOIN dim_item di ON di.code = r.item_code "
+        f"JOIN dim_customer dc ON dc.code = r.customer_code{_ch_dc_join_cond} "
+        f"JOIN dim_user du ON du.code = r.user_code AND du.role_code = 'C_PRESALES_VANSALES' "
+        f"{_org_join}WHERE {sw_wide}",
+        [latest_date, cur_start, cur_end, ytd_start, ytd_end]
+        + _channel_join_params + _org_params + sp_wide
+    )
     sku_counts = {
-        "today": sku_count(latest_date, latest_date),
+        "today": int(sku_row["today_cnt"]) if sku_row else 0,
         "today_label": str(latest_date),
-        "mtd": sku_count(cur_start, full_month_end),
-        "ytd": sku_count(ytd_start, date(cur_end.year, 12, 31)),
+        "mtd": int(sku_row["mtd_cnt"]) if sku_row else 0,
+        "ytd": int(sku_row["ytd_cnt"]) if sku_row else 0,
     }
 
     # --- SKU table from rpt_route_sales_by_item_customer (same source as KPIs) ---
@@ -320,9 +344,8 @@ def get_sales_performance(
     cw_start = max(week_start, cur_start)
     cw_end = min(today, cur_end)
 
-    # Use full_month_end for WHERE so the query fetches all month rows;
-    # current_month_sales CASE still uses cur_start/cur_end (MTD only).
-    cm_sk = {k: v for k, v in {**base_filters, 'date_from': cur_start, 'date_to': full_month_end}.items() if k in RSIC_KEYS}
+    # Use cur_end so table rows and MTD KPI count both reflect the selected day
+    cm_sk = {k: v for k, v in {**base_filters, 'date_from': cur_start, 'date_to': cur_end}.items() if k in RSIC_KEYS}
     cmw_s, cmp_s = build_where(cm_sk, date_col='date', prefix='r')
     ly_sk = {k: v for k, v in {**base_filters, 'date_from': ly_start, 'date_to': ly_end}.items() if k in RSIC_KEYS}
     lyw_s, lyp_s = build_where(ly_sk, date_col='date', prefix='r')
@@ -336,20 +359,16 @@ def get_sales_performance(
         f"  ROUND(SUM(CASE WHEN r.date BETWEEN %s AND %s THEN r.total_sales ELSE 0 END)::numeric, 2) AS ly_current_month_sales, "
         f"  ROUND(SUM(CASE WHEN r.date BETWEEN %s AND %s THEN r.total_sales ELSE 0 END)::numeric, 2) AS current_week_sales "
         f"FROM rpt_route_sales_by_item_customer r "
-        f"LEFT JOIN dim_item di ON r.item_code = di.code "
-        f"{_org_join}"
+        f"JOIN dim_item di ON di.code = r.item_code "
+        f"JOIN dim_user du ON du.code = r.user_code AND du.role_code = 'C_PRESALES_VANSALES' "
+        f"{_org_join}{_channel_join}"
         f"WHERE ({cmw_s} OR {lyw_s}) "
         f"GROUP BY r.item_code, COALESCE(di.name, r.item_code), "
         f"  di.category_code, COALESCE(di.category_name, di.category_code), "
         f"  COALESCE(di.brand_name, di.brand_code) "
-        f"HAVING NOT ( "
-        f"  COALESCE(SUM(CASE WHEN r.date BETWEEN %s AND %s THEN r.total_sales ELSE 0 END), 0) = 0 "
-        f"  AND COALESCE(SUM(CASE WHEN r.date BETWEEN %s AND %s THEN r.total_sales ELSE 0 END), 0) = 0 "
-        f") "
         f"ORDER BY r.item_code",
-        [cur_start, full_month_end, ly_start, ly_end, cw_start, cw_end]
-        + _org_params + cmp_s + lyp_s
-        + [cur_start, full_month_end, ly_start, ly_end]
+        [cur_start, cur_end, ly_start, ly_end, cw_start, cw_end]
+        + _org_params + _channel_join_params + cmp_s + lyp_s
     )
 
     for row in sku_table:

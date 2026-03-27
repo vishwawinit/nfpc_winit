@@ -44,9 +44,6 @@ def get_productivity_coverage(
 
     w, p = build_where(filters, date_col='visit_date', prefix='c')
 
-    # Match dashboard: filter to routes with active user assignments only
-    active_join = "JOIN dim_route _dr ON c.route_code = _dr.code AND _dr.has_active_assignment = true "
-
     # Summary totals — same columns as dashboard call metrics
     summary_row = query_one(
         f"SELECT "
@@ -56,7 +53,6 @@ def get_productivity_coverage(
         f"  COALESCE(SUM(c.selling_calls), 0) AS selling, "
         f"  COALESCE(SUM(c.planned_selling_calls), 0) AS planned_selling "
         f"FROM rpt_coverage_summary c "
-        f"{active_join}"
         f"WHERE {w}",
         p
     )
@@ -89,17 +85,16 @@ def get_productivity_coverage(
     # Per-user breakdown
     user_rows = query(
         f"SELECT "
-        f"  c.user_code, c.user_name, "
+        f"  c.user_code, c.user_name, c.route_code, c.route_name, "
         f"  COALESCE(SUM(c.scheduled_calls), 0) AS scheduled, "
         f"  COALESCE(SUM(c.total_actual_calls), 0) AS actual, "
         f"  COALESCE(SUM(c.planned_calls), 0) AS planned_calls, "
         f"  COALESCE(SUM(c.selling_calls), 0) AS productive, "
         f"  COALESCE(SUM(c.planned_selling_calls), 0) AS planned_selling "
         f"FROM rpt_coverage_summary c "
-        f"{active_join}"
         f"WHERE {w} "
-        f"GROUP BY c.user_code, c.user_name "
-        f"ORDER BY c.user_name",
+        f"GROUP BY c.user_code, c.user_name, c.route_code, c.route_name "
+        f"ORDER BY c.user_name, c.route_code",
         p
     )
 
@@ -112,6 +107,8 @@ def get_productivity_coverage(
         users.append({
             "user_code":    row["user_code"],
             "user_name":    row["user_name"],
+            "route_code":   row["route_code"],
+            "route_name":   row["route_name"],
             "scheduled":    sched,
             "actual":       act,
             "planned":      plan,

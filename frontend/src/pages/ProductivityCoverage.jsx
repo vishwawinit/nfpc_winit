@@ -64,15 +64,15 @@ export default function ProductivityCoverage() {
         <div className="text-center py-16 text-gray-400 font-medium">No data available</div>
       ) : (
         <>
-          {/* Summary KPI Cards */}
+          {/* Summary KPI Cards — labels match Dashboard "Calls & Coverage" section */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-            <KpiCard title="Total Scheduled" value={summary.total_scheduled?.toLocaleString() ?? '-'} icon={CalendarCheck} color="blue" variant="light" />
-            <KpiCard title="Total Actual" value={summary.total_actual?.toLocaleString() ?? '-'} icon={Users} color="green" variant="light" />
-            <KpiCard title="Planned" value={summary.planned?.toLocaleString() ?? '-'} icon={MapPin} color="blue" variant="light" />
-            <KpiCard title="Unplanned" value={summary.unplanned?.toLocaleString() ?? '-'} icon={Navigation} color="yellow" variant="light" />
-            <KpiCard title="Productive (Planned)" value={summary.productive_planned?.toLocaleString() ?? '-'} icon={Target} color="green" variant="light" />
-            <KpiCard title="Productive (Unplanned)" value={summary.productive_unplanned?.toLocaleString() ?? '-'} icon={TrendingUp} color="purple" variant="light" />
-            <KpiCard title="Coverage %" value={summary.coverage_pct != null ? `${Number(summary.coverage_pct).toFixed(1)}%` : '-'} icon={Zap}
+            <KpiCard title="Scheduled"           value={summary.total_scheduled?.toLocaleString() ?? '-'}                           icon={CalendarCheck} color="blue"   variant="light" />
+            <KpiCard title="Actual"              value={summary.total_actual?.toLocaleString() ?? '-'}                              icon={Users}         color="green"  variant="light" />
+            <KpiCard title="Planned"             value={summary.planned?.toLocaleString() ?? '-'}                                   icon={MapPin}        color="indigo" variant="light" />
+            <KpiCard title="Unplanned"           value={summary.unplanned?.toLocaleString() ?? '-'}                                 icon={Navigation}    color="yellow" variant="light" />
+            <KpiCard title="Productive Planned"  value={summary.productive_planned?.toLocaleString() ?? '-'}                        icon={Target}        color="green"  variant="light" />
+            <KpiCard title="Productive Unplanned" value={summary.productive_unplanned?.toLocaleString() ?? '-'}                     icon={TrendingUp}    color="purple" variant="light" />
+            <KpiCard title="Coverage %"          value={summary.coverage_pct != null ? `${Number(summary.coverage_pct).toFixed(1)}%` : '-'} icon={Zap}
               color={summary.coverage_pct >= 90 ? 'green' : summary.coverage_pct >= 70 ? 'yellow' : 'red'} variant="light" />
           </div>
 
@@ -107,11 +107,15 @@ export default function ProductivityCoverage() {
             {tab === 'coverage' ? (
               <DataTable
                 columns={[
-                  { key: 'user_code', label: 'User Code' },
-                  { key: 'user_name', label: 'Salesman' },
-                  { key: 'scheduled', label: 'Scheduled', format: 'number' },
-                  { key: 'actual', label: 'Actual', format: 'number' },
-                  { key: 'coverage_pct', label: 'Coverage %', format: 'percent' },
+                  { key: 'user_code',    label: 'User Code',   align: 'left'   },
+                  { key: 'user_name',    label: 'Salesman',    align: 'left'   },
+                  { key: 'route_code',   label: 'Route',       align: 'center' },
+                  { key: 'route_name',   label: 'Route Name',  align: 'left'   },
+                  { key: 'scheduled',    label: 'Scheduled',   align: 'right',  format: 'number'  },
+                  { key: 'actual',       label: 'Actual',      align: 'right',  format: 'number'  },
+                  { key: 'planned',      label: 'Planned',     align: 'right',  format: 'number'  },
+                  { key: 'unplanned',    label: 'Unplanned',   align: 'right',  format: 'number'  },
+                  { key: 'coverage_pct', label: 'Coverage %',  align: 'right',  format: 'percent' },
                 ]}
                 data={users}
                 exportName="coverage-by-user"
@@ -119,11 +123,16 @@ export default function ProductivityCoverage() {
             ) : (
               <DataTable
                 columns={[
-                  { key: 'user_code', label: 'User Code' },
-                  { key: 'user_name', label: 'Salesman' },
-                  { key: 'actual', label: 'Actual Calls', format: 'number' },
-                  { key: 'productive', label: 'Productive Calls', format: 'number' },
-                  { key: 'coverage_pct', label: 'Coverage %', format: 'percent' },
+                  { key: 'user_code',    label: 'User Code',         align: 'left'   },
+                  { key: 'user_name',    label: 'Salesman',          align: 'left'   },
+                  { key: 'route_code',   label: 'Route',             align: 'center' },
+                  { key: 'route_name',   label: 'Route Name',        align: 'left'   },
+                  { key: 'scheduled',    label: 'Scheduled',         align: 'right',  format: 'number'  },
+                  { key: 'actual',       label: 'Actual Calls',      align: 'right',  format: 'number'  },
+                  { key: 'planned',      label: 'Planned',           align: 'right',  format: 'number'  },
+                  { key: 'unplanned',    label: 'Unplanned',         align: 'right',  format: 'number'  },
+                  { key: 'productive',   label: 'Productive Calls',  align: 'right',  format: 'number'  },
+                  { key: 'coverage_pct', label: 'Coverage %',        align: 'right',  format: 'percent' },
                 ]}
                 data={users}
                 exportName="productivity-by-user"

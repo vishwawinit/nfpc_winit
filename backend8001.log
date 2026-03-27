@@ -1,0 +1,35 @@
+INFO:     Started server process [36364]
+INFO:     Waiting for application startup.
+INFO:warmup:Starting cache warmup in background...
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+[DEBUG] filters={'date_from': datetime.date(2026, 3, 1), 'date_to': datetime.date(2026, 3, 1), 'route': 'F44'} WHERE=c.visit_date >= %s AND c.visit_date <= %s AND c.route_code = %s params=[datetime.date(2026, 3, 1), datetime.date(2026, 3, 1), 'F44']
+INFO:     127.0.0.1:65403 - "GET /api/productivity-coverage?date_from=2026-03-01&date_to=2026-03-01&route=F44 HTTP/1.1" 200 OK
+INFO:warmup:  Warmed: dashboard.get_dashboard
+INFO:warmup:  Warmed: sales_performance.get_sales_performance
+WARNING:warmup:  Skip:  top_customers.get_top_customers - can't adapt type 'Query'
+WARNING:warmup:  Skip:  top_products.get_top_products - can't adapt type 'Query'
+INFO:warmup:  Warmed: market_sales.get_market_sales_performance
+INFO:warmup:  Warmed: target_achievement.get_target_vs_achievement
+INFO:warmup:  Warmed: daily_sales_overview.get_daily_sales_overview
+INFO:warmup:  Warmed: mtd_wastage.get_mtd_wastage_summary
+INFO:warmup:  Warmed: weekly_sales_returns.get_weekly_sales_returns
+INFO:warmup:  Warmed: brand_wise_sales.get_brand_wise_sales
+INFO:warmup:  Warmed: mtd_sales_overview.get_mtd_sales_overview
+INFO:warmup:  Warmed: log_report.get_log_report
+INFO:warmup:  Warmed: time_management.get_time_management
+INFO:warmup:  Warmed: customer_attendance.get_customer_attendance
+INFO:warmup:  Warmed: mtd_attendance.get_mtd_attendance
+INFO:warmup:  Warmed: journey_plan_compliance.get_journey_plan_compliance
+INFO:warmup:  Warmed: eot_status.get_eot_status
+INFO:warmup:  Warmed: productivity_coverage.get_productivity_coverage
+INFO:warmup:  Warmed: salesman_journey.get_salesman_journey
+INFO:warmup:  Warmed: revenue_dispersion.get_revenue_dispersion
+INFO:warmup:  Warmed: monthly_sales_stock.get_monthly_sales_stock
+INFO:warmup:  Warmed: endorsement.get_endorsement
+INFO:warmup:  Warmed: filters.get_sales_orgs
+INFO:warmup:  Warmed: filters.get_order_customers
+INFO:warmup:  Warmed: filters.get_brands
+INFO:warmup:  Warmed: filters.get_categories
+INFO:warmup:  Warmed: filters.get_channels
+INFO:warmup:Cache warmup complete: 25 cached, 2 skipped in 111.2s
