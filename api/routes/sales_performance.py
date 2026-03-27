@@ -166,16 +166,19 @@ def get_sales_performance(
         _brand_on_di_cond = " AND " + " AND ".join(di_conds)
         _brand_di_params = i_params[:]
 
-    # Channel filter — use JOIN for best performance (avoids correlated subquery over 39k+ rows)
-    _channel_join = ""
-    _channel_join_params = []
+    # Channel filter — EXISTS subquery (same as dashboard, avoids row multiplication)
+    _channel_cond = ""
+    _channel_cond_params = []
     _ch_dc_join_cond = ""   # extra condition on existing dim_customer dc join (sku_count only)
     if channel:
         ch_vals = [v.strip() for v in channel.split(',') if v.strip()]
         if ch_vals:
             ch_ph = ','.join(['%s'] * len(ch_vals))
-            _channel_join = f"JOIN dim_customer _chdc ON _chdc.code = r.customer_code AND TRIM(_chdc.channel_code) IN ({ch_ph}) "
-            _channel_join_params = ch_vals
+            _channel_cond = (
+                f" AND EXISTS (SELECT 1 FROM dim_customer _chdc "
+                f"WHERE _chdc.code = r.customer_code AND TRIM(_chdc.channel_code) IN ({ch_ph}))"
+            )
+            _channel_cond_params = ch_vals
             _ch_dc_join_cond = f" AND TRIM(dc.channel_code) IN ({ch_ph})"
 
     # --- Sales/Returns from rpt_route_sales_summary_by_item (consistent with Dashboard) ---
@@ -189,15 +192,15 @@ def get_sales_performance(
 
         # When brand/channel filter is active, use RSIC for total_sales.
         # Otherwise use RSSI (pre-aggregated, matches dashboard).
-        if _brand_dim_join or _channel_join or base_filters.get('customer'):
+        if _brand_dim_join or _channel_cond or base_filters.get('customer'):
             # Single query for sales + returns (saves one round-trip to remote DB)
             row = query_one(
                 f"SELECT COALESCE(SUM(r.total_sales),0) AS sales, "
                 f"  COALESCE(SUM(r.total_gr_sales),0) AS gr, "
                 f"  COALESCE(SUM(r.total_damage_sales),0) AS damage, "
                 f"  COALESCE(SUM(r.total_expiry_sales),0) AS expiry "
-                f"FROM rpt_route_sales_by_item_customer r {_org_join}{_brand_dim_join}{_channel_join}WHERE {sw2}",
-                _org_params + _brand_dim_join_params + _channel_join_params + sp2
+                f"FROM rpt_route_sales_by_item_customer r {_org_join}{_brand_dim_join}WHERE {sw2}{_channel_cond}",
+                _org_params + _brand_dim_join_params + sp2 + _channel_cond_params
             )
             return {
                 "sales": float(row["sales"]) if row else 0,
@@ -324,7 +327,7 @@ def get_sales_performance(
         f"JOIN dim_user du ON du.code = r.user_code AND du.role_code = 'C_PRESALES_VANSALES' "
         f"{_org_join}WHERE {sw_wide}",
         [latest_date, cur_start, cur_end, ytd_start, ytd_end]
-        + _brand_di_params + _channel_join_params + _org_params + sp_wide
+        + _brand_di_params + _channel_cond_params + _org_params + sp_wide
     )
     sku_counts = {
         "today": int(sku_row["today_cnt"]) if sku_row else 0,
@@ -362,14 +365,14 @@ def get_sales_performance(
         f"FROM rpt_route_sales_by_item_customer r "
         f"JOIN dim_item di ON di.code = r.item_code{_brand_on_di_cond} "
         f"JOIN dim_user du ON du.code = r.user_code AND du.role_code = 'C_PRESALES_VANSALES' "
-        f"{_org_join}{_channel_join}"
-        f"WHERE ({cmw_s} OR {lyw_s}) "
+        f"{_org_join}"
+        f"WHERE ({cmw_s} OR {lyw_s}){_channel_cond} "
         f"GROUP BY r.item_code, COALESCE(di.name, r.item_code), "
         f"  di.category_code, COALESCE(di.category_name, di.category_code), "
         f"  COALESCE(di.brand_name, di.brand_code) "
         f"ORDER BY r.item_code",
         [cur_start, cur_end, ly_start, ly_end, cw_start, cw_end]
-        + _brand_di_params + _org_params + _channel_join_params + cmp_s + lyp_s
+        + _brand_di_params + _org_params + cmp_s + lyp_s + _channel_cond_params
     )
 
     for row in sku_table:
