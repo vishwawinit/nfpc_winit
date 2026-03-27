@@ -54,3 +54,4 @@ INFO:warmup:  Warmed: filters.get_brands
 INFO:warmup:  Warmed: filters.get_categories
 INFO:warmup:  Warmed: filters.get_channels
 INFO:warmup:Cache warmup complete: 25 cached, 2 skipped in 112.2s
+INFO:     127.0.0.1:52747 - "GET /api/sales-performance?day=27&month=3&year=2026&brand=12 HTTP/1.1" 200 OK

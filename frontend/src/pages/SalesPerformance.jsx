@@ -27,10 +27,11 @@ export default function SalesPerformance() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const hasData = useRef(false);
-  const [filters, setFilters] = useState(() => {
+  const defaultFilters = () => {
     const now = new Date();
     return { day: now.getDate(), month: now.getMonth() + 1, year: now.getFullYear() };
-  });
+  };
+  const [filters, setFilters] = useState(defaultFilters);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,7 +61,9 @@ export default function SalesPerformance() {
       <FilterPanel
         filters={filters}
         onChange={setFilters}
+        onReset={() => setFilters(defaultFilters())}
         showFields={['day', 'month', 'year', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'channel', 'category', 'brand']}
+        rowBreakBefore={['route']}
       />
 
       {/* Refreshing indicator — subtle bar, doesn't hide content */}
