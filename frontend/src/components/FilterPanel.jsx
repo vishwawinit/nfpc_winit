@@ -215,7 +215,7 @@ function MultiSelect({ options, value, onChange, placeholder = 'All', loading = 
   );
 }
 
-export default function FilterPanel({ filters, onChange, showFields = [], onReset }) {
+export default function FilterPanel({ filters, onChange, showFields = [], onReset, rowBreakBefore = [] }) {
   const [salesOrgs, setSalesOrgs] = useState([]);
   const [hosList, setHosList] = useState([]);
   const [asms, setAsms] = useState([]);
@@ -504,7 +504,7 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
         <div className={`grid ${multiGridCols} gap-x-3 gap-y-4`}>
           {['sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'channel', 'customer', 'brand', 'category', 'item'].map(field =>
             show(field) && (
-              <div key={field}>
+              <div key={field} className={rowBreakBefore.includes(field) ? 'col-start-1' : ''}>
                 <Label field={field} />
                 <MultiSelect
                   options={optionsFor(field)}

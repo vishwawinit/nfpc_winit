@@ -204,7 +204,8 @@ export default function Dashboard() {
       </div>
 
       <FilterPanel filters={filters} onChange={setFilters}
-        showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'channel', 'category', 'brand']} />
+        showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'channel', 'category', 'brand']}
+        rowBreakBefore={['route']} />
 
       {loading ? <Loading /> : !data ? (
         <div className="text-center py-20 text-gray-400 font-medium">No data available</div>
