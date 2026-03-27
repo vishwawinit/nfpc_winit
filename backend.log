@@ -55,3 +55,19 @@ INFO:warmup:  Warmed: filters.get_categories
 INFO:warmup:  Warmed: filters.get_channels
 INFO:warmup:Cache warmup complete: 25 cached, 2 skipped in 112.2s
 INFO:     127.0.0.1:52747 - "GET /api/sales-performance?day=27&month=3&year=2026&brand=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52786 - "GET /api/sales-performance?day=27&month=3&year=2026&brand=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52835 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52837 - "GET /api/filters/channels HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52839 - "GET /api/filters/brands HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52845 - "GET /api/filters/categories HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52848 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52846 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52855 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52857 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52860 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52851 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52863 - "GET /api/sales-performance?day=27&month=3&year=2026 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52870 - "GET /api/sales-performance?day=27&month=3&year=2026 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52883 - "GET /api/sales-performance?day=27&month=3&year=2026 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52886 - "GET /api/sales-performance?day=27&month=3&year=2026&category=M06 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52904 - "GET /api/sales-performance?day=27&month=3&year=2026 HTTP/1.1" 200 OK
