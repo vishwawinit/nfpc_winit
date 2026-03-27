@@ -142,28 +142,29 @@ def get_sales_performance(
         _org_join = f"JOIN dim_route _dr ON r.route_code = _dr.code AND _dr.sales_org_code IN ({org_ph}) "
         _org_params = orgs
 
-    # Resolve brand/category to item_codes (table has item_code but no brand/category columns)
-    item_filter_codes = None
+    # Brand/category → JOIN dim_item (avoids item-code format mismatch with RSIC table)
+    # _brand_dim_join: for get_sales_returns (alias _di, no existing dim_item join)
+    # _brand_on_di_cond / _brand_di_params: for SKU count/table (already JOIN dim_item di)
+    _brand_dim_join = ""
+    _brand_dim_join_params = []
+    _brand_on_di_cond = ""
+    _brand_di_params = []
     if brand or category:
-        from api.database import query as db_query
-        item_conditions = []
-        item_params = []
+        i_conds, i_params = [], []
         if brand:
             bvals = [v.strip() for v in brand.split(',') if v.strip()]
-            bph = ','.join(['%s'] * len(bvals))
-            item_conditions.append(f"TRIM(brand_code) IN ({bph})")
-            item_params.extend(bvals)
+            i_conds.append(f"TRIM(_di.brand_code) IN ({','.join(['%s'] * len(bvals))})")
+            i_params.extend(bvals)
         if category:
             cvals = [v.strip() for v in category.split(',') if v.strip()]
-            cph = ','.join(['%s'] * len(cvals))
-            item_conditions.append(f"category_code IN ({cph})")
-            item_params.extend(cvals)
-        iwhere = " AND ".join(item_conditions)
-        item_rows = db_query(f"SELECT DISTINCT code FROM dim_item WHERE {iwhere}", item_params)
-        if not item_rows:
-            return _empty_response()
-        item_filter_codes = ','.join(r['code'] for r in item_rows)
-        base_filters['item'] = item_filter_codes
+            i_conds.append(f"_di.category_code IN ({','.join(['%s'] * len(cvals))})")
+            i_params.extend(cvals)
+        _brand_dim_join = f"JOIN dim_item _di ON _di.code = r.item_code AND {' AND '.join(i_conds)} "
+        _brand_dim_join_params = i_params
+        # Same conditions but referencing existing 'di' alias (SKU count/table queries)
+        di_conds = [c.replace('_di.', 'di.') for c in i_conds]
+        _brand_on_di_cond = " AND " + " AND ".join(di_conds)
+        _brand_di_params = i_params[:]
 
     # Channel filter — use JOIN for best performance (avoids correlated subquery over 39k+ rows)
     _channel_join = ""
@@ -186,17 +187,17 @@ def get_sales_performance(
         f2 = {k: v for k, v in {**base_filters, 'date_from': d_start, 'date_to': d_end}.items() if k in RSIC_KEYS_LOCAL}
         sw2, sp2 = build_where(f2, date_col='date', prefix='r')
 
-        # When item/brand/channel filter is active, use RSIC for total_sales.
+        # When brand/channel filter is active, use RSIC for total_sales.
         # Otherwise use RSSI (pre-aggregated, matches dashboard).
-        if base_filters.get('item') or base_filters.get('customer') or _channel_join:
+        if _brand_dim_join or _channel_join or base_filters.get('customer'):
             # Single query for sales + returns (saves one round-trip to remote DB)
             row = query_one(
                 f"SELECT COALESCE(SUM(r.total_sales),0) AS sales, "
                 f"  COALESCE(SUM(r.total_gr_sales),0) AS gr, "
                 f"  COALESCE(SUM(r.total_damage_sales),0) AS damage, "
                 f"  COALESCE(SUM(r.total_expiry_sales),0) AS expiry "
-                f"FROM rpt_route_sales_by_item_customer r {_org_join}{_channel_join}WHERE {sw2}",
-                _org_params + _channel_join_params + sp2
+                f"FROM rpt_route_sales_by_item_customer r {_org_join}{_brand_dim_join}{_channel_join}WHERE {sw2}",
+                _org_params + _brand_dim_join_params + _channel_join_params + sp2
             )
             return {
                 "sales": float(row["sales"]) if row else 0,
@@ -318,12 +319,12 @@ def get_sales_performance(
         f"  COUNT(DISTINCT CASE WHEN r.date BETWEEN %s AND %s THEN r.item_code END) AS mtd_cnt, "
         f"  COUNT(DISTINCT CASE WHEN r.date BETWEEN %s AND %s THEN r.item_code END) AS ytd_cnt "
         f"FROM rpt_route_sales_by_item_customer r "
-        f"JOIN dim_item di ON di.code = r.item_code "
+        f"JOIN dim_item di ON di.code = r.item_code{_brand_on_di_cond} "
         f"JOIN dim_customer dc ON dc.code = r.customer_code{_ch_dc_join_cond} "
         f"JOIN dim_user du ON du.code = r.user_code AND du.role_code = 'C_PRESALES_VANSALES' "
         f"{_org_join}WHERE {sw_wide}",
         [latest_date, cur_start, cur_end, ytd_start, ytd_end]
-        + _channel_join_params + _org_params + sp_wide
+        + _brand_di_params + _channel_join_params + _org_params + sp_wide
     )
     sku_counts = {
         "today": int(sku_row["today_cnt"]) if sku_row else 0,
@@ -359,7 +360,7 @@ def get_sales_performance(
         f"  ROUND(SUM(CASE WHEN r.date BETWEEN %s AND %s THEN r.total_sales ELSE 0 END)::numeric, 2) AS ly_current_month_sales, "
         f"  ROUND(SUM(CASE WHEN r.date BETWEEN %s AND %s THEN r.total_sales ELSE 0 END)::numeric, 2) AS current_week_sales "
         f"FROM rpt_route_sales_by_item_customer r "
-        f"JOIN dim_item di ON di.code = r.item_code "
+        f"JOIN dim_item di ON di.code = r.item_code{_brand_on_di_cond} "
         f"JOIN dim_user du ON du.code = r.user_code AND du.role_code = 'C_PRESALES_VANSALES' "
         f"{_org_join}{_channel_join}"
         f"WHERE ({cmw_s} OR {lyw_s}) "
@@ -368,7 +369,7 @@ def get_sales_performance(
         f"  COALESCE(di.brand_name, di.brand_code) "
         f"ORDER BY r.item_code",
         [cur_start, cur_end, ly_start, ly_end, cw_start, cw_end]
-        + _org_params + _channel_join_params + cmp_s + lyp_s
+        + _brand_di_params + _org_params + _channel_join_params + cmp_s + lyp_s
     )
 
     for row in sku_table:

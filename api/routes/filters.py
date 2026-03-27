@@ -204,8 +204,32 @@ def get_users(sales_org: str = None, supervisor: str = None, depot: str = None, 
 
 
 @router.get("/filters/routes")
-def get_routes(sales_org: str = None, depot: str = None, supervisor: str = None, asm: str = None, hos: str = None):
+def get_routes(sales_org: str = None, depot: str = None, supervisor: str = None, asm: str = None, hos: str = None, user_code: str = None):
     """Routes. When hierarchy filters given, only return routes assigned to matching users."""
+    # If specific user(s) selected, resolve routes directly for those users (most specific filter)
+    if user_code:
+        user_codes = _split(user_code, upper=True)
+        u_ph = ','.join(['%s'] * len(user_codes))
+        route_codes = set()
+        # Routes assigned in dim_user
+        rows = query(f"SELECT DISTINCT route_code FROM dim_user WHERE code IN ({u_ph}) AND route_code IS NOT NULL", user_codes)
+        route_codes |= set(r['route_code'] for r in rows)
+        # Routes from transaction data
+        txn = query(f"SELECT DISTINCT route_code FROM rpt_customer_visits WHERE user_code IN ({u_ph})", user_codes)
+        route_codes |= set(r['route_code'] for r in txn if r['route_code'])
+        if not route_codes:
+            return []
+        rc_list = list(route_codes)
+        ph = ','.join(['%s'] * len(rc_list))
+        result = query(f"SELECT code, name FROM dim_route WHERE is_active = true AND code IN ({ph}) ORDER BY name", rc_list)
+        if len(result) < len(rc_list):
+            found = set(r['code'] for r in result)
+            for rc in rc_list:
+                if rc not in found:
+                    result.append({'code': rc, 'name': rc})
+            result.sort(key=lambda x: x['name'] or x['code'])
+        return result
+
     all_subs_set = _get_all_users_under(hos=hos, asm=asm, supervisor=supervisor)
 
     if all_subs_set is not None or depot:

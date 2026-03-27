@@ -333,17 +333,17 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
     );
   }, [filters.sales_org, filters.hos, filters.asm, filters.supervisor, filters.depot]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Routes depend on: sales_org + hos + asm + depot + supervisor ───
+  // ─── Routes depend on: sales_org + hos + asm + depot + supervisor + user_code ───
   useEffect(() => {
     if (!show('route')) return;
     abortAndFetch('routes',
       () => fetchFilters.routes({
         sales_org: filters.sales_org, hos: filters.hos, asm: filters.asm,
-        depot: filters.depot, supervisor: filters.supervisor,
+        depot: filters.depot, supervisor: filters.supervisor, user_code: filters.user_code,
       }),
       setRoutes, setLoadingRoutes
     );
-  }, [filters.sales_org, filters.hos, filters.asm, filters.depot, filters.supervisor]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filters.sales_org, filters.hos, filters.asm, filters.depot, filters.supervisor, filters.user_code]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Customers: load once from dim_customer, filter client-side by sales_org ───
   const [allCustomers, setAllCustomers] = useState([]);
