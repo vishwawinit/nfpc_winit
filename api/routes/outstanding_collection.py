@@ -66,16 +66,23 @@ def get_outstanding_collection(
 
     w, p = _build_where(filters)
 
-    # Aging buckets
+    # Aging buckets — computed from days_overdue
+    _bucket_expr = (
+        "CASE "
+        "WHEN days_overdue BETWEEN 1 AND 15 THEN '1-15' "
+        "WHEN days_overdue BETWEEN 16 AND 30 THEN '16-30' "
+        "WHEN days_overdue BETWEEN 31 AND 90 THEN '31-90' "
+        "WHEN days_overdue > 90 THEN '90+' "
+        "ELSE '1-15' END"
+    )
     aging_buckets = query(
-        f"SELECT aging_bucket AS bucket, "
+        f"SELECT "
+        f"  {_bucket_expr} AS bucket, "
         f"  ROUND(COALESCE(SUM(balance_amount), 0)::numeric, 2) AS amount, "
         f"  COUNT(DISTINCT customer_code) AS customer_count "
         f"FROM rpt_outstanding WHERE {w} "
-        f"GROUP BY aging_bucket "
-        f"ORDER BY CASE aging_bucket "
-        f"  WHEN 'Current' THEN 1 WHEN '1-30' THEN 2 WHEN '31-60' THEN 3 "
-        f"  WHEN '61-90' THEN 4 WHEN '91-120' THEN 5 WHEN '120+' THEN 6 END",
+        f"GROUP BY {_bucket_expr} "
+        f"ORDER BY CASE {_bucket_expr} WHEN '1-15' THEN 1 WHEN '16-30' THEN 2 WHEN '31-90' THEN 3 WHEN '90+' THEN 4 END",
         p
     )
 
@@ -83,7 +90,7 @@ def get_outstanding_collection(
     bucket_cond = ""
     bucket_params = []
     if bucket:
-        bucket_cond = " AND aging_bucket = %s"
+        bucket_cond = f" AND {_bucket_expr} = %s"
         bucket_params = [bucket]
 
     customers = query(

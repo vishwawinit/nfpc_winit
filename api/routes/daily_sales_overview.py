@@ -109,32 +109,36 @@ def get_daily_sales_overview(
             f"  WHERE dc.code = customer_code AND {ch_where})"
         )
 
-    # Brand/Category filter: resolve to item_codes via dim_item
-    item_filter_cond = ""
-    item_filter_params = []
+    # Brand/Category → JOIN dim_item (avoids item-code format mismatch with RSIC table)
+    # _brand_dim_join: for RSIC queries (alias _di, no existing dim_item join)
+    # _brand_on_di_cond / _brand_di_params: for item_table (already uses LEFT JOIN dim_item di)
+    # sd_brand_cond: for rpt_sales_detail queries (discount, invoice)
+    _brand_dim_join = ""
+    _brand_dim_join_params = []
+    _brand_on_di_cond = ""
+    _brand_di_params = []
+    sd_brand_cond = ""
+    sd_brand_params = []
     if brand or category:
-        from api.database import query as db_query
-        item_conditions = []
-        item_params = []
+        i_conds, i_params = [], []
         if brand:
             b_vals = [v.strip() for v in brand.split(',') if v.strip()]
-            b_ph = ','.join(['%s'] * len(b_vals))
-            item_conditions.append(f"TRIM(brand_code) IN ({b_ph})")
-            item_params.extend(b_vals)
+            i_conds.append(f"TRIM(_di.brand_code) IN ({','.join(['%s'] * len(b_vals))})")
+            i_params.extend(b_vals)
         if category:
             c_vals = [v.strip() for v in category.split(',') if v.strip()]
-            c_ph = ','.join(['%s'] * len(c_vals))
-            item_conditions.append(f"category_code IN ({c_ph})")
-            item_params.extend(c_vals)
-        i_where = " AND ".join(item_conditions)
-        item_rows = db_query(f"SELECT DISTINCT code FROM dim_item WHERE {i_where}", item_params)
-        if not item_rows:
-            return _empty_response()
-        i_codes = [r['code'] for r in item_rows]
-        i_ph = ','.join(['%s'] * len(i_codes))
-        item_filter_cond = f" AND r.item_code IN ({i_ph})"
-        item_filter_params = i_codes
-    sd_item_cond = f" AND item_code IN ({','.join(['%s'] * len(item_filter_params))})" if item_filter_params else ""
+            i_conds.append(f"_di.category_code IN ({','.join(['%s'] * len(c_vals))})")
+            i_params.extend(c_vals)
+        _brand_dim_join = f"JOIN dim_item _di ON _di.code = r.item_code AND {' AND '.join(i_conds)} "
+        _brand_dim_join_params = i_params
+        # Same conditions referencing existing 'di' alias (item_table)
+        di_conds = [c.replace('_di.', 'di.') for c in i_conds]
+        _brand_on_di_cond = " AND " + " AND ".join(di_conds)
+        _brand_di_params = i_params[:]
+        # For rpt_sales_detail queries (no r. alias, item_code is direct column)
+        sd_conds = [c.replace('_di.', '_sdi.') for c in i_conds]
+        sd_brand_cond = f" AND EXISTS (SELECT 1 FROM dim_item _sdi WHERE _sdi.code = item_code AND {' AND '.join(sd_conds)})"
+        sd_brand_params = i_params[:]
 
     # org_join for queries on rpt_route_sales_by_item_customer
     f_rsic = {k: v for k, v in filters.items() if k in RSIC_KEYS}
@@ -158,7 +162,7 @@ def get_daily_sales_overview(
         extra_params.append(route_type)
     extra_where = (" AND " + " AND ".join(extra_conds)) if extra_conds else ""
 
-    # Cash/Credit: from rpt_route_sales_by_item_customer joined with dim_customer.customer_type
+    # Cash/Credit split: from rpt_route_sales_by_item_customer + dim_customer.customer_type
     # Matches MSSQL SP: SUM(CASE WHEN CD.CustomerType='Cash' THEN TotalSales ELSE 0 END)
     try:
         f_rsic_cc = {k: v for k, v in filters.items() if k in RSIC_KEYS}
@@ -169,19 +173,47 @@ def get_daily_sales_overview(
             f"  COALESCE(SUM(CASE WHEN dc.customer_type = 'Cash' THEN r.total_sales ELSE 0 END), 0) AS cash_sales, "
             f"  COALESCE(SUM(CASE WHEN dc.customer_type = 'Credit' THEN r.total_sales ELSE 0 END), 0) AS credit_sales "
             f"FROM rpt_route_sales_by_item_customer r "
-            f"JOIN dim_route dr ON r.route_code = dr.code "
-            f"JOIN dim_customer dc ON r.customer_code = dc.code AND dc.sales_org_code = dr.sales_org_code "
-            f"{cc_join}"
-            f"WHERE {ccw}{channel_cond}{item_filter_cond}",
-            _rsic_org_params + ccp + channel_params + item_filter_params
+            f"LEFT JOIN (SELECT DISTINCT ON (code) code, customer_type FROM dim_customer ORDER BY code) dc ON dc.code = r.customer_code "
+            f"{cc_join}{_brand_dim_join}"
+            f"WHERE {ccw}{channel_cond}",
+            _rsic_org_params + _brand_dim_join_params + ccp + channel_params
         )
         cash_sales = float(cash_credit_row["cash_sales"]) if cash_credit_row else 0
         credit_sales = float(cash_credit_row["credit_sales"]) if cash_credit_row else 0
     except Exception:
         cash_sales = 0
         credit_sales = 0
-    # SP Part2: Daily Sales = Cash + Credit (both from rpt_route_sales_by_item_customer)
-    total_sales = cash_sales + credit_sales
+
+    # Daily Sales total: use rpt_route_sales_summary_by_item (DISTINCT ON dedup) when no
+    # channel/sub_channel/brand/category filter — summary table lacks channel/customer columns
+    # and only has brand_code='NFPC' (not real brand codes). Fall back to cash+credit otherwise.
+    _use_rsic_total = bool(channel or sub_channel or brand or category)
+    if not _use_rsic_total:
+        try:
+            f_rssi = {k: v for k, v in {
+                'route': route, 'user_code': user_code, 'brand': brand, 'category': category,
+                'date_from': date_from, 'date_to': date_to,
+            }.items() if v is not None}
+            sw_s, sp_s = build_where(f_rssi, date_col='date')
+            org_cond_s = ""
+            org_params_s = []
+            if sales_org:
+                orgs_s = [v.strip() for v in sales_org.split(',') if v.strip()]
+                org_ph_s = ','.join(['%s'] * len(orgs_s))
+                org_cond_s = f" AND sales_org_code IN ({org_ph_s})"
+                org_params_s = orgs_s
+            rssi_row = query_one(
+                f"SELECT COALESCE(SUM(total_sales), 0) AS total_sales "
+                f"FROM (SELECT DISTINCT ON (route_code, item_code, date) total_sales "
+                f"  FROM rpt_route_sales_summary_by_item WHERE {sw_s}{org_cond_s} "
+                f"  ORDER BY route_code, item_code, date) t",
+                sp_s + org_params_s
+            )
+            total_sales = float(rssi_row["total_sales"]) if rssi_row else cash_sales + credit_sales
+        except Exception:
+            total_sales = cash_sales + credit_sales
+    else:
+        total_sales = cash_sales + credit_sales
 
     # Discount: SUM of line-level discounts (dedup by trx_code+line_no to avoid ETL duplicates)
     # SUM of all detail discounts per trx = header TotalDiscountAmount
@@ -190,8 +222,8 @@ def get_daily_sales_overview(
         disc_row = query_one(
             f"SELECT COALESCE(SUM(discount_amount), 0) AS discount "
             f"FROM (SELECT DISTINCT trx_code, line_no, discount_amount FROM rpt_sales_detail "
-            f"  WHERE trx_type IN (1, 4) AND trx_status = 200 AND {sw}{extra_where}{sd_channel_cond}{sd_item_cond}) t",
-            sp + extra_params + channel_params + item_filter_params
+            f"  WHERE trx_type IN (1, 4) AND trx_status = 200 AND {sw}{extra_where}{sd_channel_cond}{sd_brand_cond}) t",
+            sp + extra_params + channel_params + sd_brand_params
         )
         discount = float(disc_row["discount"]) if disc_row else 0
     except Exception:
@@ -214,8 +246,8 @@ def get_daily_sales_overview(
         inv_row = query_one(
             f"SELECT COUNT(DISTINCT trx_code) AS total_invoices "
             f"FROM rpt_sales_detail "
-            f"WHERE trx_type IN (1, 4) AND trx_status = 200 AND {sw}{extra_where}{sd_channel_cond}{sd_item_cond}",
-            sp + extra_params + channel_params + item_filter_params
+            f"WHERE trx_type IN (1, 4) AND trx_status = 200 AND {sw}{extra_where}{sd_channel_cond}{sd_brand_cond}",
+            sp + extra_params + channel_params + sd_brand_params
         )
         total_invoices = int(inv_row["total_invoices"]) if inv_row else 0
     except Exception:
@@ -316,6 +348,7 @@ def get_daily_sales_overview(
     mw, mp = build_where(f_mtd, date_col='date', prefix='r')
 
     try:
+        _item_join_type = "JOIN" if _brand_on_di_cond else "LEFT JOIN"
         item_table = query(
             f"SELECT "
             f"  r.item_code, "
@@ -331,13 +364,14 @@ def get_daily_sales_overview(
             f"    THEN COALESCE(r.total_gr_sales,0) + COALESCE(r.total_damage_sales,0) + COALESCE(r.total_expiry_sales,0) "
             f"    ELSE 0 END)::numeric, 2) AS mtd_wastage "
             f"FROM rpt_route_sales_by_item_customer r "
-            f"LEFT JOIN dim_item di ON r.item_code = di.code "
+            f"{_item_join_type} dim_item di ON r.item_code = di.code{_brand_on_di_cond} "
             f"{org_join}"
-            f"WHERE ({rw2} OR {mw}){channel_cond}{item_filter_cond} "
+            f"WHERE ({rw2} OR {mw}){channel_cond} "
             f"GROUP BY r.item_code, COALESCE(di.name, r.item_code), "
             f"  TRIM(COALESCE(di.brand_code, '')), COALESCE(di.brand_name, di.brand_code, '') "
             f"ORDER BY gross_sales DESC",
-            [date_from, date_to, mtd_start, mtd_end, mtd_start, mtd_end] + _rsic_org_params + rp2 + mp + channel_params + item_filter_params
+            [date_from, date_to, mtd_start, mtd_end, mtd_start, mtd_end]
+            + _brand_di_params + _rsic_org_params + rp2 + mp + channel_params
         )
     except Exception:
         item_table = []

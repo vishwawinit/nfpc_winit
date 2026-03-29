@@ -44,12 +44,10 @@ export default function OutstandingCollection() {
   const totalCustomers = buckets.reduce((s, b) => s + (Number(b.customer_count) || 0), 0);
 
   const bucketConfig = {
-    'Current':  { label: 'Current',      bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-300', icon: 'bg-emerald-100 text-emerald-600', accent: 'bg-emerald-500' },
-    '1-30':     { label: '1-30 Days',    bg: 'bg-blue-50',    text: 'text-blue-700',    ring: 'ring-blue-300',    icon: 'bg-blue-100 text-blue-600',       accent: 'bg-blue-500' },
-    '31-60':    { label: '31-60 Days',   bg: 'bg-indigo-50',  text: 'text-indigo-700',  ring: 'ring-indigo-300',  icon: 'bg-indigo-100 text-indigo-600',   accent: 'bg-indigo-500' },
-    '61-90':    { label: '61-90 Days',   bg: 'bg-amber-50',   text: 'text-amber-700',   ring: 'ring-amber-300',   icon: 'bg-amber-100 text-amber-600',     accent: 'bg-amber-500' },
-    '91-120':   { label: '91-120 Days',  bg: 'bg-orange-50',  text: 'text-orange-700',  ring: 'ring-orange-300',  icon: 'bg-orange-100 text-orange-600',   accent: 'bg-orange-500' },
-    '120+':     { label: '120+ Days',    bg: 'bg-violet-50',  text: 'text-violet-700',  ring: 'ring-violet-300',  icon: 'bg-violet-100 text-violet-600',   accent: 'bg-violet-500' },
+    '1-15':  { label: '1-15 Days',   bg: 'bg-blue-50',    text: 'text-blue-700',    ring: 'ring-blue-300',    icon: 'bg-blue-100 text-blue-600',       accent: 'bg-blue-500' },
+    '16-30': { label: '16-30 Days',  bg: 'bg-indigo-50',  text: 'text-indigo-700',  ring: 'ring-indigo-300',  icon: 'bg-indigo-100 text-indigo-600',   accent: 'bg-indigo-500' },
+    '31-90': { label: '31-90 Days',  bg: 'bg-amber-50',   text: 'text-amber-700',   ring: 'ring-amber-300',   icon: 'bg-amber-100 text-amber-600',     accent: 'bg-amber-500' },
+    '90+':   { label: '90+ Days',    bg: 'bg-rose-50',    text: 'text-rose-700',    ring: 'ring-rose-300',    icon: 'bg-rose-100 text-rose-600',       accent: 'bg-rose-500' },
   };
   const defaultBucket = { label: 'Other', bg: 'bg-slate-50', text: 'text-slate-700', ring: 'ring-slate-300', icon: 'bg-slate-100 text-slate-600', accent: 'bg-slate-500' };
 
@@ -132,7 +130,7 @@ export default function OutstandingCollection() {
                 </button>
               )}
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {buckets.map((b) => {
                 const cfg = bucketConfig[b.bucket] || defaultBucket;
                 const isActive = selectedBucket === b.bucket;

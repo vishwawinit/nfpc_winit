@@ -113,7 +113,7 @@ def get_monthly_sales_stock(
     rw, rp = build_where(f_rsic, date_col='date', prefix='r')
 
     # Item × Channel with MTD and YTD
-    # Channel comes from dim_customer joined via customer_code + route's sales_org
+    # Use DISTINCT ON (code) for dim_customer to reliably get channel per customer
     rows = query(
         f"SELECT "
         f"  r.item_code, "
@@ -123,8 +123,7 @@ def get_monthly_sales_stock(
         f"  ROUND(COALESCE(SUM(r.total_sales), 0)::numeric, 2) AS ytd_amount "
         f"FROM rpt_route_sales_by_item_customer r "
         f"LEFT JOIN dim_item di ON r.item_code = di.code "
-        f"LEFT JOIN dim_route dr ON r.route_code = dr.code "
-        f"LEFT JOIN dim_customer dc ON r.customer_code = dc.code AND dr.sales_org_code = dc.sales_org_code "
+        f"LEFT JOIN (SELECT DISTINCT ON (code) code, channel_name FROM dim_customer ORDER BY code) dc ON r.customer_code = dc.code "
         f"{_org_join}"
         f"WHERE {rw}{item_cond}{channel_cond} "
         f"GROUP BY r.item_code, COALESCE(di.name, r.item_code), "

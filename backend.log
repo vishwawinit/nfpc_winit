@@ -1,50 +1,46 @@
-INFO:     Started server process [41648]
+INFO:     Will watch for changes in these directories: ['D:\\vishwa\\nfpc_winit']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [35716] using WatchFiles
+INFO:     Started server process [13596]
 INFO:     Waiting for application startup.
 INFO:warmup:Starting cache warmup in background...
 INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 INFO:warmup:  Warmed: dashboard.get_dashboard
-INFO:     127.0.0.1:65347 - "GET /api/dashboard?date_from=2026-03-01&date_to=2026-03-27 HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: sales_performance.get_sales_performance
 WARNING:warmup:  Skip:  top_customers.get_top_customers - can't adapt type 'Query'
 WARNING:warmup:  Skip:  top_products.get_top_products - can't adapt type 'Query'
-INFO:     127.0.0.1:65349 - "GET /api/sales-performance?month=3&year=2026 HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: market_sales.get_market_sales_performance
 INFO:warmup:  Warmed: target_achievement.get_target_vs_achievement
-INFO:     127.0.0.1:65352 - "GET /api/dashboard?date_from=2026-03-01&date_to=2026-03-27&brand=12 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:65356 - "GET /api/sales-performance?month=3&year=2026&brand=12 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51079 - "GET /api/dashboard?date_from=2026-03-01&date_to=2026-03-27&channel=01 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60822 - "GET /api/eot-status?date_from=2026-03-01&date_to=2026-03-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60866 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60869 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60870 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60874 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60875 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60889 - "GET /api/eot-status?date_from=2026-03-01&date_to=2026-03-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60876 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60885 - "GET /api/filters/routes HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: daily_sales_overview.get_daily_sales_overview
-INFO:     127.0.0.1:52617 - "GET /api/sales-performance?month=3&year=2026&channel=01 HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: mtd_wastage.get_mtd_wastage_summary
 INFO:warmup:  Warmed: weekly_sales_returns.get_weekly_sales_returns
 INFO:warmup:  Warmed: brand_wise_sales.get_brand_wise_sales
-INFO:     127.0.0.1:52628 - "GET /api/dashboard?date_from=2026-03-01&date_to=2026-03-27&brand=12&channel=01 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52630 - "GET /api/sales-performance?month=3&year=2026&brand=12&channel=01 HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: mtd_sales_overview.get_mtd_sales_overview
+INFO:     127.0.0.1:60898 - "GET /api/eot-status?date_from=2026-03-01&date_to=2026-03-01 HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: log_report.get_log_report
+INFO:     127.0.0.1:60902 - "GET /api/eot-status?date_from=2026-03-01&date_to=2026-03-01 HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: time_management.get_time_management
+INFO:     127.0.0.1:60905 - "GET /api/eot-status?date_from=2026-03-01&date_to=2026-03-01 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60908 - "GET /api/eot-status?date_from=2026-03-01&date_to=2026-03-01 HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: customer_attendance.get_customer_attendance
 INFO:warmup:  Warmed: mtd_attendance.get_mtd_attendance
 INFO:warmup:  Warmed: journey_plan_compliance.get_journey_plan_compliance
-INFO:     127.0.0.1:52655 - "GET /api/dashboard?date_from=2026-03-01&date_to=2026-03-27&brand=12&channel=12 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52659 - "GET /api/sales-performance?day=27&month=3&year=2026&brand=12&channel=02,12 HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: eot_status.get_eot_status
-INFO:     127.0.0.1:52674 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52679 - "GET /api/filters/channels HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52681 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52683 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52682 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52705 - "GET /api/sales-performance?day=27&month=3&year=2026 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52684 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52697 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: productivity_coverage.get_productivity_coverage
-INFO:     127.0.0.1:52698 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52700 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52702 - "GET /api/filters/routes HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: salesman_journey.get_salesman_journey
-INFO:     127.0.0.1:52711 - "GET /api/sales-performance?day=27&month=3&year=2026&brand=12 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52714 - "GET /api/sales-performance?day=27&month=3&year=2026&brand=12&channel=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60914 - "GET /api/eot-status?date_from=2026-03-01&date_to=2026-03-01 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60917 - "GET /api/eot-status?date_from=2026-03-01&date_to=2026-03-01 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60920 - "GET /api/eot-status?date_from=2026-03-01&date_to=2026-03-01 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60923 - "GET /api/eot-status?date_from=2026-03-01&date_to=2026-03-01 HTTP/1.1" 200 OK
 INFO:warmup:  Warmed: revenue_dispersion.get_revenue_dispersion
 INFO:warmup:  Warmed: monthly_sales_stock.get_monthly_sales_stock
 INFO:warmup:  Warmed: endorsement.get_endorsement
@@ -53,21 +49,70 @@ INFO:warmup:  Warmed: filters.get_order_customers
 INFO:warmup:  Warmed: filters.get_brands
 INFO:warmup:  Warmed: filters.get_categories
 INFO:warmup:  Warmed: filters.get_channels
-INFO:warmup:Cache warmup complete: 25 cached, 2 skipped in 112.2s
-INFO:     127.0.0.1:52747 - "GET /api/sales-performance?day=27&month=3&year=2026&brand=12 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52786 - "GET /api/sales-performance?day=27&month=3&year=2026&brand=12 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52835 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52837 - "GET /api/filters/channels HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52839 - "GET /api/filters/brands HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52845 - "GET /api/filters/categories HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52848 - "GET /api/filters/asms HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52846 - "GET /api/filters/hos HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52855 - "GET /api/filters/depots HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52857 - "GET /api/filters/users HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52860 - "GET /api/filters/routes HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52851 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52863 - "GET /api/sales-performance?day=27&month=3&year=2026 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52870 - "GET /api/sales-performance?day=27&month=3&year=2026 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52883 - "GET /api/sales-performance?day=27&month=3&year=2026 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52886 - "GET /api/sales-performance?day=27&month=3&year=2026&category=M06 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52904 - "GET /api/sales-performance?day=27&month=3&year=2026 HTTP/1.1" 200 OK
+INFO:warmup:Cache warmup complete: 25 cached, 2 skipped in 102.1s
+INFO:     127.0.0.1:60956 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60958 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60961 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60965 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60966 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60969 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60972 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60982 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60983 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60988 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60990 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60989 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60991 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60994 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61002 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61006 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61007 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61008 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61010 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61012 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61015 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61065 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61064 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61066 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61068 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61067 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61074 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61075 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61063 - "GET /api/eot-status?date_from=2026-03-01&date_to=2026-03-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61085 - "GET /api/eot-status?date_from=2026-03-01&date_to=2026-03-02 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61091 - "GET /api/eot-status?date_from=2026-03-01&date_to=2026-03-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61096 - "GET /api/eot-status?date_from=2026-03-01&date_to=2026-03-02 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61099 - "GET /api/eot-status?date_from=2026-03-01&date_to=2026-03-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61088 - "GET /api/eot-status?date_from=2026-03-01&date_to=2026-03-11 HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'api\routes\eot_status.py'. Reloading...
+ INFO:     127.0.0.1:61166 - "GET /api/eot-status?date_from=2026-03-01&date_to=2026-03-05 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61304 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61306 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61305 - "GET /api/filters/channels HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61308 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61307 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61309 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61312 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61315 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61321 - "GET /api/filters/order-customers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61318 - "GET /api/customer-attendance?date_from=2026-03-01&date_to=2026-03-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61330 - "GET /api/customer-attendance?date_from=2026-03-01&date_to=2026-03-01 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61348 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61349 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61350 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61347 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61346 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61354 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61356 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61335 - "GET /api/mtd-attendance?date_from=2026-03-01&date_to=2026-03-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61385 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61373 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61380 - "GET /api/filters/brands HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61377 - "GET /api/filters/channels HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61383 - "GET /api/filters/categories HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61392 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61395 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61397 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61398 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61400 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61371 - "GET /api/dashboard?date_from=2026-03-01&date_to=2026-03-29 HTTP/1.1" 200 OK

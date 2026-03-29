@@ -14,6 +14,8 @@ from api.models import build_where, resolve_user_codes
 router = APIRouter()
 
 RSIC_KEYS = {'date_from', 'date_to', 'route', 'user_code', 'item', 'customer'}
+# Summary table supports these filters directly (has brand_code, category_code, sales_org_code)
+RSSI_KEYS = {'date_from', 'date_to', 'route', 'user_code', 'brand', 'category'}
 
 
 @router.get("/weekly-sales-returns")
@@ -51,76 +53,100 @@ def get_weekly_sales_returns(
         'date_from': date_from, 'date_to': date_to,
     }.items() if v is not None}
 
-    # Resolve sales_org to route JOIN for RSIC tables
-    _org_join = ""
-    _org_params = []
-    if sales_org and not base_filters.get('route'):
-        orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
-        org_ph = ','.join(['%s'] * len(orgs))
-        _org_join = f"JOIN dim_route _dr ON r.route_code = _dr.code AND _dr.sales_org_code IN ({org_ph}) "
-        _org_params = orgs
+    # Use RSIC when channel/customer/brand/category filter active — summary table lacks
+    # customer/channel columns and only has brand_code='NFPC' (not real brand codes)
+    _use_rsic = bool(channel or customer or brand or category)
 
-    # Channel filter
-    channel_cond = ""
-    channel_params = []
-    if channel:
-        ch_vals = [v.strip() for v in channel.split(',') if v.strip()]
-        ch_ph = ','.join(['%s'] * len(ch_vals))
-        cust_rows = query(
-            f"SELECT DISTINCT dc.code FROM dim_customer dc "
-            f"JOIN dim_route dr ON dr.sales_org_code = dc.sales_org_code "
-            f"WHERE TRIM(dc.channel_code) IN ({ch_ph})", ch_vals
+    if not _use_rsic:
+        # ── Summary table path (matches dashboard exactly) ──────────────────
+        # rpt_route_sales_summary_by_item: one row per (route, item, date)
+        # DISTINCT ON removes any lingering duplicates, same as dashboard
+        f_rssi = {k: v for k, v in {
+            'route': route, 'user_code': user_code, 'brand': brand, 'category': category,
+            'date_from': date_from, 'date_to': date_to,
+        }.items() if v is not None}
+        sw, sp = build_where(f_rssi, date_col='date')
+        org_cond = ""
+        org_params = []
+        if sales_org:
+            orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
+            org_ph = ','.join(['%s'] * len(orgs))
+            org_cond = f" AND sales_org_code IN ({org_ph})"
+            org_params = orgs
+
+        rows = query(
+            f"SELECT "
+            f"  EXTRACT(ISOYEAR FROM date)::int AS year, "
+            f"  EXTRACT(WEEK FROM date)::int AS week_number, "
+            f"  MIN(date) AS week_start, "
+            f"  MAX(date) AS week_end, "
+            f"  COALESCE(SUM(total_sales), 0) AS sales_amount, "
+            f"  COALESCE(SUM(total_wastage), 0) AS return_amount "
+            f"FROM (SELECT DISTINCT ON (route_code, item_code, date) "
+            f"  date, total_sales, total_wastage "
+            f"  FROM rpt_route_sales_summary_by_item WHERE {sw}{org_cond} "
+            f"  ORDER BY route_code, item_code, date) t "
+            f"GROUP BY EXTRACT(ISOYEAR FROM date), EXTRACT(WEEK FROM date) "
+            f"ORDER BY year, week_number",
+            sp + org_params
         )
-        if not cust_rows:
-            return _empty()
-        c_codes = [r['code'] for r in cust_rows]
-        c_ph = ','.join(['%s'] * len(c_codes))
-        channel_cond = f" AND r.customer_code IN ({c_ph})"
-        channel_params = c_codes
+    else:
+        # ── RSIC path: required for channel / customer filters ───────────────
+        # Resolve sales_org to route JOIN for RSIC tables
+        _org_join = ""
+        _org_params = []
+        if sales_org and not base_filters.get('route'):
+            orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
+            org_ph = ','.join(['%s'] * len(orgs))
+            _org_join = f"JOIN dim_route _dr ON r.route_code = _dr.code AND _dr.sales_org_code IN ({org_ph}) "
+            _org_params = orgs
 
-    # Brand/Category filter
-    item_cond = ""
-    item_params = []
-    if brand or category:
-        i_conditions = []
-        i_params = []
-        if brand:
-            b_vals = [v.strip() for v in brand.split(',') if v.strip()]
-            b_ph = ','.join(['%s'] * len(b_vals))
-            i_conditions.append(f"TRIM(brand_code) IN ({b_ph})")
-            i_params.extend(b_vals)
-        if category:
-            c_vals = [v.strip() for v in category.split(',') if v.strip()]
-            c_ph = ','.join(['%s'] * len(c_vals))
-            i_conditions.append(f"category_code IN ({c_ph})")
-            i_params.extend(c_vals)
-        i_where = " AND ".join(i_conditions)
-        i_rows = query(f"SELECT DISTINCT code FROM dim_item WHERE {i_where}", i_params)
-        if not i_rows:
-            return _empty()
-        i_codes = [r['code'] for r in i_rows]
-        i_ph = ','.join(['%s'] * len(i_codes))
-        item_cond = f" AND r.item_code IN ({i_ph})"
-        item_params = i_codes
+        # Channel filter — EXISTS on dim_customer
+        channel_cond = ""
+        channel_params = []
+        if channel:
+            ch_vals = [v.strip() for v in channel.split(',') if v.strip()]
+            ch_ph = ','.join(['%s'] * len(ch_vals))
+            channel_cond = (
+                f" AND EXISTS (SELECT 1 FROM dim_customer _chdc "
+                f"WHERE _chdc.code = r.customer_code AND TRIM(_chdc.channel_code) IN ({ch_ph}))"
+            )
+            channel_params = ch_vals
 
-    f_rsic = {k: v for k, v in base_filters.items() if k in RSIC_KEYS}
-    rw, rp = build_where(f_rsic, date_col='date', prefix='r')
+        # Brand/Category — JOIN dim_item
+        brand_dim_join = ""
+        brand_dim_join_params = []
+        if brand or category:
+            i_conds, i_params = [], []
+            if brand:
+                b_vals = [v.strip() for v in brand.split(',') if v.strip()]
+                i_conds.append(f"TRIM(_di.brand_code) IN ({','.join(['%s'] * len(b_vals))})")
+                i_params.extend(b_vals)
+            if category:
+                c_vals = [v.strip() for v in category.split(',') if v.strip()]
+                i_conds.append(f"_di.category_code IN ({','.join(['%s'] * len(c_vals))})")
+                i_params.extend(c_vals)
+            brand_dim_join = f"JOIN dim_item _di ON _di.code = r.item_code AND {' AND '.join(i_conds)} "
+            brand_dim_join_params = i_params
 
-    rows = query(
-        f"SELECT "
-        f"  EXTRACT(ISOYEAR FROM r.date)::int AS year, "
-        f"  EXTRACT(WEEK FROM r.date)::int AS week_number, "
-        f"  MIN(r.date) AS week_start, "
-        f"  MAX(r.date) AS week_end, "
-        f"  COALESCE(SUM(r.total_sales), 0) AS sales_amount, "
-        f"  COALESCE(SUM(COALESCE(r.total_gr_sales,0) + COALESCE(r.total_damage_sales,0) "
-        f"    + COALESCE(r.total_expiry_sales,0)), 0) AS return_amount "
-        f"FROM rpt_route_sales_by_item_customer r {_org_join}"
-        f"WHERE {rw}{channel_cond}{item_cond} "
-        f"GROUP BY EXTRACT(ISOYEAR FROM r.date), EXTRACT(WEEK FROM r.date) "
-        f"ORDER BY year, week_number",
-        _org_params + rp + channel_params + item_params
-    )
+        f_rsic = {k: v for k, v in base_filters.items() if k in RSIC_KEYS}
+        rw, rp = build_where(f_rsic, date_col='date', prefix='r')
+
+        rows = query(
+            f"SELECT "
+            f"  EXTRACT(ISOYEAR FROM r.date)::int AS year, "
+            f"  EXTRACT(WEEK FROM r.date)::int AS week_number, "
+            f"  MIN(r.date) AS week_start, "
+            f"  MAX(r.date) AS week_end, "
+            f"  COALESCE(SUM(r.total_sales), 0) AS sales_amount, "
+            f"  COALESCE(SUM(COALESCE(r.total_gr_sales,0) + COALESCE(r.total_damage_sales,0) "
+            f"    + COALESCE(r.total_expiry_sales,0)), 0) AS return_amount "
+            f"FROM rpt_route_sales_by_item_customer r {_org_join}{brand_dim_join}"
+            f"WHERE {rw}{channel_cond} "
+            f"GROUP BY EXTRACT(ISOYEAR FROM r.date), EXTRACT(WEEK FROM r.date) "
+            f"ORDER BY year, week_number",
+            _org_params + brand_dim_join_params + rp + channel_params
+        )
 
     weekly_data = []
     for row in rows:
@@ -253,29 +279,21 @@ def get_order_details(
         channel_cond = f" AND TRIM(sd.channel_code) IN ({ch_ph})"
         channel_params = ch_vals
 
-    # Brand/Category — rpt_sales_detail brand_code is not reliable; resolve via dim_item
+    # Brand/Category — EXISTS on dim_item (rpt_sales_detail brand_code not reliable)
     item_cond = ""
     item_params = []
     if brand or category:
-        i_conditions = []
-        i_params = []
+        i_conds, i_params = [], []
         if brand:
             b_vals = [v.strip() for v in brand.split(',') if v.strip()]
-            b_ph = ','.join(['%s'] * len(b_vals))
-            i_conditions.append(f"TRIM(brand_code) IN ({b_ph})")
+            i_conds.append(f"TRIM(_di.brand_code) IN ({','.join(['%s'] * len(b_vals))})")
             i_params.extend(b_vals)
         if category:
             c_vals = [v.strip() for v in category.split(',') if v.strip()]
-            c_ph = ','.join(['%s'] * len(c_vals))
-            i_conditions.append(f"category_code IN ({c_ph})")
+            i_conds.append(f"_di.category_code IN ({','.join(['%s'] * len(c_vals))})")
             i_params.extend(c_vals)
-        i_rows = query(f"SELECT DISTINCT code FROM dim_item WHERE {' AND '.join(i_conditions)}", i_params)
-        if not i_rows:
-            return []
-        i_codes = [r['code'] for r in i_rows]
-        i_ph = ','.join(['%s'] * len(i_codes))
-        item_cond = f" AND sd.item_code IN ({i_ph})"
-        item_params = i_codes
+        item_cond = f" AND EXISTS (SELECT 1 FROM dim_item _di WHERE _di.code = sd.item_code AND {' AND '.join(i_conds)})"
+        item_params = i_params
 
     rows = query(
         f"SELECT "

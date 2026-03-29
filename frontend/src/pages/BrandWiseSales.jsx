@@ -12,10 +12,16 @@ function exportToExcel(data, columns, filename) {
   const header = columns.map(c => c.label).join('\t');
   const rows = data.map(row => columns.map(c => {
     const v = row[c.key] ?? '';
-    return typeof v === 'number' ? v : String(v);
+    if (typeof v === 'number') {
+      if (c.format === 'percent' || c.key === 'achieved_pct' || c.key === 'pct_of_total')
+        return `${Number(v).toFixed(2)}%`;
+      if (c.format === 'currency') return Number(v).toFixed(2);
+      return v;
+    }
+    return String(v);
   }).join('\t'));
-  const tsv = header + '\n' + rows.join('\n');
-  const blob = new Blob([tsv], { type: 'application/vnd.ms-excel' });
+  const tsv = [header, ...rows].join('\n');
+  const blob = new Blob(['\uFEFF' + tsv], { type: 'text/tab-separated-values;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -59,6 +65,15 @@ export default function BrandWiseSales() {
       .then(res => setModalItems(res.items || []))
       .catch(console.error)
       .finally(() => setModalLoading(false));
+  };
+
+  const handleDownloadBrand = (brand) => {
+    fetchBrandItems({ ...filters, brand: brand.brand_code })
+      .then(res => {
+        const items = res.items || [];
+        exportToExcel(items, itemColumns, `brand-items-${brand.brand_code}-${brand.brand_name}`);
+      })
+      .catch(console.error);
   };
 
   const closeModal = () => {
@@ -155,10 +170,16 @@ export default function BrandWiseSales() {
                       </td>
                       <td className="px-6 py-3.5 text-right text-gray-600 tabular-nums">{b.pct_of_total != null ? `${Number(b.pct_of_total).toFixed(1)}%` : '-'}</td>
                       <td className="px-6 py-3.5 text-center">
-                        <button onClick={() => handleView(b)}
-                          className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
-                          <Eye className="w-3.5 h-3.5" /> View
-                        </button>
+                        <div className="inline-flex items-center gap-2">
+                          <button onClick={() => handleView(b)} title="View items"
+                            className="p-1.5 rounded-lg text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 transition-colors">
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleDownloadBrand(b)} title="Download items"
+                            className="p-1.5 rounded-lg text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 transition-colors">
+                            <Download className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -192,12 +213,6 @@ export default function BrandWiseSales() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => exportToExcel(modalItems, itemColumns, `brand-items-${modalBrand.brand_code}`)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  <Download className="w-3.5 h-3.5" /> Export Excel
-                </button>
                 <button onClick={closeModal}
                   className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
                   <X className="w-5 h-5" />

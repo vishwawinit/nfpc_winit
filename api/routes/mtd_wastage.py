@@ -88,11 +88,9 @@ def get_mtd_wastage_summary(
         return _empty()
     base_filters, _org_join, _org_params, item_cond, item_params, rw, rp = result
 
-    # Summary totals
+    # Summary totals — wastage from RSIC (only source with GR/damage/expiry data)
     summary_row = query_one(
         f"SELECT "
-        f"  COALESCE(SUM(r.total_qty), 0) AS total_qty, "
-        f"  COALESCE(SUM(r.total_sales), 0) AS total_sales, "
         f"  COALESCE(SUM(r.total_gr_qty), 0) AS total_gr_qty, "
         f"  COALESCE(SUM(r.total_gr_sales), 0) AS total_gr_sales, "
         f"  COALESCE(SUM(r.total_damage_qty), 0) AS total_damage_qty, "
@@ -103,7 +101,35 @@ def get_mtd_wastage_summary(
         _org_params + rp + item_params
     )
 
-    total_sales = float(summary_row["total_sales"]) if summary_row else 0
+    # Total sales: use summary table with DISTINCT ON dedup (matches dashboard)
+    # Falls back to RSIC when brand/category filter is active (summary table lacks those columns)
+    _use_rsic_sales = bool(item_cond) or bool(base_filters.get('customer'))  # brand/category/customer forces RSIC
+    if not _use_rsic_sales:
+        f_rssi = {k: v for k, v in base_filters.items() if k in {'date_from', 'date_to', 'route', 'user_code'}}
+        sw_s, sp_s = build_where(f_rssi, date_col='date')
+        org_cond_s = ""
+        org_params_s = []
+        if sales_org:
+            orgs_s = [v.strip() for v in sales_org.split(',') if v.strip()]
+            org_ph_s = ','.join(['%s'] * len(orgs_s))
+            org_cond_s = f" AND sales_org_code IN ({org_ph_s})"
+            org_params_s = orgs_s
+        rssi_row = query_one(
+            f"SELECT COALESCE(SUM(total_sales), 0) AS total_sales "
+            f"FROM (SELECT DISTINCT ON (route_code, item_code, date) total_sales "
+            f"  FROM rpt_route_sales_summary_by_item WHERE {sw_s}{org_cond_s} "
+            f"  ORDER BY route_code, item_code, date) t",
+            sp_s + org_params_s
+        )
+        total_sales = float(rssi_row["total_sales"]) if rssi_row else 0
+    else:
+        # With brand/category filter: sum from RSIC (already queried above)
+        rsic_sales_row = query_one(
+            f"SELECT COALESCE(SUM(r.total_sales), 0) AS total_sales "
+            f"FROM rpt_route_sales_by_item_customer r {_org_join}WHERE {rw}{item_cond}",
+            _org_params + rp + item_params
+        )
+        total_sales = float(rsic_sales_row["total_sales"]) if rsic_sales_row else 0
     total_gr = float(summary_row["total_gr_sales"]) if summary_row else 0
     total_damage = float(summary_row["total_damage_sales"]) if summary_row else 0
     total_expiry = float(summary_row["total_expiry_sales"]) if summary_row else 0

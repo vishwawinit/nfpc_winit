@@ -43,10 +43,10 @@ def get_eot_status(
         'sales_org': sales_org,
     }.items() if v is not None}
 
-    # --- Step 1: Get users who submitted EOT for the date range ---
+    # --- Step 1: Get one row per (user_code, trip_date) ---
     ew, ep = build_where(filters, date_col='trip_date')
     eot_rows = query(
-        f"SELECT DISTINCT ON (user_code) user_code, user_name, route_code, route_name, "
+        f"SELECT DISTINCT ON (user_code, trip_date) user_code, user_name, route_code, route_name, "
         f"  sales_org_code, eot_type, eot_time, trip_date, "
         f"  route_start_datetime, unload_datetime, eot_status "
         f"FROM rpt_eot WHERE {ew} "
@@ -57,8 +57,7 @@ def get_eot_status(
     if not eot_rows:
         return {"kpis": {}, "call_metrics": {}, "users": []}
 
-    eot_user_codes = [r["user_code"] for r in eot_rows]
-    eot_map = {r["user_code"]: r for r in eot_rows}
+    eot_user_codes = set(r["user_code"] for r in eot_rows)
 
     # --- Step 2: Customer visits for EOT users ---
     vw, vp = build_where(filters, date_col='date')
@@ -72,7 +71,7 @@ def get_eot_status(
         vp
     )
     # Filter to EOT users only
-    user_visits = [v for v in user_visits if v["user_code"] in eot_map]
+    user_visits = [v for v in user_visits if v["user_code"] in eot_user_codes]
 
     # --- Step 3: Productive set from sales ---
     rsic_keys = {'date_from', 'date_to', 'route', 'user_code'}
@@ -86,18 +85,20 @@ def get_eot_status(
     )
     productive_set = set((r["route_code"], r["customer_code"], str(r["date"])) for r in prod_rows)
 
-    # --- Step 4: Build per-user data ---
+    # --- Step 4: Build per-(user, date) data ---
     users_map = OrderedDict()
     for eot in eot_rows:
         uc = eot["user_code"]
-        users_map[uc] = {
+        td = str(eot["trip_date"]) if eot["trip_date"] else None
+        key = (uc, td)
+        users_map[key] = {
             "user_code": uc,
             "user_name": eot["user_name"],
             "route_code": eot["route_code"],
             "route_name": eot["route_name"],
             "eot_type": eot["eot_type"],
             "eot_time": str(eot["eot_time"]) if eot["eot_time"] else None,
-            "trip_date": str(eot["trip_date"]) if eot["trip_date"] else None,
+            "trip_date": td,
             "route_start_datetime": str(eot["route_start_datetime"]) if eot.get("route_start_datetime") else None,
             "unload_datetime": str(eot["unload_datetime"]) if eot.get("unload_datetime") else None,
             "eot_status": eot.get("eot_status") or "Submitted",
@@ -108,17 +109,19 @@ def get_eot_status(
 
     for v in user_visits:
         uc = v["user_code"]
-        if uc not in users_map:
+        vdate = str(v["date"]) if v["date"] else None
+        key = (uc, vdate)
+        if key not in users_map:
             continue
-        u = users_map[uc]
-        is_prod = (v["route_code"], v["customer_code"], str(v["date"])) in productive_set
+        u = users_map[key]
+        is_prod = (v["route_code"], v["customer_code"], vdate) in productive_set
         u["total_visits"] += 1
         if is_prod:
             u["productive_visits"] += 1
         u["total_time_mins"] += v["total_time_mins"] or 0
 
     users_list = list(users_map.values())
-    users_list.sort(key=lambda u: u["total_visits"], reverse=True)
+    users_list.sort(key=lambda u: (u["trip_date"] or "", u["total_visits"]), reverse=True)
 
     # --- Step 5: Aggregate KPIs across EOT users ---
     cw, cp = build_where(filters, date_col='visit_date')
@@ -149,9 +152,21 @@ def get_eot_status(
         "strike_rate": strike_rate,
     }
 
+    sales_filters = {k: v for k, v in filters.items() if k in {'date_from', 'date_to', 'route', 'user_code'}}
+    sw_s, sp_s = build_where(sales_filters, date_col='date')
+    org_cond_s = ""
+    org_params_s = []
+    if filters.get('sales_org'):
+        orgs_s = [v.strip() for v in filters['sales_org'].split(',') if v.strip()]
+        org_ph_s = ','.join(['%s'] * len(orgs_s))
+        org_cond_s = f" AND sales_org_code IN ({org_ph_s})"
+        org_params_s = orgs_s
     sales_row = query_one(
         f"SELECT COALESCE(SUM(total_sales), 0) AS sales_amount "
-        f"FROM rpt_route_sales_by_item_customer WHERE {rw}", rp
+        f"FROM (SELECT DISTINCT ON (route_code, item_code, date) total_sales "
+        f"  FROM rpt_route_sales_summary_by_item WHERE {sw_s}{org_cond_s} "
+        f"  ORDER BY route_code, item_code, date) t",
+        sp_s + org_params_s
     )
     sw, sp = build_where(filters, date_col='trx_date')
     order_row = query_one(

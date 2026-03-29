@@ -216,6 +216,7 @@ function MultiSelect({ options, value, onChange, placeholder = 'All', loading = 
 }
 
 export default function FilterPanel({ filters, onChange, showFields = [], onReset, rowBreakBefore = [] }) {
+  const initialFiltersRef = useRef(filters);
   const [salesOrgs, setSalesOrgs] = useState([]);
   const [hosList, setHosList] = useState([]);
   const [asms, setAsms] = useState([]);
@@ -484,12 +485,7 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
           {/* Reset Filters Button */}
           <button
             type="button"
-            onClick={() => {
-              const reset = {};
-              if (hasDateFrom) reset.date_from = filters.date_from;
-              if (hasDateTo) reset.date_to = filters.date_to;
-              onChange(reset);
-            }}
+            onClick={() => onChange(initialFiltersRef.current)}
             className="flex items-center gap-1.5 px-3 py-[7px] text-[13px] font-medium text-gray-500 bg-gray-100 hover:bg-red-50 hover:text-red-600 rounded-lg border border-gray-200/80 transition-all duration-150 self-end"
             title="Reset all filters"
           >
@@ -580,7 +576,7 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
             <div className="flex items-end">
               <button
                 type="button"
-                onClick={onReset}
+                onClick={() => onChange(initialFiltersRef.current)}
                 className="flex items-center gap-1.5 px-3 py-[7px] text-[13px] font-medium text-gray-500 bg-gray-100 hover:bg-red-50 hover:text-red-600 rounded-lg border border-gray-200/80 transition-all duration-150"
                 title="Reset all filters"
               >

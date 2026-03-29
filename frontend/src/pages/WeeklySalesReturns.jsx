@@ -128,26 +128,29 @@ export default function WeeklySalesReturns() {
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const hasData = useRef(false);
 
   const [orders, setOrders] = useState(null);
   const [ordersLoading, setOrdersLoading] = useState(false);
 
-  const [filters, setFilters] = useState(() => {
+  const defaultFilters = () => {
     const now = new Date();
     const y = now.getFullYear();
     const d = String(now.getDate()).padStart(2, '0');
     const m = String(now.getMonth() + 1).padStart(2, '0');
     return { date_from: `${y}-01-01`, date_to: `${y}-${m}-${d}` };
-  });
+  };
+  const [filters, setFilters] = useState(defaultFilters);
 
   useEffect(() => {
     let cancelled = false;
     if (!hasData.current) setLoading(true);
+    else setRefreshing(true);
     fetchWeeklySalesReturns(filters)
       .then(res => { if (!cancelled) { setData(res); hasData.current = true; } })
       .catch(err => { if (!cancelled) console.error(err); })
-      .finally(() => { if (!cancelled) setLoading(false); });
+      .finally(() => { if (!cancelled) { setLoading(false); setRefreshing(false); } });
     return () => { cancelled = true; };
   }, [filters]);
 
@@ -174,7 +177,15 @@ export default function WeeklySalesReturns() {
       </div>
 
       <FilterPanel filters={filters} onChange={setFilters}
-        showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'channel', 'customer', 'brand', 'category']} />
+        onReset={() => setFilters(defaultFilters())}
+        showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'channel', 'customer', 'brand', 'category']}
+        rowBreakBefore={['route']} />
+
+      {refreshing && (
+        <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-1 bg-indigo-500 rounded-full animate-pulse" style={{ width: '60%' }} />
+        </div>
+      )}
 
       {loading ? <Loading /> : !data ? (
         <div className="text-center py-16 text-gray-400">No data available</div>

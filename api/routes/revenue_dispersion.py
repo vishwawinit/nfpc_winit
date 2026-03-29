@@ -30,15 +30,15 @@ def _bucket_pct(rows):
 
 
 def _where_sd(filters, sales_org=None, period_label=None):
-    """Build WHERE clause and params for rpt_sales_detail (alias sd)."""
+    """Build WHERE clause and params for rpt_sales_detail inner dedup subquery (no table prefix)."""
     f = {k: v for k, v in filters.items() if k in SD_KEYS}
-    rw, rp = build_where(f, date_col='trx_date', prefix='sd')
-    # Always filter completed transactions
-    rw = rw + " AND sd.trx_status = 200"
+    rw, rp = build_where(f, date_col='trx_date')  # no prefix — used inside DISTINCT ON subquery
+    # Match daily_sales_overview: only sale/collection types, completed status
+    rw = rw + " AND trx_type IN (1, 4) AND trx_status = 200"
     if sales_org:
         orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
         ph = ','.join(['%s'] * len(orgs))
-        rw += f" AND sd.sales_org_code IN ({ph})"
+        rw += f" AND sales_org_code IN ({ph})"
         rp = rp + orgs
     return rw, rp
 
@@ -58,8 +58,12 @@ def _run_revenue_query(filters, sales_org, period_label=None):
                 sd.customer_code,
                 COUNT(DISTINCT sd.trx_code) AS invoice_count,
                 SUM(sd.net_amount) AS total_amount
-            FROM rpt_sales_detail sd
-            WHERE {rw}
+            FROM (
+                SELECT DISTINCT ON (trx_code, line_no) *
+                FROM rpt_sales_detail
+                WHERE {rw}
+                ORDER BY trx_code, line_no
+            ) sd
             GROUP BY {month_group} sd.customer_code
         ),
         bucketed AS (
@@ -105,8 +109,12 @@ def _run_sku_query(filters, sales_org, period_label=None):
                 sd.customer_code,
                 COUNT(DISTINCT sd.item_code) AS item_count,
                 COUNT(DISTINCT sd.trx_code) AS invoice_count
-            FROM rpt_sales_detail sd
-            WHERE sd.net_amount >= 0 AND {rw}
+            FROM (
+                SELECT DISTINCT ON (trx_code, line_no) *
+                FROM rpt_sales_detail
+                WHERE net_amount >= 0 AND {rw}
+                ORDER BY trx_code, line_no
+            ) sd
             GROUP BY {month_group} sd.customer_code
         ),
         bucketed AS (

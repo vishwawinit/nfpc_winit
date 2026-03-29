@@ -29,9 +29,9 @@ from dotenv import load_dotenv
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
-# Date range: last 6 months
-DATE_FROM = '2025-10-01'
-DATE_TO = '2026-03-31'
+# Date range: Jan 01 to Feb 28
+DATE_FROM = '2026-01-01'
+DATE_TO = '2026-02-28'
 
 # ============================================================
 # LOGGING SETUP
