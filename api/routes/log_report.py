@@ -130,27 +130,19 @@ def get_log_report(
         "current_month_sales": round(float(mtd_row["mtd_sales"]) if mtd_row else 0, 2),
     }
 
-    # --- User Data (sales from summary table deduped, credit from RSIC) ---
+    # --- User Data from RSIC (summary table user_code is NULL, can't use it per user) ---
     user_sales = query(
-        f"SELECT d.user_code, COALESCE(du.name, d.user_code) AS user_name, "
+        f"SELECT r.user_code, COALESCE(du.name, r.user_code) AS user_name, "
         f"  COALESCE(du.sales_org_code, '') AS sales_org_name, "
-        f"  ROUND(SUM(d.total_sales)::numeric, 2) AS sales_amount "
-        f"FROM (SELECT DISTINCT ON (route_code, item_code, date) route_code, user_code, total_sales "
-        f"  FROM rpt_route_sales_summary_by_item WHERE {sw} "
-        f"  ORDER BY route_code, item_code, date) AS d "
-        f"LEFT JOIN dim_user du ON d.user_code = du.code "
-        f"GROUP BY d.user_code, COALESCE(du.name, d.user_code), COALESCE(du.sales_org_code, '') "
-        f"ORDER BY sales_amount DESC",
-        sp
-    )
-    user_credit = query(
-        f"SELECT r.user_code, "
+        f"  ROUND(SUM(r.total_sales)::numeric, 2) AS sales_amount, "
         f"  ROUND(SUM(r.total_gr_sales + r.total_damage_sales + r.total_expiry_sales)::numeric, 2) AS credit_amount "
         f"FROM rpt_route_sales_by_item_customer r "
-        f"WHERE {rw} GROUP BY r.user_code",
+        f"LEFT JOIN dim_user du ON r.user_code = du.code "
+        f"WHERE {rw} "
+        f"GROUP BY r.user_code, COALESCE(du.name, r.user_code), COALESCE(du.sales_org_code, '') "
+        f"ORDER BY sales_amount DESC",
         rp
     )
-    credit_map = {r["user_code"]: float(r["credit_amount"]) for r in user_credit}
 
     # Collection per user
     user_col = query(
@@ -166,7 +158,7 @@ def get_log_report(
             "user_name": row["user_name"],
             "sales_org_name": row["sales_org_name"],
             "sales_amount": float(row["sales_amount"]),
-            "credit_amount": credit_map.get(row["user_code"], 0),
+            "credit_amount": float(row["credit_amount"]),
             "collection_amount": col_map.get(row["user_code"], 0),
         })
 
