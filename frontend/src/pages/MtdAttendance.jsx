@@ -7,9 +7,9 @@ import { Search, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 const PAGE_SIZES = [20, 50, 100, 200];
 
 function exportToExcel(data, filename) {
-  const header = ['Date', 'User Code', 'User Name', 'Route Code', 'Route Name', 'Sales Org'].join('\t');
+  const header = ['User Code', 'User Name', 'Total Working Days', 'Planned Working Days', 'Total Absent Days', 'Attendance %'].join('\t');
   const rows = data.map(r =>
-    [r.date, r.user_code, r.user_name, r.route_code, r.route_name, r.sales_org_code].join('\t')
+    [r.user_code, r.user_name, r.total_working_days, r.planned_working_days, r.total_absent_days, r.attendance_pct].join('\t')
   );
   const blob = new Blob([header + '\n' + rows.join('\n')], { type: 'application/vnd.ms-excel' });
   const url = URL.createObjectURL(blob);
@@ -53,9 +53,7 @@ export default function MtdAttendance() {
     const s = search.toLowerCase();
     return rows.filter(r =>
       r.user_code?.toLowerCase().includes(s) ||
-      r.user_name?.toLowerCase().includes(s) ||
-      r.route_code?.toLowerCase().includes(s) ||
-      r.route_name?.toLowerCase().includes(s)
+      r.user_name?.toLowerCase().includes(s)
     );
   }, [rows, search]);
 
@@ -65,12 +63,12 @@ export default function MtdAttendance() {
   const paged = filtered.slice(startIdx, startIdx + pageSize);
 
   const columns = [
-    { key: 'date',          label: 'Date' },
-    { key: 'user_code',     label: 'User Code' },
-    { key: 'user_name',     label: 'User Name' },
-    { key: 'route_code',    label: 'Route Code' },
-    { key: 'route_name',    label: 'Route Name' },
-    { key: 'sales_org_code',label: 'Sales Org' },
+    { key: 'user_code',           label: 'User Code' },
+    { key: 'user_name',           label: 'User Name' },
+    { key: 'total_working_days',  label: 'Total Working Days' },
+    { key: 'planned_working_days',label: 'Planned Working Days' },
+    { key: 'total_absent_days',   label: 'Total Absent Days' },
+    { key: 'attendance_pct',      label: 'Attendance %' },
   ];
 
   return (
@@ -116,12 +114,18 @@ export default function MtdAttendance() {
               <tbody className="divide-y divide-gray-50">
                 {paged.map((r, i) => (
                   <tr key={i} className={`transition-colors hover:bg-indigo-50/40 ${i % 2 !== 0 ? 'bg-gray-50/30' : ''}`}>
-                    <td className="px-4 py-2.5 tabular-nums text-gray-600">{r.date}</td>
                     <td className="px-4 py-2.5 font-mono text-xs text-gray-500">{r.user_code}</td>
                     <td className="px-4 py-2.5 font-medium text-gray-800">{r.user_name}</td>
-                    <td className="px-4 py-2.5 font-mono text-xs text-gray-500">{r.route_code}</td>
-                    <td className="px-4 py-2.5 text-gray-600 text-xs">{r.route_name}</td>
-                    <td className="px-4 py-2.5 text-gray-500 text-xs">{r.sales_org_code}</td>
+                    <td className="px-4 py-2.5 tabular-nums text-center text-gray-700">{r.total_working_days}</td>
+                    <td className="px-4 py-2.5 tabular-nums text-center text-gray-700">{r.planned_working_days}</td>
+                    <td className="px-4 py-2.5 tabular-nums text-center text-red-600 font-medium">{r.total_absent_days}</td>
+                    <td className="px-4 py-2.5 tabular-nums text-center">
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
+                        r.attendance_pct >= 90 ? 'bg-emerald-100 text-emerald-700' :
+                        r.attendance_pct >= 70 ? 'bg-amber-100 text-amber-700' :
+                        'bg-red-100 text-red-700'
+                      }`}>{r.attendance_pct}%</span>
+                    </td>
                   </tr>
                 ))}
                 {paged.length === 0 && (

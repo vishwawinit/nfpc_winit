@@ -407,11 +407,11 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
   };
 
   const handleDateFrom = (val) => {
-    if (filters.date_to && val > filters.date_to) return;
+    if (show('date_to') && filters.date_to && val > filters.date_to) return;
     set('date_from', val);
   };
   const handleDateTo = (val) => {
-    if (filters.date_from && val < filters.date_from) return;
+    if (show('date_from') && filters.date_from && val < filters.date_from) return;
     set('date_to', val);
   };
 

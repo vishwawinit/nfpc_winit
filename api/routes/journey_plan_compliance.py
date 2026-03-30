@@ -102,7 +102,7 @@ def get_journey_plan_compliance(
             f"  0 AS selling_calls, "
             f"  GREATEST(s.scheduled_calls - COALESCE(p.planned_calls, 0), 0) AS unplanned, "
             f"  CASE WHEN s.scheduled_calls > 0 "
-            f"    THEN ROUND(COALESCE(v.actual_calls, 0)::numeric / s.scheduled_calls * 100, 2) "
+            f"    THEN LEAST(ROUND(COALESCE(v.actual_calls, 0)::numeric / s.scheduled_calls * 100, 2), 100) "
             f"    ELSE 0 END AS coverage_pct "
             f"FROM scheduled s "
             f"LEFT JOIN visited v ON s.date = v.date "

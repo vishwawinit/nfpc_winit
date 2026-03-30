@@ -124,8 +124,8 @@ def get_salesman_journey_detail(
             "route_code": journey_row["route_code"],
             "route_name": journey_row["route_name"],
             "vehicle": journey_row["vehicle_code"],
-            "journey_start": str(journey_row["start_time"]) if journey_row["start_time"] else None,
-            "journey_end": str(journey_row["end_time"]) if journey_row["end_time"] else None,
+            "journey_start": str(journey_row["start_time"])[11:16] if journey_row["start_time"] else None,
+            "journey_end": str(journey_row["end_time"])[11:16] if journey_row["end_time"] else None,
         }
 
     # Sales KPIs
@@ -142,8 +142,8 @@ def get_salesman_journey_detail(
     coll_row = query_one(f"SELECT COALESCE(SUM(amount), 0) AS collection FROM rpt_collections WHERE {cw}", cp)
 
     kpis = {
-        "total_sales": float(sales_row["total_sales"]) if sales_row else 0,
-        "collection": float(coll_row["collection"]) if coll_row else 0,
+        "total_sales": round(float(sales_row["total_sales"]), 2) if sales_row else 0,
+        "collection": round(float(coll_row["collection"]), 2) if coll_row else 0,
     }
 
     # Visits with productive detection
@@ -168,8 +168,8 @@ def get_salesman_journey_detail(
             "date": str(v["date"]),
             "customer_code": v["customer_code"],
             "customer_name": v["customer_name"],
-            "arrival_time": str(v["arrival_time"]) if v["arrival_time"] else None,
-            "out_time": str(v["out_time"]) if v["out_time"] else None,
+            "arrival_time": str(v["arrival_time"])[11:16] if v["arrival_time"] else None,
+            "out_time": str(v["out_time"])[11:16] if v["out_time"] else None,
             "duration_mins": v["total_time_mins"],
             "productive": is_prod,
             "latitude": v["latitude"],

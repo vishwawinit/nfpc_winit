@@ -52,24 +52,27 @@ def get_mtd_attendance(
         jw += f" AND COALESCE(j.sales_org_code, du.sales_org_code) IN ({ph})"
         jp.extend(orgs)
 
+    planned_days = (d_to - d_from).days + 1
+
     rows = query(
-        f"SELECT j.date, j.user_code, j.user_name, j.route_code, j.route_name, "
-        f"  COALESCE(j.sales_org_code, du.sales_org_code) AS sales_org_code "
+        f"SELECT j.user_code, j.user_name, "
+        f"  COUNT(DISTINCT j.date) AS working_days "
         f"FROM rpt_journeys j "
         f"LEFT JOIN dim_user du ON du.code = j.user_code "
         f"WHERE {jw} "
-        f"ORDER BY j.date DESC, j.user_name",
+        f"GROUP BY j.user_code, j.user_name "
+        f"ORDER BY j.user_name",
         jp
     )
 
     return [
         {
-            "date": str(r["date"]),
             "user_code": r["user_code"],
             "user_name": r["user_name"],
-            "route_code": r["route_code"],
-            "route_name": r["route_name"],
-            "sales_org_code": r["sales_org_code"],
+            "total_working_days": int(r["working_days"]),
+            "planned_working_days": planned_days,
+            "total_absent_days": max(0, planned_days - int(r["working_days"])),
+            "attendance_pct": round(int(r["working_days"]) / planned_days * 100, 1) if planned_days > 0 else 0,
         }
         for r in rows
     ]
