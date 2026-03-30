@@ -1,14 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Download, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const PAGE_SIZES = [20, 50, 100];
 
-export default function DataTable({ columns, data, onRowClick, exportName, pageSize: defaultPageSize = 20, disableSort = false }) {
+export default function DataTable({ columns, data, onRowClick, exportName, pageSize: defaultPageSize = 20, disableSort = false,
+  serverTotal, serverPage, onServerPageChange, serverPageSize, onServerPageSizeChange, serverPageSizes,
+  onExportAll, exportingAll, onPageChange }) {
   const [sortCol, setSortCol] = useState(null);
   const [sortDir, setSortDir] = useState('asc');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(defaultPageSize);
+
+  useEffect(() => { onPageChange?.(page, pageSize); }, [page, pageSize]);
 
   const handleSort = (col) => {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -32,16 +36,18 @@ export default function DataTable({ columns, data, onRowClick, exportName, pageS
     });
   }
 
-  // Pagination
+  // Pagination — use serverTotal for page count when no local search is active
   const totalRows = filtered.length;
-  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+  const effectiveTotal = (serverTotal != null && !search) ? serverTotal : totalRows;
+  const totalPages = Math.max(1, Math.ceil(effectiveTotal / pageSize));
   const safePage = Math.min(page, totalPages);
   const startIdx = (safePage - 1) * pageSize;
   const paged = filtered.slice(startIdx, startIdx + pageSize);
 
   const exportCsv = () => {
-    const header = columns.map(c => c.label).join(',');
-    const rows = filtered.map(row => columns.map(c => {
+    if (onExportAll) { onExportAll(); return; }
+    const header = columns.filter(c => c.key !== '_view').map(c => c.label).join(',');
+    const rows = filtered.map(row => columns.filter(c => c.key !== '_view').map(c => {
       const v = row[c.key] ?? '';
       return typeof v === 'string' && v.includes(',') ? `"${v}"` : v;
     }).join(','));
@@ -93,15 +99,18 @@ export default function DataTable({ columns, data, onRowClick, exportName, pageS
         </div>
         <div className="flex items-center gap-3">
           <span className="text-[11px] font-semibold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full tabular-nums">
-            {totalRows} rows
+            {(serverTotal ?? totalRows).toLocaleString()} rows
           </span>
-          <button
-            onClick={exportCsv}
-            className="inline-flex items-center gap-1.5 text-[13px] font-semibold bg-indigo-600 text-white px-4 py-[7px] rounded-lg hover:bg-indigo-700 active:bg-indigo-800 transition-all duration-150 shadow-sm shadow-indigo-600/10"
-          >
-            <Download className="w-3.5 h-3.5" strokeWidth={2} />
-            Export
-          </button>
+          {(exportName !== null || onExportAll) && (
+            <button
+              onClick={exportCsv}
+              disabled={exportingAll}
+              className="inline-flex items-center gap-1.5 text-[13px] font-semibold bg-indigo-600 text-white px-4 py-[7px] rounded-lg hover:bg-indigo-700 active:bg-indigo-800 disabled:opacity-60 transition-all duration-150 shadow-sm shadow-indigo-600/10"
+            >
+              <Download className="w-3.5 h-3.5" strokeWidth={2} />
+              {exportingAll ? 'Exporting...' : (onExportAll ? 'Export All' : 'Export')}
+            </button>
+          )}
         </div>
       </div>
 
@@ -166,47 +175,62 @@ export default function DataTable({ columns, data, onRowClick, exportName, pageS
       </div>
 
       {/* Pagination */}
-      {totalRows > 0 && (
+      {(totalRows > 0 || (serverTotal ?? 0) > 0) && (
         <div className="px-5 py-3 flex items-center justify-between border-t border-gray-100/80 bg-gray-50/30">
           {/* Page size selector */}
           <div className="flex items-center gap-2 text-[12px] text-gray-500">
             <span>Show</span>
             <select
-              value={pageSize}
-              onChange={e => handlePageSize(Number(e.target.value))}
+              value={onServerPageChange ? serverPageSize : pageSize}
+              onChange={e => onServerPageChange ? onServerPageSizeChange?.(Number(e.target.value)) : handlePageSize(Number(e.target.value))}
               className="bg-white border border-gray-200 rounded-md px-2 py-1 text-[12px] focus:outline-none focus:ring-1 focus:ring-indigo-400"
             >
-              {PAGE_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+              {(onServerPageChange ? (serverPageSizes || PAGE_SIZES) : PAGE_SIZES).map(s => <option key={s} value={s}>{s}</option>)}
             </select>
             <span>per page</span>
           </div>
 
           {/* Page info + navigation */}
           <div className="flex items-center gap-2">
-            <span className="text-[12px] text-gray-400 tabular-nums">
-              {startIdx + 1}–{Math.min(startIdx + pageSize, totalRows)} of {totalRows}
-            </span>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={safePage <= 1}
-                className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                title="Previous page"
-              >
-                <ChevronLeft className="w-4 h-4 text-gray-500" />
-              </button>
-              <span className="px-2 py-0.5 text-[12px] font-semibold text-indigo-600 bg-indigo-50 rounded-md tabular-nums min-w-[60px] text-center">
-                {safePage} / {totalPages}
-              </span>
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={safePage >= totalPages}
-                className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                title="Next page"
-              >
-                <ChevronRight className="w-4 h-4 text-gray-500" />
-              </button>
-            </div>
+            {onServerPageChange ? (
+              <>
+                <span className="text-[12px] text-gray-400 tabular-nums">
+                  {((serverPage - 1) * serverPageSize) + 1}–{Math.min(serverPage * serverPageSize, serverTotal)} of {serverTotal.toLocaleString()}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => onServerPageChange(p => Math.max(1, p - 1))} disabled={serverPage <= 1}
+                    className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                    <ChevronLeft className="w-4 h-4 text-gray-500" />
+                  </button>
+                  <span className="px-2 py-0.5 text-[12px] font-semibold text-indigo-600 bg-indigo-50 rounded-md tabular-nums min-w-[60px] text-center">
+                    {serverPage} / {Math.ceil(serverTotal / serverPageSize)}
+                  </span>
+                  <button onClick={() => onServerPageChange(p => Math.min(Math.ceil(serverTotal / serverPageSize), p + 1))} disabled={serverPage >= Math.ceil(serverTotal / serverPageSize)}
+                    className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                    <ChevronRight className="w-4 h-4 text-gray-500" />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <span className="text-[12px] text-gray-400 tabular-nums">
+                  {startIdx + 1}–{Math.min(startIdx + pageSize, effectiveTotal)} of {effectiveTotal.toLocaleString()}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage <= 1}
+                    className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors" title="Previous page">
+                    <ChevronLeft className="w-4 h-4 text-gray-500" />
+                  </button>
+                  <span className="px-2 py-0.5 text-[12px] font-semibold text-indigo-600 bg-indigo-50 rounded-md tabular-nums min-w-[60px] text-center">
+                    {safePage} / {totalPages}
+                  </span>
+                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}
+                    className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors" title="Next page">
+                    <ChevronRight className="w-4 h-4 text-gray-500" />
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

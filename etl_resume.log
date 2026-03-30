@@ -1,0 +1,139 @@
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 18-77: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1345, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1232, in main
+    log(f"{'\u2550' * 60}")
+Message: '\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550'
+Arguments: ()
+[90m16:04:38[0m   NFPC Reports ETL
+[90m16:04:38[0m   Date range: 2026-01-01 to 2026-02-28
+[90m16:04:38[0m   Mode: sequential
+[90m16:04:38[0m   Log file:   D:\vishwa\nfpc_winit\etl\logs\etl_20260330_160438.log
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 18-77: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1345, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1237, in main
+    log(f"{'\u2550' * 60}")
+Message: '\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550'
+Arguments: ()
+[90m16:04:38[0m Connecting to MSSQL...
+[90m16:04:38[0m   MSSQL connected
+[90m16:04:38[0m Connecting to PostgreSQL...
+[90m16:04:40[0m   PostgreSQL connected
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 20-69: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1345, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1307, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 592, in load_daily_sales_summary
+    progress.start_step('rpt_daily_sales_summary', expected_rows=5_000_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 102, in start_step
+    log(f"\n{'\u2500' * 50}")
+Message: '\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 51-70: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1345, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1307, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 592, in load_daily_sales_summary
+    progress.start_step('rpt_daily_sales_summary', expected_rows=5_000_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 103, in start_step
+    log(f"  [{self.completed + 1}/{self.total_steps}] {name} {bar}")
+Message: '  [1/1] rpt_daily_sales_summary [\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591] 0%'
+Arguments: ()
+[90m16:04:40[0m        Expected: ~5,000,000 rows
+[90m16:04:41[0m     Processing 2026-01-01 to 2026-02-01...
+[90m16:04:41[0m   Querying MSSQL (this may take a while for large tables)...
+[90m16:10:36[0m   MSSQL query returned in 355.1s - starting load...
+[90m16:10:50[0m              50,000 rows | 135 rows/sec | 370s elapsed | ETA 36652s
+[90m16:11:01[0m             100,000 rows | 262 rows/sec | 381s elapsed | ETA 18669s
+[90m16:11:12[0m             150,000 rows | 383 rows/sec | 392s elapsed | ETA 12671s
+[90m16:11:23[0m             200,000 rows | 496 rows/sec | 403s elapsed | ETA 9674s
+[90m16:11:35[0m             250,000 rows | 602 rows/sec | 415s elapsed | ETA 7884s
+[90m16:11:46[0m             300,000 rows | 704 rows/sec | 426s elapsed | ETA 6672s
+[90m16:11:57[0m             350,000 rows | 801 rows/sec | 437s elapsed | ETA 5805s
+[90m16:12:08[0m             400,000 rows | 893 rows/sec | 448s elapsed | ETA 5150s
+[90m16:12:21[0m             450,000 rows | 975 rows/sec | 461s elapsed | ETA 4666s
+[90m16:12:34[0m             500,000 rows | 1,055 rows/sec | 474s elapsed | ETA 4264s
+[90m16:12:46[0m             550,000 rows | 1,131 rows/sec | 486s elapsed | ETA 3936s
+[90m16:12:58[0m             600,000 rows | 1,204 rows/sec | 498s elapsed | ETA 3654s
+[90m16:13:12[0m             650,000 rows | 1,270 rows/sec | 512s elapsed | ETA 3424s
+[90m16:13:23[0m             700,000 rows | 1,338 rows/sec | 523s elapsed | ETA 3215s
+[90m16:13:34[0m             750,000 rows | 1,403 rows/sec | 534s elapsed | ETA 3028s
+[90m16:13:47[0m             800,000 rows | 1,463 rows/sec | 547s elapsed | ETA 2870s
+[90m16:13:58[0m             850,000 rows | 1,522 rows/sec | 558s elapsed | ETA 2726s
+[90m16:14:09[0m             900,000 rows | 1,581 rows/sec | 569s elapsed | ETA 2594s
+[90m16:14:21[0m             950,000 rows | 1,634 rows/sec | 581s elapsed | ETA 2478s
+[90m16:14:33[0m           1,000,000 rows | 1,686 rows/sec | 593s elapsed | ETA 2373s
+[90m16:14:44[0m           1,050,000 rows | 1,738 rows/sec | 604s elapsed | ETA 2273s
+[90m16:14:58[0m           1,100,000 rows | 1,780 rows/sec | 618s elapsed | ETA 2191s
+[90m16:15:11[0m           1,150,000 rows | 1,823 rows/sec | 631s elapsed | ETA 2112s
+[90m16:15:23[0m           1,200,000 rows | 1,867 rows/sec | 643s elapsed | ETA 2036s
+[90m16:15:35[0m           1,250,000 rows | 1,907 rows/sec | 656s elapsed | ETA 1967s
+[90m16:15:50[0m           1,300,000 rows | 1,941 rows/sec | 670s elapsed | ETA 1906s
+[90m16:16:02[0m           1,350,000 rows | 1,978 rows/sec | 682s elapsed | ETA 1845s
+[90m16:16:14[0m           1,400,000 rows | 2,017 rows/sec | 694s elapsed | ETA 1785s
+[90m16:16:26[0m           1,450,000 rows | 2,054 rows/sec | 706s elapsed | ETA 1728s
+[90m16:16:38[0m           1,500,000 rows | 2,089 rows/sec | 718s elapsed | ETA 1676s
+[90m16:16:50[0m           1,550,000 rows | 2,122 rows/sec | 730s elapsed | ETA 1626s
+[90m16:17:06[0m           1,600,000 rows | 2,144 rows/sec | 746s elapsed | ETA 1586s
+[90m16:17:19[0m           1,650,000 rows | 2,174 rows/sec | 759s elapsed | ETA 1541s
+[90m16:17:32[0m           1,700,000 rows | 2,203 rows/sec | 772s elapsed | ETA 1498s
+[90m16:17:44[0m           1,750,000 rows | 2,233 rows/sec | 784s elapsed | ETA 1456s
+[90m16:17:56[0m           1,800,000 rows | 2,261 rows/sec | 796s elapsed | ETA 1415s
+[90m16:18:09[0m           1,850,000 rows | 2,287 rows/sec | 809s elapsed | ETA 1378s
+[90m16:18:21[0m           1,900,000 rows | 2,314 rows/sec | 821s elapsed | ETA 1340s
+[90m16:18:33[0m           1,950,000 rows | 2,339 rows/sec | 834s elapsed | ETA 1304s
+[90m16:18:47[0m           2,000,000 rows | 2,362 rows/sec | 847s elapsed | ETA 1270s
+[90m16:19:00[0m           2,050,000 rows | 2,383 rows/sec | 860s elapsed | ETA 1238s
+[90m16:19:12[0m           2,100,000 rows | 2,408 rows/sec | 872s elapsed | ETA 1204s
+[90m16:19:23[0m           2,150,000 rows | 2,433 rows/sec | 884s elapsed | ETA 1171s
+[90m16:19:35[0m           2,200,000 rows | 2,457 rows/sec | 895s elapsed | ETA 1139s
+[90m16:19:48[0m     2026-01: 2,247,053 rows
+[90m16:19:48[0m     Processing 2026-02-01 to 2026-02-28...
+[90m16:19:48[0m   Querying MSSQL (this may take a while for large tables)...
+[90m16:22:54[0m   MSSQL query returned in 186.1s - starting load...
+[90m16:23:09[0m              50,000 rows | 45 rows/sec | 1109s elapsed | ETA 109788s
+[90m16:23:20[0m             100,000 rows | 89 rows/sec | 1120s elapsed | ETA 54875s
+[90m16:23:33[0m             150,000 rows | 132 rows/sec | 1133s elapsed | ETA 36625s
+[90m16:23:45[0m             200,000 rows | 175 rows/sec | 1145s elapsed | ETA 27478s
+[90m16:24:04[0m             250,000 rows | 215 rows/sec | 1164s elapsed | ETA 22117s
+[90m16:24:26[0m             300,000 rows | 253 rows/sec | 1187s elapsed | ETA 18589s
+[90m16:24:49[0m             350,000 rows | 290 rows/sec | 1209s elapsed | ETA 16059s

@@ -30,6 +30,7 @@ export const fetchMtdWastage = (params) => api.get('/mtd-wastage-summary', { par
 export const fetchMtdWastageItems = (params) => api.get('/mtd-wastage-items', { params }).then(r => r.data);
 export const fetchWeeklySalesReturns = (params) => api.get('/weekly-sales-returns', { params }).then(r => r.data);
 export const fetchOrderDetails = (params) => api.get('/weekly-sales-returns/orders', { params }).then(r => r.data);
+export const fetchOrderDetailsExport = (params) => api.get('/weekly-sales-returns/orders', { params: { ...params, export: true } }).then(r => r.data);
 export const fetchOrderItems = (order_no) => api.get('/weekly-sales-returns/order-items', { params: { order_no } }).then(r => r.data);
 export const fetchBrandWiseSales = (params) => api.get('/brand-wise-sales', { params }).then(r => r.data);
 export const fetchBrandItems = (params) => api.get('/brand-wise-sales/items', { params }).then(r => r.data);

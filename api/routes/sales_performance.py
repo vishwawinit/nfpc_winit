@@ -105,8 +105,9 @@ def get_sales_performance(
     else:
         lmtd_kpi_start = date(mtd_kpi_start.year, mtd_kpi_start.month - 1, 1)
     lmtd_month_last = (mtd_kpi_start - timedelta(days=1))
+    # Use display day (not data-capped day) so LMTD covers same intended day range as MTD
     lmtd_kpi_end = date(lmtd_kpi_start.year, lmtd_kpi_start.month,
-                        min(mtd_kpi_end.day, lmtd_month_last.day))
+                        min(mtd_kpi_display.day, lmtd_month_last.day))
 
     # Year-to-date
     ytd_start = date(cur_start.year, 1, 1)
@@ -221,9 +222,17 @@ def get_sales_performance(
                 f"  FROM rpt_route_sales_summary_by_item WHERE {sw}) t",
                 sp
             )
-            # Returns always from RSIC
+            sales_val = float(row["sales"]) if row else 0
+            # Fallback to RSIC if summary table has no data for this period
             f3 = {k: v for k, v in {**base_filters, 'date_from': d_start, 'date_to': d_end}.items() if k in RSIC_KEYS_LOCAL}
             sw3, sp3 = build_where(f3, date_col='date', prefix='r')
+            if sales_val == 0:
+                rsic_row = query_one(
+                    f"SELECT COALESCE(SUM(r.total_sales),0) AS sales "
+                    f"FROM rpt_route_sales_by_item_customer r {_org_join}WHERE {sw3}",
+                    _org_params + sp3
+                )
+                sales_val = float(rsic_row["sales"]) if rsic_row else 0
             row2 = query_one(
                 f"SELECT COALESCE(SUM(r.total_gr_sales),0) AS gr, "
                 f"  COALESCE(SUM(r.total_damage_sales),0) AS damage, "
@@ -232,7 +241,7 @@ def get_sales_performance(
                 _org_params + sp3
             )
             return {
-                "sales": float(row["sales"]) if row else 0,
+                "sales": sales_val,
                 "gr": float(row2["gr"]) if row2 else 0,
                 "damage": float(row2["damage"]) if row2 else 0,
                 "expiry": float(row2["expiry"]) if row2 else 0,
@@ -344,15 +353,21 @@ def get_sales_performance(
     ly_start = date(cur_start.year - 1, cur_start.month, 1)
     ly_end = _month_range(ly_start.year, ly_start.month)[1]
 
-    # Current week effective (capped to month boundaries like SP)
+    # Current week: based on latest available data date (not today, which may be ahead of data)
+    eff_week_date = latest_date if latest_date else today
+    week_start = eff_week_date - timedelta(days=eff_week_date.weekday())
     cw_start = max(week_start, cur_start)
-    cw_end = min(today, cur_end)
+    cw_end = min(eff_week_date, cur_end)
+
+    # Last month (previous calendar month, full range)
+    lm_start = last_month_start
+    lm_end = last_month_max
 
     # Use cur_end so table rows and MTD KPI count both reflect the selected day
     cm_sk = {k: v for k, v in {**base_filters, 'date_from': cur_start, 'date_to': cur_end}.items() if k in RSIC_KEYS}
     cmw_s, cmp_s = build_where(cm_sk, date_col='date', prefix='r')
-    ly_sk = {k: v for k, v in {**base_filters, 'date_from': ly_start, 'date_to': ly_end}.items() if k in RSIC_KEYS}
-    lyw_s, lyp_s = build_where(ly_sk, date_col='date', prefix='r')
+    lm_sk = {k: v for k, v in {**base_filters, 'date_from': lm_start, 'date_to': lm_end}.items() if k in RSIC_KEYS}
+    lmw_s, lmp_s = build_where(lm_sk, date_col='date', prefix='r')
 
     sku_table = query(
         f"SELECT "
@@ -360,23 +375,23 @@ def get_sales_performance(
         f"  di.category_code, COALESCE(di.category_name, di.category_code) AS category_name, "
         f"  COALESCE(di.brand_name, di.brand_code) AS brand_name, "
         f"  ROUND(SUM(CASE WHEN r.date BETWEEN %s AND %s THEN r.total_sales ELSE 0 END)::numeric, 2) AS current_month_sales, "
-        f"  ROUND(SUM(CASE WHEN r.date BETWEEN %s AND %s THEN r.total_sales ELSE 0 END)::numeric, 2) AS ly_current_month_sales, "
+        f"  ROUND(SUM(CASE WHEN r.date BETWEEN %s AND %s THEN r.total_sales ELSE 0 END)::numeric, 2) AS last_month_sales, "
         f"  ROUND(SUM(CASE WHEN r.date BETWEEN %s AND %s THEN r.total_sales ELSE 0 END)::numeric, 2) AS current_week_sales "
         f"FROM rpt_route_sales_by_item_customer r "
         f"JOIN dim_item di ON di.code = r.item_code{_brand_on_di_cond} "
         f"JOIN dim_user du ON du.code = r.user_code AND du.role_code = 'C_PRESALES_VANSALES' "
         f"{_org_join}"
-        f"WHERE ({cmw_s} OR {lyw_s}){_channel_cond} "
+        f"WHERE ({cmw_s} OR {lmw_s}){_channel_cond} "
         f"GROUP BY r.item_code, COALESCE(di.name, r.item_code), "
         f"  di.category_code, COALESCE(di.category_name, di.category_code), "
         f"  COALESCE(di.brand_name, di.brand_code) "
         f"ORDER BY r.item_code",
-        [cur_start, cur_end, ly_start, ly_end, cw_start, cw_end]
-        + _brand_di_params + _org_params + cmp_s + lyp_s + _channel_cond_params
+        [cur_start, cur_end, lm_start, lm_end, cw_start, cw_end]
+        + _brand_di_params + _org_params + cmp_s + lmp_s + _channel_cond_params
     )
 
     for row in sku_table:
-        ly = float(row["ly_current_month_sales"] or 0)
+        ly = float(row["last_month_sales"] or 0)
         cm = float(row["current_month_sales"] or 0)
         if ly == 0 and cm == 0:
             row["growth"] = 0

@@ -80,16 +80,39 @@ def get_weekly_sales_returns(
             f"  EXTRACT(WEEK FROM date)::int AS week_number, "
             f"  MIN(date) AS week_start, "
             f"  MAX(date) AS week_end, "
-            f"  COALESCE(SUM(total_sales), 0) AS sales_amount, "
-            f"  COALESCE(SUM(total_wastage), 0) AS return_amount "
+            f"  COALESCE(SUM(total_sales), 0) AS sales_amount "
             f"FROM (SELECT DISTINCT ON (route_code, item_code, date) "
-            f"  date, total_sales, total_wastage "
+            f"  date, total_sales "
             f"  FROM rpt_route_sales_summary_by_item WHERE {sw}{org_cond} "
             f"  ORDER BY route_code, item_code, date) t "
             f"GROUP BY EXTRACT(ISOYEAR FROM date), EXTRACT(WEEK FROM date) "
             f"ORDER BY year, week_number",
             sp + org_params
         )
+
+        # Returns from RSIC (summary table total_wastage is always 0)
+        f_ret = {k: v for k, v in {
+            'route': route, 'user_code': user_code,
+            'date_from': date_from, 'date_to': date_to,
+        }.items() if v is not None}
+        ret_org_join = ""
+        ret_org_params = []
+        if sales_org and not route:
+            orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
+            org_ph = ','.join(['%s'] * len(orgs))
+            ret_org_join = f"JOIN dim_route _dr ON r.route_code = _dr.code AND _dr.sales_org_code IN ({org_ph}) "
+            ret_org_params = orgs
+        rw_ret, rp_ret = build_where(f_ret, date_col='date', prefix='r')
+        ret_rows = query(
+            f"SELECT EXTRACT(ISOYEAR FROM r.date)::int AS year, "
+            f"  EXTRACT(WEEK FROM r.date)::int AS week_number, "
+            f"  COALESCE(SUM(r.total_gr_sales + r.total_damage_sales + r.total_expiry_sales), 0) AS return_amount "
+            f"FROM rpt_route_sales_by_item_customer r {ret_org_join}"
+            f"WHERE {rw_ret} "
+            f"GROUP BY EXTRACT(ISOYEAR FROM r.date), EXTRACT(WEEK FROM r.date)",
+            ret_org_params + rp_ret
+        )
+        returns_map = {(r["year"], r["week_number"]): float(r["return_amount"]) for r in ret_rows}
     else:
         # ── RSIC path: required for channel / customer filters ───────────────
         # Resolve sales_org to route JOIN for RSIC tables
@@ -151,7 +174,7 @@ def get_weekly_sales_returns(
     weekly_data = []
     for row in rows:
         sales = float(row["sales_amount"])
-        returns = float(row["return_amount"])
+        returns = returns_map.get((row["year"], row["week_number"]), 0) if not _use_rsic else float(row["return_amount"])
         weekly_data.append({
             "year": row["year"],
             "week_number": row["week_number"],
@@ -233,6 +256,9 @@ def get_order_details(
     asm: Optional[str] = None,
     depot: Optional[str] = None,
     supervisor: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 100,
+    export: bool = False,
 ):
     # Resolve hierarchy
     _hier = {k: v for k, v in {'hos': hos, 'depot': depot, 'supervisor': supervisor, 'asm': asm}.items() if v}
@@ -295,35 +321,56 @@ def get_order_details(
         item_cond = f" AND EXISTS (SELECT 1 FROM dim_item _di WHERE _di.code = sd.item_code AND {' AND '.join(i_conds)})"
         item_params = i_params
 
+    # Build inner WHERE (no prefix) to push date/type filter inside CTE
+    inner_whr, inner_prms = build_where(f, date_col='trx_date')
+    inner_org_cond = org_cond.replace('sd.', '') if org_cond else ""
+
     rows = query(
-        f"SELECT "
-        f"  sd.trx_code AS order_no, "
-        f"  MAX(sd.user_name) AS salesman, "
-        f"  TRIM(MAX(sd.customer_name)) AS customer, "
-        f"  MAX(sd.trx_date) AS order_date, "
-        f"  MAX(sd.route_name) AS route, "
-        f"  ROUND(SUM(sd.qty_cases)::numeric, 0) AS qty_cases, "
-        f"  ROUND(SUM(sd.qty_pieces)::numeric, 0) AS qty_pieces, "
-        f"  ROUND(SUM(sd.gross_amount)::numeric, 2) AS gross_amount, "
-        f"  ROUND(SUM(sd.discount_amount)::numeric, 2) AS discount_amount, "
-        f"  ROUND(SUM(sd.gross_amount - sd.discount_amount)::numeric, 2) AS net_amount, "
-        f"  CASE "
-        f"    WHEN MAX(sd.trx_type) IN (1,3,5) AND MAX(sd.trx_status) = 200 THEN 'Delivered' "
-        f"    WHEN MAX(sd.trx_type) IN (1,3,5) AND MAX(sd.trx_status) = 100 THEN 'Pending' "
-        f"    WHEN MAX(sd.trx_type) = 4 AND MAX(sd.trx_status) = 200 THEN 'Approved' "
-        f"    WHEN MAX(sd.trx_type) = 4 AND MAX(sd.trx_status) = 400 THEN 'Pending' "
-        f"    WHEN MAX(sd.trx_type) = 4 AND MAX(sd.trx_status) = 500 THEN 'Collected' "
-        f"    WHEN MAX(sd.trx_status) = -100 THEN 'Rejected' "
-        f"    ELSE 'Unknown' "
-        f"  END AS action "
-        f"FROM (SELECT DISTINCT ON (trx_code, line_no) * FROM rpt_sales_detail) sd "
-        f"WHERE {whr}{org_cond}{channel_cond}{item_cond} AND sd.trx_type IN (1,3,4,5) "
-        f"GROUP BY sd.trx_code "
-        f"ORDER BY MAX(sd.trx_date) DESC",
-        prms + org_params + channel_params + item_params
+        f"WITH deduped AS ("
+        f"  SELECT trx_code, line_no, "
+        f"    MAX(user_name) AS user_name, MAX(customer_name) AS customer_name, "
+        f"    MAX(trx_date) AS trx_date, MAX(route_name) AS route_name, "
+        f"    MAX(qty_cases) AS qty_cases, MAX(qty_pieces) AS qty_pieces, "
+        f"    MAX(gross_amount) AS gross_amount, MAX(discount_amount) AS discount_amount, "
+        f"    MAX(trx_type) AS trx_type, MAX(trx_status) AS trx_status, "
+        f"    MAX(channel_code) AS channel_code, MAX(item_code) AS item_code "
+        f"  FROM rpt_sales_detail "
+        f"  WHERE {inner_whr} AND trx_type IN (1,3,4,5){inner_org_cond} "
+        f"  GROUP BY trx_code, line_no"
+        f"), _grouped AS ("
+        f"  SELECT "
+        f"    sd.trx_code AS order_no, "
+        f"    MAX(sd.user_name) AS salesman, "
+        f"    TRIM(MAX(sd.customer_name)) AS customer, "
+        f"    MAX(sd.trx_date) AS order_date, "
+        f"    MAX(sd.route_name) AS route, "
+        f"    ROUND(SUM(sd.qty_cases)::numeric, 0) AS qty_cases, "
+        f"    ROUND(SUM(sd.qty_pieces)::numeric, 0) AS qty_pieces, "
+        f"    ROUND(SUM(sd.gross_amount)::numeric, 2) AS gross_amount, "
+        f"    ROUND(SUM(sd.discount_amount)::numeric, 2) AS discount_amount, "
+        f"    ROUND(SUM(sd.gross_amount - sd.discount_amount)::numeric, 2) AS net_amount, "
+        f"    CASE "
+        f"      WHEN MAX(sd.trx_type) IN (1,3,5) AND MAX(sd.trx_status) = 200 THEN 'Delivered' "
+        f"      WHEN MAX(sd.trx_type) IN (1,3,5) AND MAX(sd.trx_status) = 100 THEN 'Pending' "
+        f"      WHEN MAX(sd.trx_type) = 4 AND MAX(sd.trx_status) = 200 THEN 'Approved' "
+        f"      WHEN MAX(sd.trx_type) = 4 AND MAX(sd.trx_status) = 400 THEN 'Pending' "
+        f"      WHEN MAX(sd.trx_type) = 4 AND MAX(sd.trx_status) = 500 THEN 'Collected' "
+        f"      WHEN MAX(sd.trx_status) = -100 THEN 'Rejected' "
+        f"      ELSE 'Unknown' "
+        f"    END AS action "
+        f"  FROM deduped sd "
+        f"  WHERE 1=1{channel_cond}{item_cond} "
+        f"  GROUP BY sd.trx_code"
+        f") "
+        f"SELECT *, COUNT(*) OVER() AS total_count FROM _grouped "
+        f"ORDER BY order_date DESC"
+        + ("" if export else f" LIMIT {int(page_size)} OFFSET {int((page - 1) * page_size)}"),
+        inner_prms + org_params + channel_params + item_params,
     )
 
-    return [
+    total = int(rows[0]["total_count"]) if rows else 0
+
+    orders = [
         {
             "order_no": r["order_no"],
             "salesman": r["salesman"],
@@ -339,3 +386,7 @@ def get_order_details(
         }
         for r in rows
     ]
+
+    if export:
+        return orders
+    return {"orders": orders, "total": total, "page": page, "page_size": page_size}

@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { fetchWeeklySalesReturns, fetchOrderDetails, fetchOrderItems } from '../api';
+import { fetchWeeklySalesReturns, fetchOrderDetails, fetchOrderDetailsExport, fetchOrderItems } from '../api';
 import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
 import KpiCard from '../components/KpiCard';
 import DataTable from '../components/DataTable';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { TrendingUp, TrendingDown, Banknote, Percent, X } from 'lucide-react';
+import { TrendingUp, TrendingDown, Banknote, Percent, X, Eye, Download } from 'lucide-react';
 
 const aed = (v) => v != null ? `AED ${Number(v).toLocaleString('en-US', { maximumFractionDigits: 2 })}` : '-';
 const num = (v) => v != null ? Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 }) : '-';
@@ -131,15 +131,19 @@ export default function WeeklySalesReturns() {
   const [refreshing, setRefreshing] = useState(false);
   const hasData = useRef(false);
 
-  const [orders, setOrders] = useState(null);
+  const [ordersBuffer, setOrdersBuffer] = useState([]);
+  const [ordersTotal, setOrdersTotal] = useState(0);
+  const [ordersDisplaySize] = useState(25);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const ORDERS_FETCH_SIZE = 500;
 
   const defaultFilters = () => {
     const now = new Date();
     const y = now.getFullYear();
     const d = String(now.getDate()).padStart(2, '0');
     const m = String(now.getMonth() + 1).padStart(2, '0');
-    return { date_from: `${y}-01-01`, date_to: `${y}-${m}-${d}` };
+    return { date_from: `${y}-${m}-01`, date_to: `${y}-${m}-${d}` };
   };
   const [filters, setFilters] = useState(defaultFilters);
 
@@ -154,20 +158,80 @@ export default function WeeklySalesReturns() {
     return () => { cancelled = true; };
   }, [filters]);
 
+  // Fetch initial 500 records when filters or tab changes
   useEffect(() => {
     if (activeTab !== 'orders') return;
     let cancelled = false;
     setOrdersLoading(true);
-    fetchOrderDetails(filters)
-      .then(res => { if (!cancelled) setOrders(res); })
+    setOrdersBuffer([]);
+    fetchOrderDetails({ ...filters, page: 1, page_size: ORDERS_FETCH_SIZE })
+      .then(res => {
+        if (!cancelled) {
+          setOrdersBuffer(res.orders || []);
+          setOrdersTotal(res.total || 0);
+        }
+      })
       .catch(err => { if (!cancelled) console.error(err); })
       .finally(() => { if (!cancelled) setOrdersLoading(false); });
     return () => { cancelled = true; };
   }, [filters, activeTab]);
 
+
+  const handleExport = () => {
+    setExporting(true);
+    fetchOrderDetailsExport(filters)
+      .then(rows => {
+        const cols = ['order_no','salesman','customer','order_date','route','qty_cases','qty_pieces','gross_amount','discount_amount','net_amount','action'];
+        const header = ['Order No','Salesman','Customer','Order Date','Route','Cases','Pieces','Gross','Discount','Net','Action'];
+        const csv = [header.join(','), ...rows.map(r => cols.map(k => {
+          const v = r[k] ?? '';
+          return typeof v === 'string' && v.includes(',') ? `"${v}"` : v;
+        }).join(','))].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'order-details.csv';
+        a.click(); URL.revokeObjectURL(url);
+      })
+      .catch(console.error)
+      .finally(() => setExporting(false));
+  };
+
+  const handleRowDownload = (row) => {
+    fetchOrderItems(row.order_no).then(items => {
+      const cols = ['line_no','item_code','item_name','brand','category','qty_cases','qty_pieces','base_price','gross_amount','discount_amount','net_amount'];
+      const header = ['Line','Item Code','Item Name','Brand','Category','Cases','Pieces','Unit Price','Gross','Discount','Net'];
+      const csv = [
+        `Order No: ${row.order_no},Date: ${row.order_date},Customer: ${row.customer},Salesman: ${row.salesman}`,
+        header.join(','),
+        ...items.map(r => cols.map(k => { const v = r[k] ?? ''; return typeof v === 'string' && v.includes(',') ? `"${v}"` : v; }).join(','))
+      ].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `${row.order_no}.csv`;
+      a.click(); URL.revokeObjectURL(url);
+    }).catch(console.error);
+  };
+
   const weekly = data?.weekly_data || [];
   const totals = data?.totals || {};
   const chartData = weekly.map(w => ({ ...w, label: `W${w.week_number}` }));
+
+  const ordersPageLoading = ordersLoading && ordersBuffer.length === 0;
+
+  const handleOrdersPageChange = (page, pageSize) => {
+    const needed = page * pageSize;
+    if (needed >= ordersBuffer.length && ordersBuffer.length < ordersTotal && !ordersLoading && ordersBuffer.length > 0) {
+      const nextPage = Math.floor(ordersBuffer.length / ORDERS_FETCH_SIZE) + 1;
+      setOrdersLoading(true);
+      fetchOrderDetails({ ...filters, page: nextPage, page_size: ORDERS_FETCH_SIZE })
+        .then(res => {
+          setOrdersBuffer(prev => [...prev, ...(res.orders || [])]);
+          setOrdersTotal(res.total || 0);
+        })
+        .catch(console.error)
+        .finally(() => setOrdersLoading(false));
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -254,32 +318,48 @@ export default function WeeklySalesReturns() {
             )}
 
             {activeTab === 'orders' && (
-              ordersLoading ? <div className="p-6"><Loading /></div> : (
-                <div className="p-6">
-                  <DataTable
-                    columns={[
-                      { key: 'order_no', label: 'Order No' },
-                      { key: 'salesman', label: 'Salesman' },
-                      { key: 'customer', label: 'Customer' },
-                      { key: 'order_date', label: 'Order Date' },
-                      {
-                        key: 'action',
-                        label: 'Action',
-                        render: (val, row) => (
-                          <button
-                            onClick={() => setSelectedOrder(row)}
-                            className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors cursor-pointer"
-                          >
-                            View
-                          </button>
-                        ),
-                      },
-                    ]}
-                    data={orders || []}
-                    exportName="order-details"
-                  />
-                </div>
-              )
+              <div className="p-6 space-y-3">
+                {ordersPageLoading ? <Loading /> : (
+                  <>
+                    <DataTable
+                      columns={[
+                        { key: 'order_date', label: 'Order Date' },
+                        { key: 'order_no', label: 'Order No' },
+                        { key: 'salesman', label: 'Salesman' },
+                        { key: 'customer', label: 'Customer' },
+                        { key: 'route', label: 'Route' },
+                        { key: 'gross_amount', label: 'Gross', format: 'currency' },
+                        { key: 'discount_amount', label: 'Discount', format: 'currency' },
+                        { key: 'net_amount', label: 'Net', format: 'currency' },
+                        {
+                          key: '_actions',
+                          label: 'Action',
+                          render: (_, row) => (
+                            <div className="flex items-center gap-2">
+                              <button onClick={() => setSelectedOrder(row)} title="View items"
+                                className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 transition-colors">
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => handleRowDownload(row)} title="Download order"
+                                className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors">
+                                <Download className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ),
+                        },
+                      ]}
+                      data={ordersBuffer}
+                      disableSort
+                      exportName={null}
+                      pageSize={ordersDisplaySize}
+                      serverTotal={ordersTotal}
+                      onExportAll={handleExport}
+                      exportingAll={exporting}
+                      onPageChange={handleOrdersPageChange}
+                    />
+                  </>
+                )}
+              </div>
             )}
           </div>
         </>

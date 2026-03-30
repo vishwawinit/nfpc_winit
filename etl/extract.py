@@ -29,9 +29,10 @@ from dotenv import load_dotenv
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
-# Date range: Jan 01 to Feb 28
+# Date range: Jan 01 to today
+from datetime import date as _date
 DATE_FROM = '2026-01-01'
-DATE_TO = '2026-02-28'
+DATE_TO = _date.today().strftime('%Y-%m-%d')
 
 # ============================================================
 # LOGGING SETUP
@@ -821,8 +822,6 @@ def load_route_sales_collection(ms_conn, pg_conn):
 def load_targets(ms_conn, pg_conn):
     progress.start_step('rpt_targets', expected_rows=100)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("TRUNCATE rpt_targets")
-    pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
     query = """
@@ -836,14 +835,25 @@ def load_targets(ms_conn, pg_conn):
         LEFT JOIN tblRoute rt ON t.RouteCode = rt.Code
         LEFT JOIN tblItem i ON t.ItemKey = i.Code
     """
-    columns = [
-        'target_id', 'time_frame', 'start_date', 'end_date', 'year', 'month',
-        'salesman_code', 'salesman_name', 'route_code', 'route_name', 'sales_org_code',
-        'item_key', 'item_name', 'customer_key', 'amount', 'quantity', 'is_active'
-    ]
-    total = extract_batch(ms_cur, query, None, pg_conn, 'rpt_targets', columns)
+    ms_cur.execute(query)
+    rows = ms_cur.fetchall()
+    if rows:
+        execute_values(pg_cur,
+            """INSERT INTO rpt_targets (target_id, time_frame, start_date, end_date, year, month,
+               salesman_code, salesman_name, route_code, route_name, sales_org_code,
+               item_key, item_name, customer_key, amount, quantity, is_active) VALUES %s
+               ON CONFLICT (target_id) DO UPDATE SET
+                 time_frame=EXCLUDED.time_frame, start_date=EXCLUDED.start_date,
+                 end_date=EXCLUDED.end_date, year=EXCLUDED.year, month=EXCLUDED.month,
+                 salesman_code=EXCLUDED.salesman_code, salesman_name=EXCLUDED.salesman_name,
+                 route_code=EXCLUDED.route_code, route_name=EXCLUDED.route_name,
+                 sales_org_code=EXCLUDED.sales_org_code, item_key=EXCLUDED.item_key,
+                 item_name=EXCLUDED.item_name, customer_key=EXCLUDED.customer_key,
+                 amount=EXCLUDED.amount, quantity=EXCLUDED.quantity, is_active=EXCLUDED.is_active""",
+            rows)
+    pg_conn.commit()
     pg_cur.close()
-    progress.finish_step(total)
+    progress.finish_step(len(rows) if rows else 0)
 
 
 def jde_to_date(jde_int):
@@ -1161,18 +1171,20 @@ def load_route_sales_by_item_customer(ms_conn, pg_conn):
 def load_holidays(ms_conn, pg_conn):
     progress.start_step('rpt_holidays', expected_rows=60)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("TRUNCATE rpt_holidays")
-    pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
     ms_cur.execute("SELECT HolidayId, CAST(HolidayDate AS DATE), Name, Year, SalesOrgCode FROM tblHoliday WHERE IsActive = 1")
     rows = ms_cur.fetchall()
     if rows:
         execute_values(pg_cur,
-            "INSERT INTO rpt_holidays (holiday_id, holiday_date, name, year, sales_org_code) VALUES %s", rows)
+            """INSERT INTO rpt_holidays (holiday_id, holiday_date, name, year, sales_org_code) VALUES %s
+               ON CONFLICT (holiday_id) DO UPDATE SET
+                 holiday_date=EXCLUDED.holiday_date, name=EXCLUDED.name,
+                 year=EXCLUDED.year, sales_org_code=EXCLUDED.sales_org_code""",
+            rows)
     pg_conn.commit()
     pg_cur.close()
-    progress.finish_step(len(rows))
+    progress.finish_step(len(rows) if rows else 0)
 
 
 # ============================================================
