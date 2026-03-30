@@ -111,8 +111,7 @@ def get_journey_plan_compliance(
             jp + jp + jp
         )
 
-    # Drill-down: per user per route per date (sp_GetJourneyPlanComplianceReportNew_Mapping logic)
-    # SP: Planned=ScheduledCalls, Actual=ActualCalls, WithoutJPActual=ABS(TotalActualCalls-ActualCalls)
+    # Drill-down: per user per route per date
     drill_down = query(
         f"SELECT rc.visit_date AS date, rc.user_code, rc.user_name, rc.route_code, rc.route_name, "
         f"  COALESCE(SUM(rc.scheduled_calls), 0) AS scheduled, "
@@ -128,6 +127,58 @@ def get_journey_plan_compliance(
         f"ORDER BY rc.visit_date DESC, rc.user_name",
         cp
     )
+
+    # Fallback drill_down from raw tables when coverage_summary has no data
+    if not drill_down:
+        jw2, jp2 = build_where(filters, date_col='date')
+        drill_down = query(
+            f"WITH scheduled AS ( "
+            f"  SELECT jp.date, jp.user_code, jp.user_name, jp.route_code, "
+            f"    COALESCE(dr.name, jp.route_code) AS route_name, "
+            f"    COUNT(*) AS scheduled_calls "
+            f"  FROM rpt_journey_plan jp "
+            f"  LEFT JOIN dim_route dr ON dr.code = jp.route_code "
+            f"  WHERE {jw2} AND jp.user_code != jp.route_code "
+            f"  GROUP BY jp.date, jp.user_code, jp.user_name, jp.route_code, dr.name "
+            f"), "
+            f"visited AS ( "
+            f"  SELECT cv.date, cv.route_code, "
+            f"    COUNT(DISTINCT cv.customer_code) AS actual_calls "
+            f"  FROM rpt_customer_visits cv WHERE {jw2} "
+            f"  GROUP BY cv.date, cv.route_code "
+            f"), "
+            f"planned_visited AS ( "
+            f"  SELECT jp.date, jp.route_code, COUNT(*) AS planned_calls "
+            f"  FROM rpt_journey_plan jp "
+            f"  WHERE EXISTS ( "
+            f"    SELECT 1 FROM rpt_customer_visits cv "
+            f"    WHERE cv.route_code = jp.route_code AND cv.date = jp.date "
+            f"    AND cv.customer_code = jp.customer_code "
+            f"  ) AND {jw2} AND jp.user_code != jp.route_code "
+            f"  GROUP BY jp.date, jp.route_code "
+            f"), "
+            f"selling AS ( "
+            f"  SELECT r.date, r.route_code, COUNT(DISTINCT r.customer_code) AS selling_calls "
+            f"  FROM rpt_route_sales_by_item_customer r "
+            f"  WHERE r.total_sales > 0 AND {jw2} "
+            f"  GROUP BY r.date, r.route_code "
+            f") "
+            f"SELECT s.date, s.user_code, s.user_name, s.route_code, s.route_name, "
+            f"  s.scheduled_calls AS scheduled, "
+            f"  COALESCE(v.actual_calls, 0) AS actual, "
+            f"  COALESCE(p.planned_calls, 0) AS planned, "
+            f"  COALESCE(sl.selling_calls, 0) AS selling, "
+            f"  ABS(COALESCE(v.actual_calls, 0) - s.scheduled_calls) AS unplanned, "
+            f"  CASE WHEN s.scheduled_calls > 0 "
+            f"    THEN LEAST(ROUND(COALESCE(v.actual_calls, 0)::numeric / s.scheduled_calls * 100, 2), 100) "
+            f"    ELSE 0 END AS coverage_pct "
+            f"FROM scheduled s "
+            f"LEFT JOIN visited v ON s.date = v.date AND s.route_code = v.route_code "
+            f"LEFT JOIN planned_visited p ON s.date = p.date AND s.route_code = p.route_code "
+            f"LEFT JOIN selling sl ON s.date = sl.date AND s.route_code = sl.route_code "
+            f"ORDER BY s.date DESC, s.user_name",
+            jp2 + jp2 + jp2 + jp2
+        )
 
     return {
         "summary": summary,

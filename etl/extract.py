@@ -505,7 +505,7 @@ def load_sales_detail(ms_conn, pg_conn):
     """Load rpt_sales_detail - denormalized transaction lines. LARGEST TABLE."""
     progress.start_step('rpt_sales_detail', expected_rows=12_000_000)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("TRUNCATE rpt_sales_detail")
+    pg_cur.execute("DELETE FROM rpt_sales_detail WHERE trx_date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
     pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
@@ -591,7 +591,7 @@ def load_daily_sales_summary(ms_conn, pg_conn):
     """Aggregated from tblTrxHeader/Detail - processes month by month to avoid tempdb overflow."""
     progress.start_step('rpt_daily_sales_summary', expected_rows=5_000_000)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("TRUNCATE rpt_daily_sales_summary")
+    pg_cur.execute("DELETE FROM rpt_daily_sales_summary WHERE date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
     pg_conn.commit()
 
     query = """
@@ -666,7 +666,7 @@ def load_daily_sales_summary(ms_conn, pg_conn):
 def load_collections(ms_conn, pg_conn):
     progress.start_step('rpt_collections', expected_rows=1_500_000)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("TRUNCATE rpt_collections")
+    pg_cur.execute("DELETE FROM rpt_collections WHERE receipt_date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
     pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
@@ -698,7 +698,7 @@ def load_collections(ms_conn, pg_conn):
 def load_customer_visits(ms_conn, pg_conn):
     progress.start_step('rpt_customer_visits', expected_rows=3_000_000)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("TRUNCATE rpt_customer_visits")
+    pg_cur.execute("DELETE FROM rpt_customer_visits WHERE date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
     pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
@@ -741,7 +741,7 @@ def load_customer_visits(ms_conn, pg_conn):
 def load_journeys(ms_conn, pg_conn):
     progress.start_step('rpt_journeys', expected_rows=80_000)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("TRUNCATE rpt_journeys")
+    pg_cur.execute("DELETE FROM rpt_journeys WHERE date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
     pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
@@ -767,7 +767,7 @@ def load_journeys(ms_conn, pg_conn):
 def load_coverage_summary(ms_conn, pg_conn):
     progress.start_step('rpt_coverage_summary', expected_rows=25_000)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("TRUNCATE rpt_coverage_summary")
+    pg_cur.execute("DELETE FROM rpt_coverage_summary WHERE visit_date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
     pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
@@ -795,7 +795,7 @@ def load_coverage_summary(ms_conn, pg_conn):
 def load_route_sales_collection(ms_conn, pg_conn):
     progress.start_step('rpt_route_sales_collection', expected_rows=25_000)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("TRUNCATE rpt_route_sales_collection")
+    pg_cur.execute("DELETE FROM rpt_route_sales_collection WHERE date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
     pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
@@ -864,7 +864,7 @@ def jde_to_date(jde_int):
 def load_outstanding(ms_conn, pg_conn):
     progress.start_step('rpt_outstanding', expected_rows=5_000_000)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("TRUNCATE rpt_outstanding")
+    pg_cur.execute("DELETE FROM rpt_outstanding WHERE trx_date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
     pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
@@ -965,8 +965,8 @@ def load_outstanding(ms_conn, pg_conn):
 def load_eot(ms_conn, pg_conn):
     progress.start_step('rpt_eot', expected_rows=80_000)
     pg_cur = pg_conn.cursor()
+    pg_cur.execute("DELETE FROM rpt_eot WHERE trip_date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
     pg_cur.execute("""
-        TRUNCATE rpt_eot;
         ALTER TABLE rpt_eot
             ADD COLUMN IF NOT EXISTS route_start_datetime TIMESTAMP,
             ADD COLUMN IF NOT EXISTS unload_datetime TIMESTAMP,
@@ -1004,7 +1004,7 @@ def load_eot(ms_conn, pg_conn):
 def load_journey_plan(ms_conn, pg_conn):
     progress.start_step('rpt_journey_plan', expected_rows=2_000_000)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("TRUNCATE rpt_journey_plan")
+    pg_cur.execute("DELETE FROM rpt_journey_plan WHERE date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
     pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
@@ -1046,7 +1046,7 @@ def load_invoice_totals(ms_conn, pg_conn):
     """
     progress.start_step('rpt_invoice_totals', expected_rows=500_000)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("TRUNCATE rpt_invoice_totals")
+    pg_cur.execute("DELETE FROM rpt_invoice_totals WHERE trx_date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
     pg_conn.commit()
 
     query = """
@@ -1104,7 +1104,7 @@ def load_route_sales_summary_by_item(ms_conn, pg_conn):
     """Load rpt_route_sales_summary_by_item - primary dashboard source for sales/targets."""
     progress.start_step('rpt_route_sales_summary_by_item', expected_rows=500_000)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("TRUNCATE rpt_route_sales_summary_by_item")
+    pg_cur.execute("DELETE FROM rpt_route_sales_summary_by_item WHERE date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
     pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
@@ -1136,7 +1136,7 @@ def load_route_sales_by_item_customer(ms_conn, pg_conn):
     """Load rpt_route_sales_by_item_customer from tblRouteSalesSummaryByItemCustomer."""
     progress.start_step('rpt_route_sales_by_item_customer', expected_rows=2_500_000)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("TRUNCATE rpt_route_sales_by_item_customer")
+    pg_cur.execute("DELETE FROM rpt_route_sales_by_item_customer WHERE date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
     pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
