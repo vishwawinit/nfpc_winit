@@ -1,8 +1,8 @@
-INFO:     Started server process [37600]
+INFO:     Started server process [14972]
 INFO:     Waiting for application startup.
 INFO:warmup:Starting cache warmup in background...
 INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Uvicorn running on http://127.0.0.1:8001 (Press CTRL+C to quit)
 INFO:warmup:  Warmed: dashboard.get_dashboard
 INFO:warmup:  Warmed: sales_performance.get_sales_performance
 WARNING:warmup:  Skip:  top_customers.get_top_customers - can't adapt type 'Query'
@@ -30,4 +30,4 @@ INFO:warmup:  Warmed: filters.get_order_customers
 INFO:warmup:  Warmed: filters.get_brands
 INFO:warmup:  Warmed: filters.get_categories
 INFO:warmup:  Warmed: filters.get_channels
-INFO:warmup:Cache warmup complete: 25 cached, 2 skipped in 107.9s
+INFO:warmup:Cache warmup complete: 25 cached, 2 skipped in 126.1s
