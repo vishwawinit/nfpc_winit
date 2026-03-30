@@ -184,14 +184,15 @@ def get_daily_sales_overview(
         cash_sales = 0
         credit_sales = 0
 
-    # Daily Sales total: use rpt_route_sales_summary_by_item (DISTINCT ON dedup) when no
-    # channel/sub_channel/brand/category filter — summary table lacks channel/customer columns
-    # and only has brand_code='NFPC' (not real brand codes). Fall back to cash+credit otherwise.
+    # Daily Sales: exact same logic as dashboard total_sales KPI
+    # Primary: rpt_route_sales_summary_by_item DISTINCT ON (route_code, item_code, date)
+    # Fallback: rpt_invoice_totals when RSSI has no data (e.g. Feb — data gap in RSSI)
+    # With channel/brand/category filter: use RSIC (cash+credit) since RSSI lacks those columns
     _use_rsic_total = bool(channel or sub_channel or brand or category)
     if not _use_rsic_total:
         try:
             f_rssi = {k: v for k, v in {
-                'route': route, 'user_code': user_code, 'brand': brand, 'category': category,
+                'route': route, 'user_code': user_code,
                 'date_from': date_from, 'date_to': date_to,
             }.items() if v is not None}
             sw_s, sp_s = build_where(f_rssi, date_col='date')
@@ -209,7 +210,21 @@ def get_daily_sales_overview(
                 f"  ORDER BY route_code, item_code, date) t",
                 sp_s + org_params_s
             )
-            total_sales = float(rssi_row["total_sales"]) if rssi_row else cash_sales + credit_sales
+            total_sales = float(rssi_row["total_sales"]) if rssi_row else 0
+            # Fallback to invoice_totals when RSSI has no data (matches dashboard)
+            if total_sales == 0:
+                f_it = {k: v for k, v in {
+                    'route': route, 'user_code': user_code, 'sales_org': sales_org,
+                    'date_from': date_from, 'date_to': date_to,
+                }.items() if v is not None}
+                itw, itp = build_where(f_it, date_col='trx_date')
+                it_row = query_one(
+                    f"SELECT COALESCE(SUM(total_sales),0) AS total_sales, "
+                    f"  COALESCE(SUM(total_returns),0) AS total_returns "
+                    f"FROM rpt_invoice_totals WHERE {itw}", itp
+                )
+                if it_row:
+                    total_sales = max(0.0, float(it_row["total_sales"]) - float(it_row["total_returns"]))
         except Exception:
             total_sales = cash_sales + credit_sales
     else:

@@ -13,6 +13,7 @@ export default function DailySalesOverview() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const hasData = useRef(false);
+  const prevDailySales = useRef(null);
   const [filters, setFilters] = useState(() => {
     const now = new Date();
     const y = now.getFullYear();
@@ -35,6 +36,15 @@ export default function DailySalesOverview() {
   const callSummary = data?.call_summary || {};
   const sales = data?.sales_details || {};
   const items = data?.item_table || [];
+
+  const cashCredit = (sales.cash_sales ?? 0) + (sales.credit_sales ?? 0);
+  // Use backend daily_sales (matches dashboard) on first load or when it changes with filters.
+  // If daily_sales didn't change after a filter update, the source table didn't reflect the filter
+  // (e.g. channel/brand not supported by RSSI) — fall back to cash + credit.
+  const isFirstLoad = prevDailySales.current === null;
+  const dailySalesChanged = sales.daily_sales !== prevDailySales.current;
+  const displayDailySales = (isFirstLoad || dailySalesChanged) ? (sales.daily_sales ?? cashCredit) : cashCredit;
+  if (data) prevDailySales.current = sales.daily_sales ?? null;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -77,7 +87,7 @@ export default function DailySalesOverview() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <KpiCard title="Cash Sales" value={aed(sales.cash_sales)} color="green" icon={Banknote} variant="solid" />
               <KpiCard title="Credit Sales" value={aed(sales.credit_sales)} color="indigo" icon={CreditCard} variant="solid" />
-              <KpiCard title="Daily Sales" value={aed(sales.daily_sales)} color="purple" icon={ShoppingCart} variant="solid" />
+              <KpiCard title="Daily Sales" value={aed(displayDailySales)} color="purple" icon={ShoppingCart} variant="solid" />
               <KpiCard title="Discount" value={aed(sales.discount)} color="yellow" icon={Percent} variant="solid" />
               <KpiCard title="Invoice Short" value={sales.invoice_short ?? '-'} color="orange" icon={FileWarning} variant="light" />
               <KpiCard title="Total Cash Due" value={aed(sales.total_cash_due)} color="red" icon={Wallet} variant="solid" />
