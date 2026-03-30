@@ -1,0 +1,39 @@
+INFO:     Will watch for changes in these directories: ['D:\\vishwa\\nfpc_winit']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [9388] using WatchFiles
+INFO:     Started server process [16392]
+INFO:     Waiting for application startup.
+INFO:warmup:Starting cache warmup in background...
+INFO:     Application startup complete.
+INFO:warmup:  Warmed: dashboard.get_dashboard
+INFO:warmup:  Warmed: sales_performance.get_sales_performance
+WARNING:warmup:  Skip:  top_customers.get_top_customers - can't adapt type 'Query'
+WARNING:warmup:  Skip:  top_products.get_top_products - can't adapt type 'Query'
+INFO:warmup:  Warmed: market_sales.get_market_sales_performance
+INFO:warmup:  Warmed: target_achievement.get_target_vs_achievement
+INFO:     127.0.0.1:63848 - "GET /api/log-report?date_from=2026-03-01&date_to=2026-03-29 HTTP/1.1" 200 OK
+INFO:warmup:  Warmed: daily_sales_overview.get_daily_sales_overview
+INFO:warmup:  Warmed: mtd_wastage.get_mtd_wastage_summary
+INFO:warmup:  Warmed: weekly_sales_returns.get_weekly_sales_returns
+INFO:warmup:  Warmed: brand_wise_sales.get_brand_wise_sales
+INFO:warmup:  Warmed: mtd_sales_overview.get_mtd_sales_overview
+INFO:warmup:  Warmed: log_report.get_log_report
+INFO:warmup:  Warmed: time_management.get_time_management
+INFO:warmup:  Warmed: customer_attendance.get_customer_attendance
+INFO:warmup:  Warmed: mtd_attendance.get_mtd_attendance
+INFO:warmup:  Warmed: journey_plan_compliance.get_journey_plan_compliance
+INFO:warmup:  Warmed: eot_status.get_eot_status
+INFO:warmup:  Warmed: productivity_coverage.get_productivity_coverage
+INFO:warmup:  Warmed: salesman_journey.get_salesman_journey
+INFO:     127.0.0.1:63998 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64000 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64003 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64008 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64004 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64022 - "GET /api/log-report?date_from=2026-03-01&date_to=2026-03-30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64007 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64019 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:warmup:  Warmed: revenue_dispersion.get_revenue_dispersion
+INFO:warmup:  Warmed: monthly_sales_stock.get_monthly_sales_stock
+INFO:warmup:  Warmed: endorsement.get_endorsement
+INFO:warmup:  Warmed: filters.get_sales_orgs
