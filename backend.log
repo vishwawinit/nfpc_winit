@@ -37,3 +37,8 @@ INFO:warmup:  Warmed: revenue_dispersion.get_revenue_dispersion
 INFO:warmup:  Warmed: monthly_sales_stock.get_monthly_sales_stock
 INFO:warmup:  Warmed: endorsement.get_endorsement
 INFO:warmup:  Warmed: filters.get_sales_orgs
+INFO:warmup:  Warmed: filters.get_order_customers
+INFO:warmup:  Warmed: filters.get_brands
+INFO:warmup:  Warmed: filters.get_categories
+INFO:warmup:  Warmed: filters.get_channels
+INFO:warmup:Cache warmup complete: 25 cached, 2 skipped in 135.5s
