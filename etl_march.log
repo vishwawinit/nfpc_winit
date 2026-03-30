@@ -1,0 +1,1054 @@
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 18-77: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1221, in main
+    log(f"{'\u2550' * 60}")
+Message: '\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550'
+Arguments: ()
+[90m11:50:44[0m   NFPC Reports ETL
+[90m11:50:44[0m   Date range: 2026-03-01 to 2026-03-31
+[90m11:50:44[0m   Mode: sequential
+[90m11:50:44[0m   Log file:   D:\vishwa\nfpc_winit\etl\logs\etl_20260330_115044.log
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 18-77: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1226, in main
+    log(f"{'\u2550' * 60}")
+Message: '\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550'
+Arguments: ()
+[90m11:50:44[0m Connecting to MSSQL...
+[90m11:50:45[0m   MSSQL connected
+[90m11:50:45[0m Connecting to PostgreSQL...
+[90m11:50:46[0m   PostgreSQL connected
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 20-69: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 313, in load_dimensions
+    progress.start_step('Dimensions (6 simple tables)', expected_rows=2000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 102, in start_step
+    log(f"\n{'\u2500' * 50}")
+Message: '\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 57-76: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 313, in load_dimensions
+    progress.start_step('Dimensions (6 simple tables)', expected_rows=2000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 103, in start_step
+    log(f"  [{self.completed + 1}/{self.total_steps}] {name} {bar}")
+Message: '  [1/16] Dimensions (6 simple tables) [\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591] 0%'
+Arguments: ()
+[90m11:50:46[0m        Expected: ~2,000 rows
+[90m11:50:47[0m     dim_sales_org: 28 rows
+[90m11:50:49[0m     dim_route: 470 rows
+[90m11:50:50[0m     dim_channel: 15 rows
+[90m11:50:51[0m     dim_country: 2 rows
+[90m11:50:52[0m     dim_region: 3 rows
+[90m11:50:53[0m     dim_city: 10 rows
+[90m11:50:54[0m     dim_route.has_active_assignment: 179 active routes
+[90m11:50:54[0m   [OK] 528 rows in 7.5s (70 rows/sec)
+[90m11:50:54[0m        Progress: 1/16 steps | Est. remaining: 2.4 min
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 20-69: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 346, in load_dimensions
+    progress.start_step('dim_user (flat with roles/details/depot/location)', expected_rows=1200)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 102, in start_step
+    log(f"\n{'\u2500' * 50}")
+Message: '\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 78-97: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 346, in load_dimensions
+    progress.start_step('dim_user (flat with roles/details/depot/location)', expected_rows=1200)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 103, in start_step
+    log(f"  [{self.completed + 1}/{self.total_steps}] {name} {bar}")
+Message: '  [2/16] dim_user (flat with roles/details/depot/location) [\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591] 6%'
+Arguments: ()
+[90m11:50:54[0m        Expected: ~1,200 rows
+[90m11:50:57[0m     dim_user: 1133 rows
+[90m11:50:57[0m   [OK] 1,133 rows in 3.8s (299 rows/sec)
+[90m11:50:57[0m        Progress: 2/16 steps | Est. remaining: 1.6 min
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 20-69: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 415, in load_dimensions
+    progress.start_step('dim_item (flat with groups + UOM)', expected_rows=10000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 102, in start_step
+    log(f"\n{'\u2500' * 50}")
+Message: '\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 62-81: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 415, in load_dimensions
+    progress.start_step('dim_item (flat with groups + UOM)', expected_rows=10000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 103, in start_step
+    log(f"  [{self.completed + 1}/{self.total_steps}] {name} {bar}")
+Message: '  [3/16] dim_item (flat with groups + UOM) [\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591] 12%'
+Arguments: ()
+[90m11:50:57[0m        Expected: ~10,000 rows
+[90m11:51:11[0m     Deduped 9924 -> 4962 items
+[90m11:51:11[0m   [OK] 4,962 rows in 13.8s (361 rows/sec)
+[90m11:51:11[0m        Progress: 3/16 steps | Est. remaining: 2.0 min
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 20-69: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 469, in load_dimensions
+    progress.start_step('dim_customer', expected_rows=120000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 102, in start_step
+    log(f"\n{'\u2500' * 50}")
+Message: '\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 41-60: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 469, in load_dimensions
+    progress.start_step('dim_customer', expected_rows=120000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 103, in start_step
+    log(f"  [{self.completed + 1}/{self.total_steps}] {name} {bar}")
+Message: '  [4/16] dim_customer [\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591] 19%'
+Arguments: ()
+[90m11:51:11[0m        Expected: ~120,000 rows
+[90m11:55:57[0m   [OK] 119,482 rows in 286.2s (418 rows/sec)
+[90m11:55:57[0m        Progress: 4/16 steps | Est. remaining: 15.7 min
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 20-69: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1162, in load_holidays
+    progress.start_step('rpt_holidays', expected_rows=60)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 102, in start_step
+    log(f"\n{'\u2500' * 50}")
+Message: '\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 41-60: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1162, in load_holidays
+    progress.start_step('rpt_holidays', expected_rows=60)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 103, in start_step
+    log(f"  [{self.completed + 1}/{self.total_steps}] {name} {bar}")
+Message: '  [5/16] rpt_holidays [\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591] 25%'
+Arguments: ()
+[90m11:55:57[0m        Expected: ~60 rows
+[90m11:55:59[0m   [OK] 58 rows in 1.4s (42 rows/sec)
+[90m11:55:59[0m        Progress: 5/16 steps | Est. remaining: 11.5 min
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 20-69: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 822, in load_targets
+    progress.start_step('rpt_targets', expected_rows=100)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 102, in start_step
+    log(f"\n{'\u2500' * 50}")
+Message: '\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 40-59: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 822, in load_targets
+    progress.start_step('rpt_targets', expected_rows=100)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 103, in start_step
+    log(f"  [{self.completed + 1}/{self.total_steps}] {name} {bar}")
+Message: '  [6/16] rpt_targets [\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591] 31%'
+Arguments: ()
+[90m11:55:59[0m        Expected: ~100 rows
+[90m11:55:59[0m   Querying MSSQL (this may take a while for large tables)...
+[90m11:56:00[0m   MSSQL query returned in 0.0s - starting load...
+[90m11:56:00[0m   [OK] 162 rows in 1.4s (116 rows/sec)
+[90m11:56:00[0m        Progress: 6/16 steps | Est. remaining: 8.8 min
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 20-69: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 768, in load_coverage_summary
+    progress.start_step('rpt_coverage_summary', expected_rows=25_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 102, in start_step
+    log(f"\n{'\u2500' * 50}")
+Message: '\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 49-68: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 768, in load_coverage_summary
+    progress.start_step('rpt_coverage_summary', expected_rows=25_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 103, in start_step
+    log(f"  [{self.completed + 1}/{self.total_steps}] {name} {bar}")
+Message: '  [7/16] rpt_coverage_summary [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591] 38%'
+Arguments: ()
+[90m11:56:00[0m        Expected: ~25,000 rows
+[90m11:56:01[0m   Querying MSSQL (this may take a while for large tables)...
+[90m11:56:01[0m   MSSQL query returned in 0.1s - starting load...
+[90m11:56:02[0m   [OK] 2,511 rows in 1.9s (1,295 rows/sec)
+[90m11:56:02[0m        Progress: 7/16 steps | Est. remaining: 6.8 min
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 20-69: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 796, in load_route_sales_collection
+    progress.start_step('rpt_route_sales_collection', expected_rows=25_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 102, in start_step
+    log(f"\n{'\u2500' * 50}")
+Message: '\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 55-74: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 796, in load_route_sales_collection
+    progress.start_step('rpt_route_sales_collection', expected_rows=25_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 103, in start_step
+    log(f"  [{self.completed + 1}/{self.total_steps}] {name} {bar}")
+Message: '  [8/16] rpt_route_sales_collection [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591] 44%'
+Arguments: ()
+[90m11:56:02[0m        Expected: ~25,000 rows
+[90m11:56:03[0m   Querying MSSQL (this may take a while for large tables)...
+[90m11:56:03[0m   MSSQL query returned in 0.0s - starting load...
+[90m11:56:04[0m   [OK] 2,101 rows in 1.5s (1,367 rows/sec)
+[90m11:56:04[0m        Progress: 8/16 steps | Est. remaining: 5.3 min
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 20-69: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1105, in load_route_sales_summary_by_item
+    progress.start_step('rpt_route_sales_summary_by_item', expected_rows=500_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 102, in start_step
+    log(f"\n{'\u2500' * 50}")
+Message: '\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 60-79: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1105, in load_route_sales_summary_by_item
+    progress.start_step('rpt_route_sales_summary_by_item', expected_rows=500_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 103, in start_step
+    log(f"  [{self.completed + 1}/{self.total_steps}] {name} {bar}")
+Message: '  [9/16] rpt_route_sales_summary_by_item [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591] 50%'
+Arguments: ()
+[90m11:56:04[0m        Expected: ~500,000 rows
+[90m11:56:04[0m   Querying MSSQL (this may take a while for large tables)...
+[90m11:56:05[0m   MSSQL query returned in 0.2s - starting load...
+[90m11:56:07[0m              10,000 rows | 2,976 rows/sec | 3s elapsed | ETA 165s
+[90m11:56:09[0m              20,000 rows | 4,048 rows/sec | 5s elapsed | ETA 119s
+[90m11:56:10[0m              30,000 rows | 4,549 rows/sec | 7s elapsed | ETA 103s
+[90m11:56:12[0m              40,000 rows | 4,561 rows/sec | 9s elapsed | ETA 101s
+[90m11:56:15[0m              50,000 rows | 4,600 rows/sec | 11s elapsed | ETA 98s
+[90m11:56:17[0m              60,000 rows | 4,410 rows/sec | 14s elapsed | ETA 100s
+[90m11:56:20[0m              70,000 rows | 4,195 rows/sec | 17s elapsed | ETA 103s
+[90m11:56:24[0m              80,000 rows | 3,974 rows/sec | 20s elapsed | ETA 106s
+[90m11:56:27[0m              90,000 rows | 3,896 rows/sec | 23s elapsed | ETA 105s
+[90m11:56:30[0m             100,000 rows | 3,817 rows/sec | 26s elapsed | ETA 105s
+[90m11:56:31[0m   [OK] 102,996 rows in 27.5s (3,742 rows/sec)
+[90m11:56:31[0m        Progress: 9/16 steps | Est. remaining: 4.5 min
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 20-69: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1137, in load_route_sales_by_item_customer
+    progress.start_step('rpt_route_sales_by_item_customer', expected_rows=2_500_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 102, in start_step
+    log(f"\n{'\u2500' * 50}")
+Message: '\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 62-81: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1137, in load_route_sales_by_item_customer
+    progress.start_step('rpt_route_sales_by_item_customer', expected_rows=2_500_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 103, in start_step
+    log(f"  [{self.completed + 1}/{self.total_steps}] {name} {bar}")
+Message: '  [10/16] rpt_route_sales_by_item_customer [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591] 56%'
+Arguments: ()
+[90m11:56:31[0m        Expected: ~2,500,000 rows
+[90m11:56:32[0m   Querying MSSQL (this may take a while for large tables)...
+[90m11:56:32[0m   MSSQL query returned in 0.0s - starting load...
+[90m11:56:45[0m              50,000 rows | 3,569 rows/sec | 14s elapsed | ETA 686s
+[90m11:56:58[0m             100,000 rows | 3,716 rows/sec | 27s elapsed | ETA 646s
+[90m11:57:10[0m             150,000 rows | 3,881 rows/sec | 39s elapsed | ETA 605s
+[90m11:57:20[0m             200,000 rows | 4,062 rows/sec | 49s elapsed | ETA 566s
+[90m11:57:30[0m             250,000 rows | 4,223 rows/sec | 59s elapsed | ETA 533s
+[90m11:57:41[0m             300,000 rows | 4,274 rows/sec | 70s elapsed | ETA 515s
+[90m11:57:55[0m             350,000 rows | 4,172 rows/sec | 84s elapsed | ETA 515s
+[90m11:58:06[0m             400,000 rows | 4,222 rows/sec | 95s elapsed | ETA 497s
+[90m11:58:16[0m             450,000 rows | 4,288 rows/sec | 105s elapsed | ETA 478s
+[90m11:58:27[0m   [OK] 498,611 rows in 115.6s (4,313 rows/sec)
+[90m11:58:27[0m        Progress: 10/16 steps | Est. remaining: 4.6 min
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 20-69: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1047, in load_invoice_totals
+    progress.start_step('rpt_invoice_totals', expected_rows=500_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 102, in start_step
+    log(f"\n{'\u2500' * 50}")
+Message: '\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 48-67: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1047, in load_invoice_totals
+    progress.start_step('rpt_invoice_totals', expected_rows=500_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 103, in start_step
+    log(f"  [{self.completed + 1}/{self.total_steps}] {name} {bar}")
+Message: '  [11/16] rpt_invoice_totals [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591] 62%'
+Arguments: ()
+[90m11:58:27[0m        Expected: ~500,000 rows
+[90m11:58:28[0m     Processing 2026-03-01 to 2026-03-15...
+[90m11:58:28[0m   Querying MSSQL (this may take a while for large tables)...
+[90m11:58:35[0m   MSSQL query returned in 6.9s - starting load...
+[90m11:58:38[0m              10,000 rows | 925 rows/sec | 11s elapsed | ETA 530s
+[90m11:58:40[0m              20,000 rows | 1,495 rows/sec | 13s elapsed | ETA 321s
+[90m11:58:43[0m              30,000 rows | 1,901 rows/sec | 16s elapsed | ETA 247s
+[90m11:58:45[0m              40,000 rows | 2,214 rows/sec | 18s elapsed | ETA 208s
+[90m11:58:47[0m              50,000 rows | 2,441 rows/sec | 20s elapsed | ETA 184s
+[90m11:58:50[0m     2026-03-01 to 2026-03-15: 59,742 rows
+[90m11:58:50[0m     Processing 2026-03-15 to 2026-03-29...
+[90m11:58:50[0m   Querying MSSQL (this may take a while for large tables)...
+[90m11:58:50[0m   MSSQL query returned in 0.0s - starting load...
+[90m11:58:50[0m     2026-03-15 to 2026-03-29: 0 rows
+[90m11:58:50[0m     Processing 2026-03-29 to 2026-03-31...
+[90m11:58:50[0m   Querying MSSQL (this may take a while for large tables)...
+[90m11:58:50[0m   MSSQL query returned in 0.0s - starting load...
+[90m11:58:50[0m     2026-03-29 to 2026-03-31: 0 rows
+[90m11:58:50[0m   [OK] 59,742 rows in 23.0s (2,592 rows/sec)
+[90m11:58:50[0m        Progress: 11/16 steps | Est. remaining: 3.7 min
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 20-69: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 966, in load_eot
+    progress.start_step('rpt_eot', expected_rows=80_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 102, in start_step
+    log(f"\n{'\u2500' * 50}")
+Message: '\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 37-56: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 966, in load_eot
+    progress.start_step('rpt_eot', expected_rows=80_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 103, in start_step
+    log(f"  [{self.completed + 1}/{self.total_steps}] {name} {bar}")
+Message: '  [12/16] rpt_eot [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591] 69%'
+Arguments: ()
+[90m11:58:50[0m        Expected: ~80,000 rows
+[90m11:58:51[0m   Querying MSSQL (this may take a while for large tables)...
+[90m11:59:02[0m   MSSQL query returned in 11.7s - starting load...
+[90m12:00:12[0m   [OK] 2,160 rows in 82.6s (26 rows/sec)
+[90m12:00:12[0m        Progress: 12/16 steps | Est. remaining: 3.2 min
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 20-69: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 742, in load_journeys
+    progress.start_step('rpt_journeys', expected_rows=80_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 102, in start_step
+    log(f"\n{'\u2500' * 50}")
+Message: '\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 42-61: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 742, in load_journeys
+    progress.start_step('rpt_journeys', expected_rows=80_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 103, in start_step
+    log(f"  [{self.completed + 1}/{self.total_steps}] {name} {bar}")
+Message: '  [13/16] rpt_journeys [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591] 75%'
+Arguments: ()
+[90m12:00:12[0m        Expected: ~80,000 rows
+[90m12:00:13[0m   Querying MSSQL (this may take a while for large tables)...
+[90m12:00:13[0m   MSSQL query returned in 0.1s - starting load...
+[90m12:00:15[0m   [OK] 2,156 rows in 2.7s (807 rows/sec)
+[90m12:00:15[0m        Progress: 13/16 steps | Est. remaining: 2.2 min
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 20-69: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 667, in load_collections
+    progress.start_step('rpt_collections', expected_rows=1_500_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 102, in start_step
+    log(f"\n{'\u2500' * 50}")
+Message: '\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 45-64: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 667, in load_collections
+    progress.start_step('rpt_collections', expected_rows=1_500_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 103, in start_step
+    log(f"  [{self.completed + 1}/{self.total_steps}] {name} {bar}")
+Message: '  [14/16] rpt_collections [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591] 81%'
+Arguments: ()
+[90m12:00:15[0m        Expected: ~1,500,000 rows
+[90m12:00:16[0m   Querying MSSQL (this may take a while for large tables)...
+[90m12:00:16[0m   MSSQL query returned in 0.4s - starting load...
+[90m12:00:37[0m              50,000 rows | 2,331 rows/sec | 21s elapsed | ETA 622s
+[90m12:00:45[0m   [OK] 77,675 rows in 30.2s (2,571 rows/sec)
+[90m12:00:45[0m        Progress: 14/16 steps | Est. remaining: 1.4 min
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 20-69: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 699, in load_customer_visits
+    progress.start_step('rpt_customer_visits', expected_rows=3_000_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 102, in start_step
+    log(f"\n{'\u2500' * 50}")
+Message: '\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 49-68: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 699, in load_customer_visits
+    progress.start_step('rpt_customer_visits', expected_rows=3_000_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 103, in start_step
+    log(f"  [{self.completed + 1}/{self.total_steps}] {name} {bar}")
+Message: '  [15/16] rpt_customer_visits [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591] 88%'
+Arguments: ()
+[90m12:00:45[0m        Expected: ~3,000,000 rows
+[90m12:00:47[0m   Querying MSSQL (this may take a while for large tables)...
+[90m12:00:47[0m   MSSQL query returned in 0.5s - starting load...
+[90m12:01:15[0m              50,000 rows | 1,659 rows/sec | 30s elapsed | ETA 1778s
+[90m12:01:33[0m   [OK] 85,539 rows in 47.7s (1,792 rows/sec)
+[90m12:01:33[0m        Progress: 15/16 steps | Est. remaining: 0.7 min
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 20-69: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1005, in load_journey_plan
+    progress.start_step('rpt_journey_plan', expected_rows=2_000_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 102, in start_step
+    log(f"\n{'\u2500' * 50}")
+Message: '\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 46-65: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1005, in load_journey_plan
+    progress.start_step('rpt_journey_plan', expected_rows=2_000_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 103, in start_step
+    log(f"  [{self.completed + 1}/{self.total_steps}] {name} {bar}")
+Message: '  [16/16] rpt_journey_plan [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591] 94%'
+Arguments: ()
+[90m12:01:33[0m        Expected: ~2,000,000 rows
+[90m12:01:34[0m   Querying MSSQL (this may take a while for large tables)...
+[90m12:01:34[0m   MSSQL query returned in 0.3s - starting load...
+[90m12:01:46[0m              50,000 rows | 3,987 rows/sec | 13s elapsed | ETA 489s
+[90m12:01:55[0m             100,000 rows | 4,482 rows/sec | 22s elapsed | ETA 424s
+[90m12:02:06[0m             150,000 rows | 4,579 rows/sec | 33s elapsed | ETA 404s
+[90m12:02:14[0m   [OK] 188,939 rows in 40.7s (4,641 rows/sec)
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 20-69: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 865, in load_outstanding
+    progress.start_step('rpt_outstanding', expected_rows=5_000_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 102, in start_step
+    log(f"\n{'\u2500' * 50}")
+Message: '\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 45-64: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 865, in load_outstanding
+    progress.start_step('rpt_outstanding', expected_rows=5_000_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 103, in start_step
+    log(f"  [{self.completed + 1}/{self.total_steps}] {name} {bar}")
+Message: '  [17/16] rpt_outstanding [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588] 100%'
+Arguments: ()
+[90m12:02:14[0m        Expected: ~5,000,000 rows
+[90m12:02:15[0m   Querying MSSQL (this may take a while for large tables)...
+[90m12:04:48[0m   MSSQL query returned - starting load with Python date conversion...
+[90m12:05:07[0m              50,000 rows | 288 rows/sec | 174s elapsed | ETA 17188s
+[90m12:05:30[0m   [OK] 94,298 rows in 196.0s (481 rows/sec)
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 20-69: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 592, in load_daily_sales_summary
+    progress.start_step('rpt_daily_sales_summary', expected_rows=5_000_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 102, in start_step
+    log(f"\n{'\u2500' * 50}")
+Message: '\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 53-73: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 592, in load_daily_sales_summary
+    progress.start_step('rpt_daily_sales_summary', expected_rows=5_000_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 103, in start_step
+    log(f"  [{self.completed + 1}/{self.total_steps}] {name} {bar}")
+Message: '  [18/16] rpt_daily_sales_summary [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588] 106%'
+Arguments: ()
+[90m12:05:30[0m        Expected: ~5,000,000 rows
+[90m12:05:33[0m     Processing 2026-03-01 to 2026-03-31...
+[90m12:05:33[0m   Querying MSSQL (this may take a while for large tables)...
+[90m12:06:41[0m   MSSQL query returned in 67.6s - starting load...
+[90m12:07:04[0m              50,000 rows | 533 rows/sec | 94s elapsed | ETA 9296s
+[90m12:07:23[0m             100,000 rows | 882 rows/sec | 113s elapsed | ETA 5559s
+[90m12:07:42[0m             150,000 rows | 1,134 rows/sec | 132s elapsed | ETA 4279s
+[90m12:08:03[0m             200,000 rows | 1,309 rows/sec | 153s elapsed | ETA 3668s
+[90m12:08:23[0m             250,000 rows | 1,443 rows/sec | 173s elapsed | ETA 3291s
+[90m12:08:40[0m             300,000 rows | 1,573 rows/sec | 191s elapsed | ETA 2987s
+[90m12:08:59[0m             350,000 rows | 1,672 rows/sec | 209s elapsed | ETA 2781s
+[90m12:09:21[0m             400,000 rows | 1,727 rows/sec | 232s elapsed | ETA 2664s
+[90m12:09:41[0m             450,000 rows | 1,795 rows/sec | 251s elapsed | ETA 2535s
+[90m12:09:59[0m     2026-03: 497,848 rows
+[90m12:09:59[0m   [OK] 497,848 rows in 269.5s (1,847 rows/sec)
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 20-69: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 506, in load_sales_detail
+    progress.start_step('rpt_sales_detail', expected_rows=12_000_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 102, in start_step
+    log(f"\n{'\u2500' * 50}")
+Message: '\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 46-67: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1296, in main
+    loader_fn(ms_conn, pg_conn)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 506, in load_sales_detail
+    progress.start_step('rpt_sales_detail', expected_rows=12_000_000)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 103, in start_step
+    log(f"  [{self.completed + 1}/{self.total_steps}] {name} {bar}")
+Message: '  [19/16] rpt_sales_detail [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588] 112%'
+Arguments: ()
+[90m12:09:59[0m        Expected: ~12,000,000 rows
+[90m12:10:16[0m     Processing 2026-03-01 to 2026-03-15...
+[90m12:10:16[0m   Querying MSSQL (this may take a while for large tables)...
+[90m12:10:23[0m   MSSQL query returned in 7.3s - starting load...
+[90m12:10:56[0m              50,000 rows | 884 rows/sec | 57s elapsed | ETA 13525s
+[90m12:11:30[0m             100,000 rows | 1,098 rows/sec | 91s elapsed | ETA 10839s
+[90m12:12:03[0m             150,000 rows | 1,217 rows/sec | 123s elapsed | ETA 9737s
+[90m12:12:30[0m             200,000 rows | 1,323 rows/sec | 151s elapsed | ETA 8917s
+[90m12:13:10[0m             250,000 rows | 1,314 rows/sec | 190s elapsed | ETA 8941s
+[90m12:13:40[0m             300,000 rows | 1,362 rows/sec | 220s elapsed | ETA 8593s
+[90m12:14:11[0m             350,000 rows | 1,390 rows/sec | 252s elapsed | ETA 8380s
+[90m12:14:45[0m             400,000 rows | 1,398 rows/sec | 286s elapsed | ETA 8296s
+[90m12:15:17[0m             450,000 rows | 1,416 rows/sec | 318s elapsed | ETA 8159s
+[90m12:15:47[0m             500,000 rows | 1,437 rows/sec | 348s elapsed | ETA 8001s
+[90m12:16:25[0m             550,000 rows | 1,425 rows/sec | 386s elapsed | ETA 8036s
+[90m12:16:53[0m             600,000 rows | 1,449 rows/sec | 414s elapsed | ETA 7866s
+[90m12:17:25[0m             650,000 rows | 1,460 rows/sec | 445s elapsed | ETA 7776s
+[90m12:18:02[0m             700,000 rows | 1,451 rows/sec | 482s elapsed | ETA 7788s
+[90m12:18:39[0m             750,000 rows | 1,444 rows/sec | 519s elapsed | ETA 7788s
+[90m12:19:08[0m             800,000 rows | 1,458 rows/sec | 549s elapsed | ETA 7684s
+[90m12:19:40[0m             850,000 rows | 1,465 rows/sec | 580s elapsed | ETA 7613s
+[90m12:20:15[0m             900,000 rows | 1,462 rows/sec | 615s elapsed | ETA 7590s
+[90m12:20:48[0m             950,000 rows | 1,465 rows/sec | 649s elapsed | ETA 7544s
+[90m12:21:22[0m           1,000,000 rows | 1,464 rows/sec | 683s elapsed | ETA 7512s
+[90m12:22:06[0m           1,050,000 rows | 1,445 rows/sec | 727s elapsed | ETA 7577s
+[90m12:22:38[0m           1,100,000 rows | 1,450 rows/sec | 758s elapsed | ETA 7516s
+[90m12:23:16[0m           1,150,000 rows | 1,444 rows/sec | 797s elapsed | ETA 7515s
+[90m12:23:37[0m     2026-03-01 to 2026-03-15: 1,179,408 rows
+[90m12:23:37[0m     Processing 2026-03-15 to 2026-03-29...
+[90m12:23:37[0m   Querying MSSQL (this may take a while for large tables)...
+[90m12:23:37[0m   MSSQL query returned in 0.1s - starting load...
+[90m12:23:37[0m     2026-03-15 to 2026-03-29: 0 rows
+[90m12:23:37[0m     Processing 2026-03-29 to 2026-03-31...
+[90m12:23:37[0m   Querying MSSQL (this may take a while for large tables)...
+[90m12:23:37[0m   MSSQL query returned in 0.1s - starting load...
+[90m12:23:37[0m     2026-03-29 to 2026-03-31: 0 rows
+[90m12:23:37[0m   [OK] 1,179,408 rows in 817.4s (1,443 rows/sec)
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 20-79: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1325, in main
+    progress.finish_etl()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 160, in finish_etl
+    log(f"\n{'\u2550' * 60}")
+Message: '\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550'
+Arguments: ()
+[90m12:23:37[0m   ETL COMPLETE
+[90m12:23:37[0m   Total time:  32.9 minutes
+[90m12:23:37[0m   Total rows:  2,920,309
+[90m12:23:37[0m   Steps:       19/16
+[90m12:23:37[0m   Log file:    D:\vishwa\nfpc_winit\etl\logs\etl_20260330_115044.log
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 18-77: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1325, in main
+    progress.finish_etl()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 166, in finish_etl
+    log(f"{'\u2550' * 60}")
+Message: '\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550'
+Arguments: ()
+[90m12:23:37[0m 
+  Step                                        Rows     Time         Rate Status
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 20-54: character maps to <undefined>
+Call stack:
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1334, in <module>
+    main()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1325, in main
+    progress.finish_etl()
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 170, in finish_etl
+    log(f"  {'\u2500' * 35} {'\u2500' * 12} {'\u2500' * 8} {'\u2500' * 12} {'\u2500' * 8}")
+Message: '  \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+Arguments: ()
+[90m12:23:37[0m   Dimensions (6 simple tables)                 528     7.5s         70/s  done
+[90m12:23:37[0m   dim_user (flat with roles/details/depot/location)        1,133     3.8s        299/s  done
+[90m12:23:37[0m   dim_item (flat with groups + UOM)          4,962    13.8s        361/s  done
+[90m12:23:37[0m   dim_customer                             119,482   286.2s        418/s  done
+[90m12:23:37[0m   rpt_holidays                                  58     1.4s         42/s  done
+[90m12:23:37[0m   rpt_targets                                  162     1.4s        116/s  done
+[90m12:23:37[0m   rpt_coverage_summary                       2,511     1.9s      1,295/s  done
+[90m12:23:37[0m   rpt_route_sales_collection                 2,101     1.5s      1,367/s  done
+[90m12:23:37[0m   rpt_route_sales_summary_by_item          102,996    27.5s      3,742/s  done
+[90m12:23:37[0m   rpt_route_sales_by_item_customer         498,611   115.6s      4,313/s  done
+[90m12:23:37[0m   rpt_invoice_totals                        59,742    23.0s      2,592/s  done
+[90m12:23:37[0m   rpt_eot                                    2,160    82.6s         26/s  done
+[90m12:23:37[0m   rpt_journeys                               2,156     2.7s        807/s  done
+[90m12:23:37[0m   rpt_collections                           77,675    30.2s      2,571/s  done
+[90m12:23:37[0m   rpt_customer_visits                       85,539    47.7s      1,792/s  done
+[90m12:23:37[0m   rpt_journey_plan                         188,939    40.7s      4,641/s  done
+[90m12:23:37[0m   rpt_outstanding                           94,298   196.0s        481/s  done
+[90m12:23:37[0m   rpt_daily_sales_summary                  497,848   269.5s      1,847/s  done
+[90m12:23:37[0m   rpt_sales_detail                       1,179,408   817.4s      1,443/s  done

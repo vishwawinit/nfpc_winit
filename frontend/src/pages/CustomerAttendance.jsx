@@ -71,7 +71,13 @@ export default function CustomerAttendance() {
                 { key: 'customer_name', label: 'Customer Name' },
                 { key: 'start_time', label: 'Start Time' },
                 { key: 'end_time', label: 'End Time' },
-                { key: 'spent_time', label: 'Time Spent' },
+                { key: 'spent_time', label: 'Time Spent', render: (v) => {
+                  if (!v && v !== 0) return '—';
+                  const totalSec = Math.round(v * 60);
+                  const m = Math.floor(totalSec / 60);
+                  const s = totalSec % 60;
+                  return `${m}m ${String(s).padStart(2, '0')}s`;
+                }},
               ]}
               data={rows}
               exportName="customer-attendance"

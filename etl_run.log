@@ -562,3 +562,17 @@ Arguments: ()
 [90m11:13:38[0m           1,650,000 rows | 4,258 rows/sec | 387s elapsed | ETA 200s
 [90m11:13:48[0m           1,700,000 rows | 4,270 rows/sec | 398s elapsed | ETA 187s
 [90m11:14:02[0m           1,750,000 rows | 4,251 rows/sec | 412s elapsed | ETA 176s
+[90m11:14:14[0m           1,800,000 rows | 4,246 rows/sec | 424s elapsed | ETA 165s
+[90m11:14:27[0m           1,850,000 rows | 4,238 rows/sec | 437s elapsed | ETA 153s
+[90m11:14:40[0m           1,900,000 rows | 4,225 rows/sec | 450s elapsed | ETA 142s
+[90m11:14:53[0m           1,950,000 rows | 4,211 rows/sec | 463s elapsed | ETA 131s
+[90m11:15:07[0m           2,000,000 rows | 4,194 rows/sec | 477s elapsed | ETA 119s
+[90m11:15:19[0m           2,050,000 rows | 4,193 rows/sec | 489s elapsed | ETA 107s
+[90m11:15:32[0m           2,100,000 rows | 4,182 rows/sec | 502s elapsed | ETA 96s
+[90m11:15:47[0m           2,150,000 rows | 4,163 rows/sec | 516s elapsed | ETA 84s
+[90m11:16:02[0m           2,200,000 rows | 4,138 rows/sec | 532s elapsed | ETA 73s
+[90m11:16:14[0m           2,250,000 rows | 4,135 rows/sec | 544s elapsed | ETA 60s
+[90m11:16:28[0m           2,300,000 rows | 4,125 rows/sec | 558s elapsed | ETA 48s
+[90m11:16:41[0m           2,350,000 rows | 4,119 rows/sec | 571s elapsed | ETA 36s
+[90m11:16:52[0m           2,400,000 rows | 4,126 rows/sec | 582s elapsed | ETA 24s
+[90m11:17:05[0m           2,450,000 rows | 4,120 rows/sec | 595s elapsed | ETA 12s
