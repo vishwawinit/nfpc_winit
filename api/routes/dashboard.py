@@ -155,7 +155,7 @@ def get_dashboard(
     # Use rpt_route_sales_by_item_customer (RSIC) when user/channel/brand/category filter active
     if not _use_rsic:
         # No user/channel filter — use summary_by_item (matches old dashboard SP exactly)
-        _sales_keys = ROUTE_SALES_ITEM_KEYS - {'sales_org'}
+        _sales_keys = ROUTE_SALES_ITEM_KEYS
         f_rssi = _filter_keys(filters, _sales_keys)
         sw_sales, sp_sales = build_where(f_rssi, date_col='date')
         sales_row = query_one(
@@ -248,7 +248,7 @@ def get_dashboard(
     # DAILY SALES TREND — same source as Total Sales KPI
     # =========================================================
     if not _use_rsic:
-        _daily_keys = ROUTE_SALES_ITEM_KEYS - {'sales_org'}
+        _daily_keys = ROUTE_SALES_ITEM_KEYS
         f_daily = _filter_keys(filters, _daily_keys)
         sw_daily, sp_daily = build_where(f_daily, date_col='date')
         daily_sales = query(
@@ -308,7 +308,7 @@ def get_dashboard(
     # WEEK-WISE SALES & COLLECTION
     # =========================================================
     if not _use_rsic:
-        _weekly_keys = ROUTE_SALES_ITEM_KEYS - {'sales_org'}
+        _weekly_keys = ROUTE_SALES_ITEM_KEYS
         f_weekly = _filter_keys(filters, _weekly_keys)
         sw_weekly, sp_weekly = build_where(f_weekly, date_col='date')
         weekly_sales = query(
@@ -492,7 +492,7 @@ def get_dashboard(
     f_rsc_rt = _filter_keys(filters, ROUTE_SC_KEYS)
     rw_c, rp_c = build_where(f_rsc_rt, date_col='date', prefix='c')
     if not _use_rsic:
-        _rt_keys = ROUTE_SALES_ITEM_KEYS - {'sales_org'}
+        _rt_keys = ROUTE_SALES_ITEM_KEYS
         f_rt = _filter_keys(filters, _rt_keys)
         sw_rt, sp_rt = build_where(f_rt, date_col='date', prefix='s')
         route_sales_target = query(
