@@ -99,11 +99,12 @@ function MapView({ users, filters, effectiveDateFrom, effectiveDateTo }) {
       .finally(() => { setMapLoading(false); loadingRef.current = false; });
   }, [filters, effectiveDateFrom, effectiveDateTo]);
 
-  // Auto-select first user on initial load
+  // When users list changes (any filter/date change), reload detail for selected user
+  // or auto-select first user if current is no longer in list
   useEffect(() => {
-    if (users.length > 0 && !selectedUser) {
-      loadDetail(users[0]);
-    }
+    if (users.length === 0) return;
+    const inList = selectedUser && users.find(u => u.user_code === selectedUser.user_code);
+    loadDetail(inList || users[0]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [users]);
 
@@ -148,42 +149,26 @@ function MapView({ users, filters, effectiveDateFrom, effectiveDateTo }) {
     [validVisits]
   );
 
-  // Fetch road-following route via Directions Service
+  // Fetch single continuous road route via OSRM
   useEffect(() => {
     setRoadPath([]);
-    if (!isLoaded || !window.google || validVisits.length < 2) return;
+    if (!isLoaded || validVisits.length < 2) return;
 
+    let cancelled = false;
     const points = validVisits.map(v => ({ lat: Number(v.latitude), lng: Number(v.longitude) }));
-    const CHUNK = 10; // 10 stops = 9 legs = 8 waypoints (well within 25 limit)
-    const svc = new window.google.maps.DirectionsService();
+    const coords = points.map(p => `${p.lng},${p.lat}`).join(';');
 
-    const chunks = [];
-    for (let i = 0; i < points.length; i += CHUNK - 1) {
-      const c = points.slice(i, i + CHUNK);
-      if (c.length >= 2) chunks.push(c);
-    }
-
-    const results = new Array(chunks.length).fill(null);
-    let done = 0;
-
-    chunks.forEach((chunk, ci) => {
-      svc.route({
-        origin: chunk[0],
-        destination: chunk[chunk.length - 1],
-        waypoints: chunk.slice(1, -1).map(p => ({ location: p, stopover: true })),
-        travelMode: window.google.maps.TravelMode.DRIVING,
-      }, (result, status) => {
-        if (status === 'OK') {
-          results[ci] = result.routes[0].overview_path.map(p => ({ lat: p.lat(), lng: p.lng() }));
-        } else {
-          results[ci] = chunk; // fallback to straight line for this chunk
+    fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`)
+      .then(r => r.json())
+      .then(data => {
+        if (cancelled) return;
+        if (data.code === 'Ok' && data.routes?.[0]?.geometry?.coordinates) {
+          setRoadPath(data.routes[0].geometry.coordinates.map(([lng, lat]) => ({ lat, lng })));
         }
-        done++;
-        if (done === chunks.length) {
-          setRoadPath(results.filter(Boolean).flat());
-        }
-      });
-    });
+      })
+      .catch(() => {});
+
+    return () => { cancelled = true; };
   }, [isLoaded, validVisits]);
 
   const productiveCount   = allVisits.filter(v => v.productive).length;
@@ -283,7 +268,7 @@ function MapView({ users, filters, effectiveDateFrom, effectiveDateTo }) {
 
           {/* Stats chips */}
           <div className="flex items-center gap-2 flex-wrap">
-            <StatChip icon={<Navigation   className="w-3.5 h-3.5" />} label="Stops"      value={allVisits.length}  color="indigo"  />
+            <StatChip icon={<Navigation   className="w-3.5 h-3.5" />} label="Stores"      value={allVisits.length}  color="indigo"  />
             <StatChip icon={<CheckCircle2 className="w-3.5 h-3.5" />} label="Productive" value={productiveCount}   color="emerald" />
             <StatChip icon={<XCircle      className="w-3.5 h-3.5" />} label="Non-Prod"   value={unproductiveCount} color="rose"    />
             {kpis && <StatChip icon={<TrendingUp className="w-3.5 h-3.5" />} label="Sales" value={aed(kpis.total_sales)} color="amber" />}
