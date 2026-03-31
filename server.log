@@ -1,0 +1,678 @@
+INFO:     Started server process [19760]
+INFO:     Waiting for application startup.
+INFO:warmup:Starting cache warmup in background...
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:51966 - "GET /api/dashboard?date_from=2026-03-01&date_to=2026-03-30 HTTP/1.1" 200 OK
+INFO:warmup:  Warmed: dashboard.get_dashboard
+INFO:warmup:  Warmed: sales_performance.get_sales_performance
+WARNING:warmup:  Skip:  top_customers.get_top_customers - can't adapt type 'Query'
+WARNING:warmup:  Skip:  top_products.get_top_products - can't adapt type 'Query'
+INFO:warmup:  Warmed: market_sales.get_market_sales_performance
+WARNING:warmup:  Skip:  target_achievement.get_target_vs_achievement - missing FROM-clause entry for table "r"
+LINE 1: ...ount   FROM rpt_route_sales_summary_by_item WHERE r.date >= ...
+                                                             ^
+
+INFO:warmup:  Warmed: daily_sales_overview.get_daily_sales_overview
+INFO:     127.0.0.1:51978 - "GET /api/dashboard?date_from=2026-03-01&date_to=2026-03-30&sales_org=AUH HTTP/1.1" 200 OK
+INFO:warmup:  Warmed: mtd_wastage.get_mtd_wastage_summary
+INFO:warmup:  Warmed: weekly_sales_returns.get_weekly_sales_returns
+INFO:warmup:  Warmed: brand_wise_sales.get_brand_wise_sales
+INFO:     127.0.0.1:51986 - "GET /api/dashboard?date_from=2026-03-01&date_to=2026-03-30&route=AUH001 HTTP/1.1" 200 OK
+INFO:warmup:  Warmed: mtd_sales_overview.get_mtd_sales_overview
+INFO:warmup:  Warmed: log_report.get_log_report
+INFO:warmup:  Warmed: time_management.get_time_management
+INFO:     127.0.0.1:52006 - "GET /api/dashboard?date_from=2026-03-01&date_to=2026-03-30&sales_org=00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52010 - "GET /api/dashboard?date_from=2026-03-01&date_to=2026-03-30 HTTP/1.1" 200 OK
+INFO:warmup:  Warmed: customer_attendance.get_customer_attendance
+INFO:warmup:  Warmed: mtd_attendance.get_mtd_attendance
+INFO:warmup:  Warmed: journey_plan_compliance.get_journey_plan_compliance
+INFO:warmup:  Warmed: eot_status.get_eot_status
+INFO:warmup:  Warmed: productivity_coverage.get_productivity_coverage
+INFO:warmup:  Warmed: salesman_journey.get_salesman_journey
+INFO:     127.0.0.1:52099 - "GET /api/dashboard?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52133 - "GET /api/brand-wise-sales?date_from=2026-02-01&date_to=2026-03-30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52150 - "GET /api/filters/sales-orgs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52155 - "GET /api/filters/channels HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52157 - "GET /api/filters/brands HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52161 - "GET /api/filters/categories HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52163 - "GET /api/filters/hos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52164 - "GET /api/filters/asms HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52199 - "GET /api/dashboard?date_from=2026-03-01&date_to=2026-03-30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52185 - "GET /api/filters/supervisors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52189 - "GET /api/filters/depots HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52192 - "GET /api/filters/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52197 - "GET /api/filters/routes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52144 - "GET /api/dashboard?date_from=2026-02-01&date_to=2026-02-28&sales_org=00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52200 - "GET /api/dashboard?date_from=2026-02-01&date_to=2026-03-30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52214 - "GET /api/dashboard?date_from=2026-01-01&date_to=2026-01-31 HTTP/1.1" 200 OK
+INFO:warmup:  Warmed: revenue_dispersion.get_revenue_dispersion
+INFO:warmup:  Warmed: monthly_sales_stock.get_monthly_sales_stock
+INFO:     127.0.0.1:52223 - "GET /api/dashboard?date_from=2026-01-01&date_to=2026-03-30 HTTP/1.1" 200 OK
+INFO:warmup:  Warmed: endorsement.get_endorsement
+INFO:warmup:  Warmed: filters.get_sales_orgs
+INFO:     127.0.0.1:52270 - "GET /api/dashboard?date_from=2026-03-01&date_to=2026-03-30 HTTP/1.1" 200 OK
+INFO:warmup:  Warmed: filters.get_order_customers
+INFO:warmup:  Warmed: filters.get_brands
+INFO:warmup:  Warmed: filters.get_categories
+INFO:warmup:  Warmed: filters.get_channels
+INFO:warmup:Cache warmup complete: 24 cached, 3 skipped in 296.2s
+INFO:     127.0.0.1:56273 - "GET /dashboard?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56275 - "GET /eot-status?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56277 - "GET /daily-sales-overview?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56280 - "GET /target-vs-achievement?year=2026&month=2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56284 - "GET /mtd-sales-overview?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56286 - "GET /sales-performance?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56288 - "GET /log-report?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56290 - "GET /weekly-sales-returns?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56293 - "GET /brand-wise-sales?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56301 - "GET /market-sales?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56315 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56321 - "GET /dashboard?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56342 - "GET /api/dashboard?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56358 - "GET /api/dashboard?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56360 - "GET /api/eot-status?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56365 - "GET /api/daily-sales-overview?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56371 - "GET /api/target-vs-achievement?year=2026&month=2 HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 416, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\applications.py", line 1160, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\cors.py", line 87, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 670, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 326, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\to_thread.py", line 56, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 2485, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 976, in run
+    result = context.run(func, *args)
+  File "D:\vishwa\nfpc_winit\api\routes\target_achievement.py", line 100, in get_target_vs_achievement
+    target_rows = query(
+        f"SELECT r.route_code, "
+    ...<5 lines>...
+        rp + item_params
+    )
+  File "D:\vishwa\nfpc_winit\api\database.py", line 100, in query
+    cur.execute(sql, params)
+    ~~~~~~~~~~~^^^^^^^^^^^^^
+psycopg2.errors.UndefinedTable: missing FROM-clause entry for table "r"
+LINE 1: ...ount   FROM rpt_route_sales_summary_by_item WHERE r.date >= ...
+                                                             ^
+
+INFO:     127.0.0.1:56377 - "GET /api/mtd-sales-overview?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56394 - "GET /api/sales-performance?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56402 - "GET /api/log-report?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56404 - "GET /api/weekly-sales-returns?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56407 - "GET /api/brand-wise-sales?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56410 - "GET /api/market-sales?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56412 - "GET /api/mtd-wastage?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56418 - "GET /api/daily-sales-overview?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56425 - "GET /api/target-vs-achievement?year=2026&month=2 HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 416, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\applications.py", line 1160, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\cors.py", line 87, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 670, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 326, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\to_thread.py", line 56, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 2485, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 976, in run
+    result = context.run(func, *args)
+  File "D:\vishwa\nfpc_winit\api\routes\target_achievement.py", line 100, in get_target_vs_achievement
+    target_rows = query(
+        f"SELECT r.route_code, "
+    ...<5 lines>...
+        rp + item_params
+    )
+  File "D:\vishwa\nfpc_winit\api\database.py", line 100, in query
+    cur.execute(sql, params)
+    ~~~~~~~~~~~^^^^^^^^^^^^^
+psycopg2.errors.UndefinedTable: missing FROM-clause entry for table "r"
+LINE 1: ...ount   FROM rpt_route_sales_summary_by_item WHERE r.date >= ...
+                                                             ^
+
+INFO:     127.0.0.1:56427 - "GET /api/market-sales?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56429 - "GET /api/mtd-wastage?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56436 - "GET /api/target-vs-achievement?year=2026&month=2 HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 416, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\applications.py", line 1160, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\cors.py", line 87, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 670, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 326, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\to_thread.py", line 56, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 2485, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 976, in run
+    result = context.run(func, *args)
+  File "D:\vishwa\nfpc_winit\api\routes\target_achievement.py", line 100, in get_target_vs_achievement
+    target_rows = query(
+        f"SELECT r.route_code, "
+    ...<5 lines>...
+        rp + item_params
+    )
+  File "D:\vishwa\nfpc_winit\api\database.py", line 100, in query
+    cur.execute(sql, params)
+    ~~~~~~~~~~~^^^^^^^^^^^^^
+psycopg2.errors.UndefinedTable: missing FROM-clause entry for table "r"
+LINE 1: ...ount   FROM rpt_route_sales_summary_by_item WHERE r.date >= ...
+                                                             ^
+
+INFO:     127.0.0.1:56438 - "GET /api/market-sales?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56440 - "GET /api/mtd-wastage?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56464 - "GET /api/target-vs-achievement?year=2026&month=2 HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 416, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\applications.py", line 1160, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\cors.py", line 87, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 670, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 326, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\to_thread.py", line 56, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 2485, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 976, in run
+    result = context.run(func, *args)
+  File "D:\vishwa\nfpc_winit\api\routes\target_achievement.py", line 100, in get_target_vs_achievement
+    target_rows = query(
+        f"SELECT r.route_code, "
+    ...<5 lines>...
+        rp + item_params
+    )
+  File "D:\vishwa\nfpc_winit\api\database.py", line 100, in query
+    cur.execute(sql, params)
+    ~~~~~~~~~~~^^^^^^^^^^^^^
+psycopg2.errors.UndefinedTable: missing FROM-clause entry for table "r"
+LINE 1: ...ount   FROM rpt_route_sales_summary_by_item WHERE r.date >= ...
+                                                             ^
+
+INFO:     127.0.0.1:56466 - "GET /api/target-vs-achievement?year=2026&month=2 HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 416, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\applications.py", line 1160, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\cors.py", line 87, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 670, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 326, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\to_thread.py", line 56, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 2485, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 976, in run
+    result = context.run(func, *args)
+  File "D:\vishwa\nfpc_winit\api\routes\target_achievement.py", line 100, in get_target_vs_achievement
+    target_rows = query(
+        f"SELECT r.route_code, "
+    ...<5 lines>...
+        rp + item_params
+    )
+  File "D:\vishwa\nfpc_winit\api\database.py", line 100, in query
+    cur.execute(sql, params)
+    ~~~~~~~~~~~^^^^^^^^^^^^^
+psycopg2.errors.UndefinedTable: missing FROM-clause entry for table "r"
+LINE 1: ...ount   FROM rpt_route_sales_summary_by_item WHERE r.date >= ...
+                                                             ^
+
+INFO:     127.0.0.1:56521 - "GET /api/dashboard?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56523 - "GET /api/eot-status?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56530 - "GET /api/daily-sales-overview?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56533 - "GET /api/target-vs-achievement?year=2026&month=2 HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 416, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\applications.py", line 1160, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\cors.py", line 87, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 670, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 326, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\to_thread.py", line 56, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 2485, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 976, in run
+    result = context.run(func, *args)
+  File "D:\vishwa\nfpc_winit\api\routes\target_achievement.py", line 100, in get_target_vs_achievement
+    target_rows = query(
+        f"SELECT r.route_code, "
+    ...<5 lines>...
+        rp + item_params
+    )
+  File "D:\vishwa\nfpc_winit\api\database.py", line 100, in query
+    cur.execute(sql, params)
+    ~~~~~~~~~~~^^^^^^^^^^^^^
+psycopg2.errors.UndefinedTable: missing FROM-clause entry for table "r"
+LINE 1: ...ount   FROM rpt_route_sales_summary_by_item WHERE r.date >= ...
+                                                             ^
+
+INFO:     127.0.0.1:56536 - "GET /api/mtd-sales-overview?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56540 - "GET /api/sales-performance?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56543 - "GET /api/brand-wise-sales?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56545 - "GET /api/log-report?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56548 - "GET /api/weekly-sales-returns?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56550 - "GET /api/market-sales-performance?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56552 - "GET /api/mtd-wastage-summary?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56573 - "GET /api/target-vs-achievement?year=2026&month=2 HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 416, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\applications.py", line 1160, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\cors.py", line 87, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 670, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py", line 326, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\to_thread.py", line 56, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 2485, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\anyio\_backends\_asyncio.py", line 976, in run
+    result = context.run(func, *args)
+  File "D:\vishwa\nfpc_winit\api\routes\target_achievement.py", line 100, in get_target_vs_achievement
+    target_rows = query(
+        f"SELECT r.route_code, "
+    ...<5 lines>...
+        rp + item_params
+    )
+  File "D:\vishwa\nfpc_winit\api\database.py", line 100, in query
+    cur.execute(sql, params)
+    ~~~~~~~~~~~^^^^^^^^^^^^^
+psycopg2.errors.UndefinedTable: missing FROM-clause entry for table "r"
+LINE 1: ...ount   FROM rpt_route_sales_summary_by_item WHERE r.date >= ...
+                                                             ^
+
