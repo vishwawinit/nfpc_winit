@@ -60,6 +60,7 @@ function MapView({ users, filters, effectiveDateFrom, effectiveDateTo }) {
   const [activeMarker, setActiveMarker]   = useState(null);
   const [dropdownOpen, setDropdownOpen]   = useState(false);
   const [userSearch, setUserSearch]       = useState('');
+  const [roadPath, setRoadPath]           = useState([]);
   const mapRef       = useRef(null);
   const loadingRef   = useRef(false);
   const dropdownRef  = useRef(null);
@@ -84,6 +85,7 @@ function MapView({ users, filters, effectiveDateFrom, effectiveDateTo }) {
     setSelectedUser(user);
     setMapDetail(null);
     setActiveMarker(null);
+    setRoadPath([]);
     setMapLoading(true);
     const df = {
       ...filters,
@@ -145,6 +147,44 @@ function MapView({ users, filters, effectiveDateFrom, effectiveDateTo }) {
     validVisits.map(v => ({ lat: Number(v.latitude), lng: Number(v.longitude) })),
     [validVisits]
   );
+
+  // Fetch road-following route via Directions Service
+  useEffect(() => {
+    setRoadPath([]);
+    if (!isLoaded || !window.google || validVisits.length < 2) return;
+
+    const points = validVisits.map(v => ({ lat: Number(v.latitude), lng: Number(v.longitude) }));
+    const CHUNK = 10; // 10 stops = 9 legs = 8 waypoints (well within 25 limit)
+    const svc = new window.google.maps.DirectionsService();
+
+    const chunks = [];
+    for (let i = 0; i < points.length; i += CHUNK - 1) {
+      const c = points.slice(i, i + CHUNK);
+      if (c.length >= 2) chunks.push(c);
+    }
+
+    const results = new Array(chunks.length).fill(null);
+    let done = 0;
+
+    chunks.forEach((chunk, ci) => {
+      svc.route({
+        origin: chunk[0],
+        destination: chunk[chunk.length - 1],
+        waypoints: chunk.slice(1, -1).map(p => ({ location: p, stopover: true })),
+        travelMode: window.google.maps.TravelMode.DRIVING,
+      }, (result, status) => {
+        if (status === 'OK') {
+          results[ci] = result.routes[0].overview_path.map(p => ({ lat: p.lat(), lng: p.lng() }));
+        } else {
+          results[ci] = chunk; // fallback to straight line for this chunk
+        }
+        done++;
+        if (done === chunks.length) {
+          setRoadPath(results.filter(Boolean).flat());
+        }
+      });
+    });
+  }, [isLoaded, validVisits]);
 
   const productiveCount   = allVisits.filter(v => v.productive).length;
   const unproductiveCount = allVisits.filter(v => !v.productive).length;
@@ -303,17 +343,24 @@ function MapView({ users, filters, effectiveDateFrom, effectiveDateTo }) {
               ],
             }}
           >
-            {path.length > 1 && (
+            {(roadPath.length > 1 || path.length > 1) && (
               <Polyline
-                path={path}
+                path={roadPath.length > 1 ? roadPath : path}
                 options={{
                   strokeColor: ROUTE_COLOR,
-                  strokeOpacity: 0.75,
-                  strokeWeight: 3,
+                  strokeOpacity: 0.85,
+                  strokeWeight: 4,
                   icons: [{
-                    icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 3 },
-                    offset: '0',
-                    repeat: '20px',
+                    icon: {
+                      path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                      scale: 3,
+                      strokeColor: ROUTE_COLOR,
+                      fillColor: ROUTE_COLOR,
+                      fillOpacity: 1,
+                      strokeOpacity: 1,
+                    },
+                    offset: '50%',
+                    repeat: '120px',
                   }],
                 }}
               />
@@ -361,7 +408,7 @@ function MapView({ users, filters, effectiveDateFrom, effectiveDateTo }) {
                         </div>
                         <div style={{ gridColumn: '1/-1' }}>
                           <div style={{ color: '#94a3b8', marginBottom: 1 }}>Duration</div>
-                          <div style={{ fontWeight: 600, color: '#334155' }}>{calcDuration(v.arrival_time, v.out_time)}</div>
+                          <div style={{ fontWeight: 600, color: '#334155' }}>{v.duration_mins != null ? `${v.duration_mins} min` : '-'}</div>
                         </div>
                       </div>
                       <div style={{

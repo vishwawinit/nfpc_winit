@@ -852,3 +852,94 @@ INFO:     127.0.0.1:54631 - "GET /api/daily-sales-overview?date_from=2026-02-01&
 INFO:     127.0.0.1:54633 - "GET /api/mtd-sales-overview?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010&route=101 HTTP/1.1" 200 OK
 INFO:     127.0.0.1:54635 - "GET /api/sales-performance?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010&route=101 HTTP/1.1" 200 OK
 INFO:     127.0.0.1:54637 - "GET /api/log-report?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010&route=101 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55007 - "GET /api/dashboard?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55033 - "GET /api/daily-sales-overview?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55035 - "GET /api/mtd-sales-overview?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55037 - "GET /api/sales-performance?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55041 - "GET /api/log-report?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55052 - "GET /api/target-vs-achievement?date_from=2026-02-01&date_to=2026-02-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55056 - "GET /api/dashboard?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55065 - "GET /api/eot-status?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55068 - "GET /api/daily-sales-overview?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55070 - "GET /api/mtd-sales-overview?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55073 - "GET /api/sales-performance?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55075 - "GET /api/log-report?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55081 - "GET /api/target-vs-achievement?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55083 - "GET /api/dashboard?date_from=2026-02-01&date_to=2026-02-28&sales_org=00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55086 - "GET /api/salesman-journey/detail?date_from=2026-02-09&date_to=2026-02-09&user_code=170742 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55090 - "GET /api/eot-status?date_from=2026-02-01&date_to=2026-02-28&sales_org=00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55093 - "GET /api/daily-sales-overview?date_from=2026-02-01&date_to=2026-02-28&sales_org=00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55098 - "GET /api/mtd-sales-overview?date_from=2026-02-01&date_to=2026-02-28&sales_org=00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55100 - "GET /api/sales-performance?date_from=2026-02-01&date_to=2026-02-28&sales_org=00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55103 - "GET /api/log-report?date_from=2026-02-01&date_to=2026-02-28&sales_org=00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55105 - "GET /api/target-vs-achievement?date_from=2026-02-01&date_to=2026-02-28&sales_org=00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55107 - "GET /api/dashboard?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010,00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55110 - "GET /api/eot-status?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010,00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55147 - "GET /api/daily-sales-overview?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010,00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55151 - "GET /api/mtd-sales-overview?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010,00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55159 - "GET /api/sales-performance?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010,00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55183 - "GET /api/log-report?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010,00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55187 - "GET /api/target-vs-achievement?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010,00020 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55192 - "GET /api/dashboard?date_from=2026-02-01&date_to=2026-02-28&route=101 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55202 - "GET /api/eot-status?date_from=2026-02-01&date_to=2026-02-28&route=101 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55206 - "GET /api/daily-sales-overview?date_from=2026-02-01&date_to=2026-02-28&route=101 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55208 - "GET /api/mtd-sales-overview?date_from=2026-02-01&date_to=2026-02-28&route=101 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55210 - "GET /api/sales-performance?date_from=2026-02-01&date_to=2026-02-28&route=101 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55216 - "GET /api/log-report?date_from=2026-02-01&date_to=2026-02-28&route=101 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55218 - "GET /api/target-vs-achievement?date_from=2026-02-01&date_to=2026-02-28&route=101 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55222 - "GET /api/dashboard?date_from=2026-02-01&date_to=2026-02-28&route=101,102 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55225 - "GET /api/eot-status?date_from=2026-02-01&date_to=2026-02-28&route=101,102 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55227 - "GET /api/daily-sales-overview?date_from=2026-02-01&date_to=2026-02-28&route=101,102 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55229 - "GET /api/mtd-sales-overview?date_from=2026-02-01&date_to=2026-02-28&route=101,102 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55235 - "GET /api/sales-performance?date_from=2026-02-01&date_to=2026-02-28&route=101,102 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55240 - "GET /api/log-report?date_from=2026-02-01&date_to=2026-02-28&route=101,102 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55251 - "GET /api/target-vs-achievement?date_from=2026-02-01&date_to=2026-02-28&route=101,102 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55253 - "GET /api/dashboard?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010&route=101 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55259 - "GET /api/eot-status?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010&route=101 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55263 - "GET /api/daily-sales-overview?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010&route=101 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55266 - "GET /api/mtd-sales-overview?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010&route=101 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55268 - "GET /api/sales-performance?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010&route=101 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55271 - "GET /api/log-report?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010&route=101 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55276 - "GET /api/target-vs-achievement?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010&route=101 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55283 - "GET /api/salesman-journey?date_from=2026-02-09&date_to=2026-02-09 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55282 - "GET /api/salesman-journey/detail?date_from=2026-02-09&date_to=2026-02-09&user_code=187087 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55293 - "GET /api/salesman-journey?date_from=2026-02-09&date_to=2026-02-09 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55292 - "GET /api/salesman-journey/detail?date_from=2026-02-09&date_to=2026-02-09&user_code=187087 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55299 - "GET /api/salesman-journey?date_from=2026-02-09&date_to=2026-02-09 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55306 - "GET /api/salesman-journey?date_from=2026-02-09&date_to=2026-02-09 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55309 - "GET /api/salesman-journey?date_from=2026-02-09&date_to=2026-02-09 HTTP/1.1" 200 OK
+INFO:     Started server process [23184]
+INFO:     Waiting for application startup.
+INFO:warmup:Starting cache warmup in background...
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:56000 - "GET /api/salesman-journey?date_from=2026-02-09&date_to=2026-02-09 HTTP/1.1" 200 OK
+INFO:warmup:  Warmed: dashboard.get_dashboard
+INFO:warmup:  Warmed: sales_performance.get_sales_performance
+WARNING:warmup:  Skip:  top_customers.get_top_customers - can't adapt type 'Query'
+WARNING:warmup:  Skip:  top_products.get_top_products - can't adapt type 'Query'
+INFO:warmup:  Warmed: market_sales.get_market_sales_performance
+INFO:warmup:  Warmed: target_achievement.get_target_vs_achievement
+INFO:warmup:  Warmed: daily_sales_overview.get_daily_sales_overview
+INFO:warmup:  Warmed: mtd_wastage.get_mtd_wastage_summary
+INFO:warmup:  Warmed: weekly_sales_returns.get_weekly_sales_returns
+INFO:warmup:  Warmed: brand_wise_sales.get_brand_wise_sales
+INFO:     127.0.0.1:56019 - "GET /api/dashboard?date_from=2026-02-01&date_to=2026-02-28&sales_org=00010 HTTP/1.1" 200 OK
+INFO:warmup:  Warmed: mtd_sales_overview.get_mtd_sales_overview
+INFO:warmup:  Warmed: log_report.get_log_report
+INFO:warmup:  Warmed: time_management.get_time_management
+INFO:warmup:  Warmed: customer_attendance.get_customer_attendance
+INFO:warmup:  Warmed: mtd_attendance.get_mtd_attendance
+INFO:warmup:  Warmed: journey_plan_compliance.get_journey_plan_compliance
+INFO:warmup:  Warmed: eot_status.get_eot_status
+INFO:warmup:  Warmed: productivity_coverage.get_productivity_coverage
+INFO:warmup:  Warmed: salesman_journey.get_salesman_journey
+INFO:warmup:  Warmed: revenue_dispersion.get_revenue_dispersion
+INFO:warmup:  Warmed: monthly_sales_stock.get_monthly_sales_stock
+INFO:warmup:  Warmed: endorsement.get_endorsement
+INFO:warmup:  Warmed: filters.get_sales_orgs
+INFO:warmup:  Warmed: filters.get_order_customers
+INFO:warmup:  Warmed: filters.get_brands
+INFO:warmup:  Warmed: filters.get_categories
+INFO:warmup:  Warmed: filters.get_channels
+INFO:warmup:Cache warmup complete: 25 cached, 2 skipped in 249.3s
