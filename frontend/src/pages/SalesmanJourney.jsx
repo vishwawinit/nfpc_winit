@@ -571,10 +571,7 @@ export default function SalesmanJourney() {
         <p className="text-sm text-gray-500 mt-1">Track salesmen routes, visits and performance</p>
       </div>
 
-      <FilterPanel filters={filters} onChange={(f) => {
-        if (f.date_from && f.date_from !== filters.date_from) f.date_to = f.date_from;
-        setFilters(f);
-      }}
+      <FilterPanel filters={filters} onChange={setFilters}
         showFields={['date_from', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route']} />
 
       {loading ? <Loading /> : users.length === 0 ? (
