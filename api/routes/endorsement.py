@@ -90,6 +90,8 @@ def get_endorsement(
 
         customer_list.append({
             "date": str(c["date"]) if c["date"] else None,
+            "salesman_code": c["user_code"],
+            "salesman_name": c["user_name"],
             "customer_code": c["customer_code"],
             "customer_name": c["customer_name"],
             "channel_name": c["channel_name"],

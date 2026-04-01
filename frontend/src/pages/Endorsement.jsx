@@ -84,6 +84,8 @@ export default function Endorsement() {
               disableSort
               columns={[
                 { key: 'date', label: 'Date' },
+                { key: 'salesman_code', label: 'Salesman Code' },
+                { key: 'salesman_name', label: 'Salesman Name' },
                 { key: 'customer_code', label: 'Code' },
                 { key: 'customer_name', label: 'Customer' },
                 { key: 'channel_name', label: 'Channel' },
@@ -95,7 +97,7 @@ export default function Endorsement() {
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold ${
                         planned ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-100 text-gray-500'
                       }`}>
-                        {planned ? 'JP' : 'UJP'}
+                        {planned ? 'Yes' : 'No'}
                       </span>
                     );
                   }
