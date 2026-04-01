@@ -9,23 +9,30 @@ import { Target, TrendingUp, Award, Eye, X, ChevronRight, Download } from 'lucid
 const aed = (v) => v != null ? `AED ${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-';
 
 function exportToExcel(data, columns, filename) {
-  const header = columns.map(c => c.label).join('\t');
-  const rows = data.map(row => columns.map(c => {
-    const v = row[c.key] ?? '';
-    if (typeof v === 'number') {
-      if (c.format === 'percent' || c.key === 'achieved_pct' || c.key === 'pct_of_total')
-        return `${Number(v).toFixed(2)}%`;
-      if (c.format === 'currency') return Number(v).toFixed(2);
-      return v;
+  const fmtVal = (v, col) => {
+    if (v == null || v === '') return '';
+    const num = Number(v);
+    if (!isNaN(num) && v !== '') {
+      if (col.format === 'percent' || col.key === 'achieved_pct' || col.key === 'pct_of_total')
+        return `${num.toFixed(2)}%`;
+      if (col.format === 'currency' || col.format === 'currency2') return num.toFixed(2);
+      if (col.format === 'number') return Number.isInteger(num) ? num : num.toFixed(2);
+      return num;
     }
-    return String(v);
-  }).join('\t'));
-  const tsv = [header, ...rows].join('\n');
-  const blob = new Blob(['\uFEFF' + tsv], { type: 'text/tab-separated-values;charset=utf-8' });
+    return String(v).trim();
+  };
+  const csvCell = (val) => {
+    const s = String(val ?? '');
+    return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const header = columns.map(c => csvCell(c.label)).join(',');
+  const rows = data.map(row => columns.map(c => csvCell(fmtVal(row[c.key], c))).join(','));
+  const csv = [header, ...rows].join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${filename}.xls`;
+  a.download = `${filename}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
