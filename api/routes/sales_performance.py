@@ -379,15 +379,18 @@ def get_sales_performance(
         f"  ROUND(SUM(CASE WHEN r.date BETWEEN %s AND %s THEN r.total_sales ELSE 0 END)::numeric, 2) AS current_week_sales "
         f"FROM rpt_route_sales_by_item_customer r "
         f"JOIN dim_item di ON di.code = r.item_code{_brand_on_di_cond} "
+        f"JOIN dim_customer dc ON dc.code = r.customer_code{_ch_dc_join_cond} "
         f"JOIN dim_user du ON du.code = r.user_code AND du.role_code = 'C_PRESALES_VANSALES' "
         f"{_org_join}"
         f"WHERE ({cmw_s} OR {lmw_s}){_channel_cond} "
         f"GROUP BY r.item_code, COALESCE(di.name, r.item_code), "
         f"  di.category_code, COALESCE(di.category_name, di.category_code), "
         f"  COALESCE(di.brand_name, di.brand_code) "
+        f"HAVING COUNT(CASE WHEN r.date BETWEEN %s AND %s THEN 1 END) > 0 "
         f"ORDER BY r.item_code",
         [cur_start, cur_end, lm_start, lm_end, cw_start, cw_end]
-        + _brand_di_params + _org_params + cmp_s + lmp_s + _channel_cond_params
+        + _brand_di_params + _channel_cond_params + _org_params + cmp_s + lmp_s + _channel_cond_params
+        + [cur_start, cur_end]
     )
 
     for row in sku_table:
