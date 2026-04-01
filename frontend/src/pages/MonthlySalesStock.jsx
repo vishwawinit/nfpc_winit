@@ -85,12 +85,12 @@ export default function MonthlySalesStock() {
   useEffect(() => { setPage(1); }, [search, filters, pageSize]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Monthly Sales & Stock</h1>
-          <p className="text-sm text-gray-500 mt-1">Item-level sales across channels with MTD and YTD comparison</p>
+          <h1 className="text-[22px] font-bold text-gray-900 tracking-tight">Monthly Sales & Stock</h1>
+          <p className="text-[13px] text-gray-400 mt-0.5 font-medium">Item-level sales across channels with MTD and YTD comparison</p>
         </div>
         {!loading && items.length > 0 && (
           <div className="flex items-center gap-4">
@@ -111,8 +111,14 @@ export default function MonthlySalesStock() {
       <FilterPanel filters={filters} onChange={setFilters}
         showFields={SHOW_FIELDS} />
 
-      {loading ? <Loading /> : items.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">No data available</div>
+      {refreshing && (
+        <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-1 bg-indigo-500 rounded-full animate-pulse" style={{ width: '60%' }} />
+        </div>
+      )}
+
+      {loading && !data ? <Loading /> : items.length === 0 ? (
+        <div className="text-center py-16 text-gray-400 font-medium">No data available</div>
       ) : (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
           {/* Toolbar: Search + Export + Page Size */}

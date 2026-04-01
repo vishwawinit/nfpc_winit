@@ -104,17 +104,25 @@ export default function BrandWiseSales() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Brand Wise Sales</h1>
-        <p className="text-sm text-gray-500 mt-1">Performance breakdown by brand with target achievement tracking</p>
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-end justify-between">
+        <div>
+          <h1 className="text-[22px] font-bold text-gray-900 tracking-tight">Brand Wise Sales</h1>
+          <p className="text-[13px] text-gray-400 mt-0.5 font-medium">Performance breakdown by brand with target achievement tracking</p>
+        </div>
       </div>
 
       <FilterPanel filters={filters} onChange={setFilters}
         showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'channel', 'category', 'brand']} />
 
-      {loading ? <Loading /> : !data ? (
-        <div className="text-center py-16 text-gray-400">No data available</div>
+      {refreshing && (
+        <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-1 bg-indigo-500 rounded-full animate-pulse" style={{ width: '60%' }} />
+        </div>
+      )}
+
+      {loading && !data ? <Loading /> : !data ? (
+        <div className="text-center py-16 text-gray-400 font-medium">No data available</div>
       ) : (
         <>
           {/* Summary KPIs */}
