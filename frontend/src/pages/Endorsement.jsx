@@ -89,6 +89,7 @@ export default function Endorsement() {
                 { key: 'customer_code', label: 'Code' },
                 { key: 'customer_name', label: 'Customer' },
                 { key: 'channel_name', label: 'Channel' },
+                { key: 'route_code', label: 'Route' },
                 {
                   key: 'is_planned', label: 'Planned',
                   render: (v) => {

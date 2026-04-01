@@ -95,6 +95,7 @@ def get_endorsement(
             "customer_code": c["customer_code"],
             "customer_name": c["customer_name"],
             "channel_name": c["channel_name"],
+            "route_code": c["route_code"],
             "is_planned": is_planned,
             "check_in": str(c["arrival_time"])[11:19] if c["arrival_time"] else None,
             "check_out": str(c["out_time"])[11:19] if c["out_time"] else None,
