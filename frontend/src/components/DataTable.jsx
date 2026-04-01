@@ -61,6 +61,7 @@ export default function DataTable({ columns, data, onRowClick, exportName, pageS
     if (val == null) return <span className="text-gray-300">-</span>;
     if (col.format === 'number') return Number(val).toLocaleString('en-US', { maximumFractionDigits: 2 });
     if (col.format === 'currency') return Number(val).toLocaleString('en-US', { style: 'currency', currency: 'AED', maximumFractionDigits: 0 });
+    if (col.format === 'currency2') return Number(val).toLocaleString('en-US', { style: 'currency', currency: 'AED', minimumFractionDigits: 2, maximumFractionDigits: 2 });
     if (col.format === 'percent') return Number(val).toFixed(1) + '%';
     return val;
   };
@@ -120,7 +121,7 @@ export default function DataTable({ columns, data, onRowClick, exportName, pageS
           <thead className="sticky top-0 z-10">
             <tr className="bg-gray-50 border-b border-gray-100/80">
               {columns.map(col => {
-                const isNumeric = col.format === 'number' || col.format === 'currency' || col.format === 'percent';
+                const isNumeric = col.format === 'number' || col.format === 'currency' || col.format === 'currency2' || col.format === 'percent';
                 const align = col.align || (isNumeric ? 'right' : 'left');
                 const alignCls = align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left';
                 return (
@@ -148,7 +149,7 @@ export default function DataTable({ columns, data, onRowClick, exportName, pageS
                 } hover:bg-indigo-50/40 ${onRowClick ? 'cursor-pointer' : ''}`}
               >
                 {columns.map(col => {
-                  const isNumeric = col.format === 'number' || col.format === 'currency' || col.format === 'percent';
+                  const isNumeric = col.format === 'number' || col.format === 'currency' || col.format === 'currency2' || col.format === 'percent';
                   const align = col.align || (isNumeric ? 'right' : 'left');
                   const alignCls = align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left';
                   return (

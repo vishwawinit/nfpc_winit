@@ -349,7 +349,7 @@ def get_daily_sales_overview(
     # Returns item-level: ItemCode, ItemName, GrossSales (selected period),
     #   MTD_GrossSales, MTD_Wastage (GR+Damage+Expiry)
     # MTD = full month (matches MSSQL SP: MONTH(Date)=M AND YEAR(Date)=Y)
-    ref_date = date_to or date.today()
+    ref_date = date_from or date_to or date.today()
     mtd_start = date(ref_date.year, ref_date.month, 1)
     if ref_date.month == 12:
         mtd_end = date(ref_date.year, 12, 31)

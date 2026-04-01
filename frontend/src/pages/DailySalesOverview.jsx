@@ -103,12 +103,12 @@ export default function DailySalesOverview() {
                   { key: 'item_code', label: 'Item Code' },
                   { key: 'item_name', label: 'Item Name' },
                   { key: 'brand_name', label: 'Brand' },
-                  { key: 'gross_sales', label: 'Gross Sales', format: 'currency' },
-                  { key: 'target_sales', label: 'Target', format: 'currency' },
-                  { key: 'variance', label: 'Variance', format: 'currency' },
-                  { key: 'mtd_gross_sales', label: 'MTD Gross', format: 'currency' },
-                  { key: 'mtd_target_sales', label: 'MTD Target', format: 'currency' },
-                  { key: 'mtd_wastage', label: 'MTD Wastage', format: 'currency' },
+                  { key: 'gross_sales', label: 'Gross Sales', format: 'currency2' },
+                  { key: 'target_sales', label: 'Target', format: 'currency2' },
+                  { key: 'variance', label: 'Variance', format: 'currency2' },
+                  { key: 'mtd_gross_sales', label: 'MTD Gross', format: 'currency2' },
+                  { key: 'mtd_target_sales', label: 'MTD Target', format: 'currency2' },
+                  { key: 'mtd_wastage', label: 'MTD Wastage', format: 'currency2' },
                 ]}
                 data={items}
                 exportName="daily-sales-overview"
