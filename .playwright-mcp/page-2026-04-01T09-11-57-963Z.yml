@@ -1,0 +1,318 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e6]:
+      - generic [ref=e8]: "N"
+      - generic [ref=e9]:
+        - generic [ref=e10]: NFPC Reports
+        - generic [ref=e11]: Enterprise Dashboard
+    - navigation [ref=e12]:
+      - generic [ref=e13]:
+        - generic [ref=e14]: Overview
+        - link "Dashboard" [ref=e16] [cursor=pointer]:
+          - /url: /
+          - img [ref=e17]
+          - generic [ref=e22]: Dashboard
+      - generic [ref=e23]:
+        - generic [ref=e24]: Sales
+        - generic [ref=e25]:
+          - link "Sales Performance" [ref=e26] [cursor=pointer]:
+            - /url: /sales-performance
+            - img [ref=e27]
+            - generic [ref=e30]: Sales Performance
+          - link "Daily Sales Overview" [ref=e31] [cursor=pointer]:
+            - /url: /daily-sales
+            - img [ref=e32]
+            - generic [ref=e34]: Daily Sales Overview
+          - link "MTD Sales Overview" [ref=e35] [cursor=pointer]:
+            - /url: /mtd-sales
+            - img [ref=e36]
+            - generic [ref=e38]: MTD Sales Overview
+          - link "Weekly Sales/Returns" [ref=e39] [cursor=pointer]:
+            - /url: /weekly-sales-returns
+            - img [ref=e40]
+            - generic [ref=e43]: Weekly Sales/Returns
+          - link "Brand Wise Sales" [ref=e44] [cursor=pointer]:
+            - /url: /brand-wise-sales
+            - img [ref=e45]
+            - generic [ref=e49]: Brand Wise Sales
+          - link "Market Sales" [ref=e50] [cursor=pointer]:
+            - /url: /market-sales
+            - img [ref=e51]
+            - generic [ref=e54]: Market Sales
+          - link "Monthly Sales Stock" [ref=e55] [cursor=pointer]:
+            - /url: /monthly-sales-stock
+            - img [ref=e56]
+            - generic [ref=e60]: Monthly Sales Stock
+          - link "Revenue Dispersion" [ref=e61] [cursor=pointer]:
+            - /url: /revenue-dispersion
+            - img [ref=e62]
+            - generic [ref=e65]: Revenue Dispersion
+      - generic [ref=e66]:
+        - generic [ref=e67]: Customers & Products
+        - generic [ref=e68]:
+          - link "Top Customers" [ref=e69] [cursor=pointer]:
+            - /url: /top-customers
+            - img [ref=e70]
+            - generic [ref=e75]: Top Customers
+          - link "Top Products" [ref=e76] [cursor=pointer]:
+            - /url: /top-products
+            - img [ref=e77]
+            - generic [ref=e81]: Top Products
+          - link "Endorsement" [ref=e82] [cursor=pointer]:
+            - /url: /endorsement
+            - img [ref=e83]
+            - generic [ref=e86]: Endorsement
+          - link "MTD Wastage" [ref=e87] [cursor=pointer]:
+            - /url: /mtd-wastage
+            - img [ref=e88]
+            - generic [ref=e91]: MTD Wastage
+      - generic [ref=e92]:
+        - generic [ref=e93]: Targets & Productivity
+        - generic [ref=e94]:
+          - link "Target vs Achievement" [ref=e95] [cursor=pointer]:
+            - /url: /target-achievement
+            - img [ref=e96]
+            - generic [ref=e100]: Target vs Achievement
+          - link "Productivity & Coverage" [ref=e101] [cursor=pointer]:
+            - /url: /productivity
+            - img [ref=e102]
+            - generic [ref=e105]: Productivity & Coverage
+          - link "Outstanding Collection" [ref=e106] [cursor=pointer]:
+            - /url: /outstanding
+            - img [ref=e107]
+            - generic [ref=e110]: Outstanding Collection
+          - link "EOT Status" [ref=e111] [cursor=pointer]:
+            - /url: /eot-status
+            - img [ref=e112]
+            - generic [ref=e115]: EOT Status
+      - generic [ref=e116]:
+        - generic [ref=e117]: Attendance & Routes
+        - generic [ref=e118]:
+          - link "Customer Attendance" [ref=e119] [cursor=pointer]:
+            - /url: /customer-attendance
+            - img [ref=e120]
+            - generic [ref=e124]: Customer Attendance
+          - link "MTD Attendance" [ref=e125] [cursor=pointer]:
+            - /url: /mtd-attendance
+            - img [ref=e126]
+            - generic [ref=e129]: MTD Attendance
+          - link "Journey Plan Compliance" [ref=e130] [cursor=pointer]:
+            - /url: /journey-plan
+            - img [ref=e131]
+            - generic [ref=e134]: Journey Plan Compliance
+          - link "Salesman Journey" [ref=e135] [cursor=pointer]:
+            - /url: /salesman-journey
+            - img [ref=e136]
+            - generic [ref=e141]: Salesman Journey
+      - generic [ref=e142]:
+        - generic [ref=e143]: Logs & Time
+        - generic [ref=e144]:
+          - link "Log Report" [ref=e145] [cursor=pointer]:
+            - /url: /log-report
+            - img [ref=e146]
+            - generic [ref=e149]: Log Report
+          - link "Time Management" [ref=e150] [cursor=pointer]:
+            - /url: /time-management
+            - img [ref=e151]
+            - generic [ref=e154]: Time Management
+    - generic [ref=e155]: v1.0 · NFPC UAE
+  - main [ref=e156]:
+    - generic [ref=e157]:
+      - generic [ref=e159]:
+        - heading "Sales Performance" [level=1] [ref=e160]
+        - paragraph [ref=e161]: Monthly achievement, returns analysis & SKU performance
+      - generic [ref=e163]:
+        - generic [ref=e164]:
+          - generic [ref=e165]:
+            - img [ref=e166]
+            - text: Sales Org
+          - button "All" [ref=e171]:
+            - generic [ref=e172]: All
+            - img [ref=e174]
+        - generic [ref=e176]:
+          - generic [ref=e177]:
+            - img [ref=e178]
+            - text: HOS
+          - button "All" [ref=e181]:
+            - generic [ref=e182]: All
+            - img [ref=e184]
+        - generic [ref=e186]:
+          - generic [ref=e187]:
+            - img [ref=e188]
+            - text: ASM
+          - button "All" [ref=e191]:
+            - generic [ref=e192]: All
+            - img [ref=e194]
+        - generic [ref=e196]:
+          - generic [ref=e197]:
+            - img [ref=e198]
+            - text: Depot
+          - button "All" [ref=e202]:
+            - generic [ref=e203]: All
+            - img [ref=e205]
+        - generic [ref=e207]:
+          - generic [ref=e208]:
+            - img [ref=e209]
+            - text: Supervisor
+          - button "All" [ref=e215]:
+            - generic [ref=e216]: All
+            - img [ref=e218]
+        - generic [ref=e220]:
+          - generic [ref=e221]:
+            - img [ref=e222]
+            - text: Salesman
+          - button "All" [ref=e226]:
+            - generic [ref=e227]: All
+            - img [ref=e229]
+        - generic [ref=e231]:
+          - generic [ref=e232]:
+            - img [ref=e233]
+            - text: Route
+          - button "All" [ref=e238]:
+            - generic [ref=e239]: All
+            - img [ref=e241]
+        - generic [ref=e243]:
+          - generic [ref=e244]:
+            - img [ref=e245]
+            - text: Channel
+          - button "All" [ref=e252]:
+            - generic [ref=e253]: All
+            - img [ref=e255]
+        - generic [ref=e257]:
+          - generic [ref=e258]:
+            - img [ref=e259]
+            - text: Brand
+          - button "All" [ref=e263]:
+            - generic [ref=e264]: All
+            - img [ref=e266]
+        - generic [ref=e268]:
+          - generic [ref=e269]:
+            - img [ref=e270]
+            - text: Category
+          - button "All" [ref=e275]:
+            - generic [ref=e276]: All
+            - img [ref=e278]
+        - generic [ref=e280]:
+          - generic [ref=e281]:
+            - img [ref=e282]
+            - text: Day
+          - combobox [ref=e284] [cursor=pointer]:
+            - option "All (MTD)"
+            - option "1" [selected]
+            - option "2"
+            - option "3"
+            - option "4"
+            - option "5"
+            - option "6"
+            - option "7"
+            - option "8"
+            - option "9"
+            - option "10"
+            - option "11"
+            - option "12"
+            - option "13"
+            - option "14"
+            - option "15"
+            - option "16"
+            - option "17"
+            - option "18"
+            - option "19"
+            - option "20"
+            - option "21"
+            - option "22"
+            - option "23"
+            - option "24"
+            - option "25"
+            - option "26"
+            - option "27"
+            - option "28"
+            - option "29"
+            - option "30"
+        - generic [ref=e285]:
+          - generic [ref=e286]:
+            - img [ref=e287]
+            - text: Month
+          - combobox [ref=e289] [cursor=pointer]:
+            - option "All"
+            - option "January"
+            - option "February"
+            - option "March"
+            - option "April" [selected]
+            - option "May"
+            - option "June"
+            - option "July"
+            - option "August"
+            - option "September"
+            - option "October"
+            - option "November"
+            - option "December"
+        - generic [ref=e290]:
+          - generic [ref=e291]:
+            - img [ref=e292]
+            - text: Year
+          - combobox [ref=e295] [cursor=pointer]:
+            - option "All"
+            - option "2026" [selected]
+            - option "2025"
+            - option "2024"
+        - button "Reset" [ref=e297]:
+          - img [ref=e298]
+          - text: Reset
+      - generic [ref=e301]:
+        - generic [ref=e302]:
+          - generic [ref=e304]:
+            - img [ref=e305]
+            - generic [ref=e308]: LMTD Sales (2026-03-01 to 2026-03-01)
+          - generic [ref=e309]: AED 1,321,627
+        - generic [ref=e310]:
+          - generic [ref=e312]:
+            - img [ref=e313]
+            - generic [ref=e316]: MTD Sales (2026-04-01 to 2026-04-01)
+          - generic [ref=e317]: AED 0
+      - generic [ref=e318]:
+        - generic [ref=e320]:
+          - generic [ref=e321]:
+            - img [ref=e323]
+            - generic [ref=e326]:
+              - heading "Return on Sales" [level=2] [ref=e327]
+              - paragraph [ref=e328]: Returns as % of total sales
+          - generic [ref=e329]: 0.0%
+        - generic [ref=e330]:
+          - generic [ref=e331]:
+            - generic [ref=e332]:
+              - img [ref=e333]
+              - generic [ref=e336]: Total Sales
+            - generic [ref=e337]: AED 0
+          - generic [ref=e338]:
+            - generic [ref=e339]:
+              - img [ref=e340]
+              - generic [ref=e343]: Total Returns
+            - generic [ref=e344]: AED 0
+          - generic [ref=e345]:
+            - generic [ref=e346]:
+              - img [ref=e347]
+              - generic [ref=e350]: Good Returns
+            - generic [ref=e351]: AED 0
+          - generic [ref=e352]:
+            - generic [ref=e353]:
+              - img [ref=e354]
+              - generic [ref=e356]: Bad Returns
+            - generic [ref=e357]: AED 0
+      - generic [ref=e358]:
+        - heading "SKU Performance" [level=2] [ref=e359]
+        - generic [ref=e360]:
+          - generic [ref=e361]:
+            - generic [ref=e363]:
+              - img [ref=e364]
+              - generic [ref=e368]: Today SKU Sold (2026-03-07)
+            - generic [ref=e369]: "240"
+          - generic [ref=e370]:
+            - generic [ref=e372]:
+              - img [ref=e373]
+              - generic [ref=e375]: MTD SKU Sold
+            - generic [ref=e376]: "0"
+          - generic [ref=e377]:
+            - generic [ref=e379]:
+              - img [ref=e380]
+              - generic [ref=e383]: YTD SKU Sold
+            - generic [ref=e384]: "335"

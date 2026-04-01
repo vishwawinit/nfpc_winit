@@ -56,10 +56,12 @@ def get_sales_performance(
         display_end = requested           # label always shows the requested day
         cur_end = min(requested, latest_data)
     elif month and year:
-        cur_start, cur_end = _month_range(year, month)
-        if cur_end > latest_data:
-            cur_end = latest_data
-        display_end = cur_end
+        cur_start = date(year, month, 1)
+        _, month_last = _month_range(year, month)
+        # Use today's day-of-month applied to the selected month (not full month auto-expand)
+        implied_day = min(today.day, month_last.day)
+        display_end = date(year, month, implied_day)
+        cur_end = min(display_end, latest_data)
     else:
         cur_start = date(today.year, today.month, 1)
         display_end = today
@@ -92,13 +94,12 @@ def get_sales_performance(
         mtd_kpi_end     = cur_end
         mtd_kpi_display = display_end
     else:
-        # Month/year only: full month to today
-        mtd_kpi_start    = date(eff_year, eff_month, 1)
-        _, month_last    = _month_range(eff_year, eff_month)
-        is_current_month = (eff_year == today.year and eff_month == today.month)
-        mtd_kpi_display  = min(date(eff_year, eff_month, today.day), month_last) \
-                           if is_current_month else month_last
-        mtd_kpi_end      = min(mtd_kpi_display, latest_data)
+        # Month/year only (no day): use today's day applied to selected month
+        mtd_kpi_start   = date(eff_year, eff_month, 1)
+        _, month_last   = _month_range(eff_year, eff_month)
+        implied_day     = min(today.day, month_last.day)
+        mtd_kpi_display = date(eff_year, eff_month, implied_day)
+        mtd_kpi_end     = min(mtd_kpi_display, latest_data)
 
     if mtd_kpi_start.month == 1:
         lmtd_kpi_start = date(mtd_kpi_start.year - 1, 12, 1)
@@ -312,13 +313,24 @@ def get_sales_performance(
     rsic_base = {k: v for k, v in base_filters.items() if k in RSIC_KEYS}
     full_month_end = min(_month_range(cur_start.year, cur_start.month)[1], latest_data)
 
-    # Find latest date with data (filtered by user if hierarchy selected)
+    # Find latest date with data (used for current-week calculation)
     latest_f = {**rsic_base, 'date_from': cur_start, 'date_to': cur_end}
     ltw, ltp = build_where(latest_f, date_col='date')
     latest_row = query_one(
         f"SELECT MAX(date) AS latest FROM rpt_route_sales_by_item_customer WHERE {ltw}", ltp
     )
     latest_date = latest_row["latest"] if latest_row and latest_row["latest"] else cur_end
+
+    # Today SKU date: strictly the selected day (or today's day applied to selected month)
+    if day and month and year:
+        today_sku_date = date(year, month, day)
+    elif month and year:
+        _, _ml = _month_range(year, month)
+        today_sku_date = date(year, month, min(today.day, _ml.day))
+    elif date_from and date_to:
+        today_sku_date = date_to
+    else:
+        today_sku_date = today
 
     # SP2: Daily/MTD/YTD SKU counts in a single query (saves 2 round-trips to remote DB)
     ytd_end = date(cur_end.year, 12, 31)
@@ -335,12 +347,12 @@ def get_sales_performance(
         f"JOIN dim_customer dc ON dc.code = r.customer_code{_ch_dc_join_cond} "
         f"JOIN dim_user du ON du.code = r.user_code AND du.role_code = 'C_PRESALES_VANSALES' "
         f"{_org_join}WHERE {sw_wide}",
-        [latest_date, cur_start, cur_end, ytd_start, ytd_end]
+        [today_sku_date, cur_start, cur_end, ytd_start, ytd_end]
         + _brand_di_params + _channel_cond_params + _org_params + sp_wide
     )
     sku_counts = {
         "today": int(sku_row["today_cnt"]) if sku_row else 0,
-        "today_label": str(latest_date),
+        "today_label": str(today_sku_date),
         "mtd": int(sku_row["mtd_cnt"]) if sku_row else 0,
         "ytd": int(sku_row["ytd_cnt"]) if sku_row else 0,
     }
