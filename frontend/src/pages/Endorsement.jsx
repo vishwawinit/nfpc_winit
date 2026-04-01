@@ -36,11 +36,11 @@ export default function Endorsement() {
   const customers = data?.customers || [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Endorsement Report</h1>
-          <p className="text-sm text-gray-500 mt-1">Customer visit tracking and journey plan compliance</p>
+          <h1 className="text-[22px] font-bold text-gray-900 tracking-tight">Endorsement Report</h1>
+          <p className="text-[13px] text-gray-400 mt-0.5 font-medium">Customer visit tracking and journey plan compliance</p>
         </div>
         {customers.length > 0 && (
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-600">
@@ -53,8 +53,14 @@ export default function Endorsement() {
       <FilterPanel filters={filters} onChange={setFilters}
         showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'channel', 'category', 'brand']} />
 
-      {loading ? <Loading /> : !data ? (
-        <div className="text-center py-16 text-gray-400">No data available</div>
+      {refreshing && (
+        <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-1 bg-indigo-500 rounded-full animate-pulse" style={{ width: '60%' }} />
+        </div>
+      )}
+
+      {loading && !data ? <Loading /> : !data ? (
+        <div className="text-center py-16 text-gray-400 font-medium">No data available</div>
       ) : (
         <>
           {/* KPI Cards */}
