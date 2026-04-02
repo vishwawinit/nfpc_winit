@@ -407,7 +407,12 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
   };
 
   const handleDateFrom = (val) => {
-    if (show('date_to') && filters.date_to && val > filters.date_to) {
+    if (!show('date_to')) {
+      // Single-date mode: keep date_to in sync with date_from
+      onChange({ ...filters, date_from: val, date_to: val });
+      return;
+    }
+    if (filters.date_to && val > filters.date_to) {
       onChange({ ...filters, date_from: val, date_to: val });
       return;
     }
@@ -463,11 +468,16 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
         <div className="flex flex-wrap items-end gap-3">
           {hasDateFrom && (
             <div className="min-w-[180px] flex-1 max-w-[220px]">
-              <Label field="date_from" />
+              {hasDateTo ? <Label field="date_from" /> : (
+                <label className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide select-none">
+                  <Calendar className="w-3.5 h-3.5 text-gray-400" strokeWidth={2} />
+                  Date
+                </label>
+              )}
               <input
                 type="date"
                 value={filters.date_from || ''}
-                max={filters.date_to || undefined}
+                max={hasDateTo ? (filters.date_to || undefined) : undefined}
                 onChange={e => handleDateFrom(e.target.value)}
                 className={inputClass}
               />

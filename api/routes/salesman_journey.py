@@ -13,6 +13,7 @@ from api.models import build_where, resolve_user_codes
 router = APIRouter()
 
 RSIC_KEYS = {'date_from', 'date_to', 'route', 'user_code'}
+RSSI_KEYS = {'date_from', 'date_to', 'sales_org', 'route', 'user_code'}  # rpt_route_sales_summary_by_item
 
 
 @router.get("/salesman-journey")
@@ -60,6 +61,7 @@ def get_salesman_journey(
     # User list: visit-row-level productive/non-productive (consistent with detail endpoint)
     vw, vp = build_where(filters, date_col='date', prefix='cv')
     rw, rp = build_where({k: v for k, v in filters.items() if k in RSIC_KEYS}, date_col='date', prefix='rc')
+    sw, sp = build_where({k: v for k, v in filters.items() if k in RSSI_KEYS}, date_col='date', prefix='s')
 
     users = query(
         f"WITH prod_set AS ( "
@@ -136,12 +138,11 @@ def get_salesman_journey_detail(
             "journey_end": str(journey_row["end_time"])[11:16] if journey_row["end_time"] else None,
         }
 
-    # Sales KPIs
+    # Sales KPIs — use RSIC (same as dashboard when user_code filter is active)
     f_rsic = {k: v for k, v in filters.items() if k in RSIC_KEYS}
     rw, rp = build_where(f_rsic, date_col='date')
     sales_row = query_one(
-        f"SELECT COALESCE(SUM(total_sales), 0) AS total_sales, "
-        f"  COALESCE(SUM(total_gr_sales + total_damage_sales + total_expiry_sales), 0) AS total_returns "
+        f"SELECT COALESCE(SUM(total_sales), 0) AS total_sales "
         f"FROM rpt_route_sales_by_item_customer WHERE {rw}", rp
     )
 
@@ -153,8 +154,6 @@ def get_salesman_journey_detail(
         "total_sales": round(float(sales_row["total_sales"]), 2) if sales_row else 0,
         "collection": round(float(coll_row["collection"]), 2) if coll_row else 0,
     }
-
-    # Visits with productive detection
     prod_rows = query(
         f"SELECT DISTINCT route_code, customer_code, date "
         f"FROM rpt_route_sales_by_item_customer WHERE total_sales > 0 AND {rw}", rp
