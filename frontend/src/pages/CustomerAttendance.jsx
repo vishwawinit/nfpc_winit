@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchCustomerAttendance } from '../api';
 import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
@@ -9,8 +9,6 @@ import { Users, MapPin, Clock, CalendarDays } from 'lucide-react';
 export default function CustomerAttendance() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const hasData = useRef(false);
   const [filters, setFilters] = useState(() => {
     const now = new Date();
     const y = now.getFullYear();
@@ -21,14 +19,44 @@ export default function CustomerAttendance() {
 
   useEffect(() => {
     let cancelled = false;
-    if (!hasData.current) setLoading(true);
-    else setRefreshing(true);
+    setLoading(true);
     fetchCustomerAttendance(filters)
-      .then(res => { if (!cancelled) { setData(res); hasData.current = true; } })
+      .then(res => { if (!cancelled) setData(res); })
       .catch(err => { if (!cancelled) console.error(err); })
-      .finally(() => { if (!cancelled) { setLoading(false); setRefreshing(false); } });
+      .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [filters]);
+
+  const toSecs = (t) => {
+    if (!t) return null;
+    const s = String(t).trim();
+    // Full datetime string: "YYYY-MM-DD HH:MM:SS"
+    if (s.includes(' ') || s.includes('T')) {
+      const d = new Date(s.replace(' ', 'T'));
+      return isNaN(d.getTime()) ? null : d.getTime() / 1000;
+    }
+    // Time-only string: "HH:MM:SS"
+    const parts = s.split(':').map(Number);
+    if (parts.some(isNaN)) return null;
+    return parts[0] * 3600 + (parts[1] || 0) * 60 + (parts[2] || 0);
+  };
+
+  const fmtTimeSpent = (row) => {
+    const s = toSecs(row.start_time);
+    const e = toSecs(row.end_time);
+    if (s !== null && e !== null && !isNaN(s) && !isNaN(e) && e > s) {
+      const diff = Math.round(e - s);
+      const m = Math.floor(diff / 60), sec = diff % 60;
+      return `${m}m ${String(sec).padStart(2, '0')}s`;
+    }
+    // Fallback: total_time_mins from DB
+    const v = row.spent_time;
+    if (!v && v !== 0) return '—';
+    const totalSec = Math.round(Number(v) * 60);
+    if (totalSec <= 0) return '—';
+    const m = Math.floor(totalSec / 60), sec = totalSec % 60;
+    return `${m}m ${String(sec).padStart(2, '0')}s`;
+  };
 
   const rows = Array.isArray(data) ? data : [];
 
@@ -46,7 +74,7 @@ export default function CustomerAttendance() {
       <FilterPanel filters={filters} onChange={setFilters}
         showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'customer', 'channel']} />
 
-      {loading ? <Loading /> : rows.length === 0 ? (
+      {loading ? <Loading /> : !data || rows.length === 0 ? (
         <div className="text-center py-16 text-gray-400">No data available</div>
       ) : (
         <>
@@ -71,15 +99,9 @@ export default function CustomerAttendance() {
                 { key: 'customer_name', label: 'Customer Name' },
                 { key: 'start_time', label: 'Start Time' },
                 { key: 'end_time', label: 'End Time' },
-                { key: 'spent_time', label: 'Time Spent', render: (v) => {
-                  if (!v && v !== 0) return '—';
-                  const totalSec = Math.round(v * 60);
-                  const m = Math.floor(totalSec / 60);
-                  const s = totalSec % 60;
-                  return `${m}m ${String(s).padStart(2, '0')}s`;
-                }},
+                { key: 'time_spent_str', label: 'Time Spent' },
               ]}
-              data={rows}
+              data={rows.map(r => ({ ...r, time_spent_str: fmtTimeSpent(r) }))}
               exportName="customer-attendance"
             />
           </div>

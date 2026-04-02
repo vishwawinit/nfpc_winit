@@ -4,7 +4,7 @@ import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
 import KpiCard from '../components/KpiCard';
 import DataTable from '../components/DataTable';
-import { Banknote, CreditCard, ShoppingCart, Percent, Phone, Receipt, Clock } from 'lucide-react';
+import { Banknote, CreditCard, ShoppingCart, Percent, Phone, Receipt, Clock, RotateCcw } from 'lucide-react';
 
 const aed = (v) => v != null ? `AED ${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-';
 
@@ -84,10 +84,11 @@ export default function DailySalesOverview() {
           {/* Sales Details */}
           <div>
             <h2 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Sales Details</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <KpiCard title="Cash Sales" value={aed(sales.cash_sales)} color="green" icon={Banknote} variant="solid" />
               <KpiCard title="Credit Sales" value={aed(sales.credit_sales)} color="indigo" icon={CreditCard} variant="solid" />
               <KpiCard title="Daily Sales" value={aed(displayDailySales)} color="purple" icon={ShoppingCart} variant="solid" />
+              <KpiCard title="Total Returns" value={aed(sales.total_returns)} color="red" icon={RotateCcw} variant="solid" />
               <KpiCard title="Discount" value={aed(sales.discount)} color="yellow" icon={Percent} variant="solid" />
             </div>
           </div>

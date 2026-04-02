@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { fetchRevenueDispersion } from '../api';
 import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
-import { BarChart3, Layers, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { BarChart3, Layers, TrendingUp, TrendingDown, Minus, ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
 
 const pctColor = (val) => {
   const n = parseFloat(val);
@@ -65,28 +65,144 @@ function monthLabel(m) {
 const REVENUE_ORDER = ['0-200', '200-500', '500-1000', '1000-2500', '2500-5000', '5000+'];
 const SKU_ORDER = ['0-5', '5-10', '10-15', '15-20', '20+'];
 
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function getDateRange(ym) {
+  const [y, m] = ym.split('-').map(Number);
+  const now = new Date();
+  const isCurrentMonth = y === now.getFullYear() && m === (now.getMonth() + 1);
+  const date_from = `${ym}-01`;
+  if (isCurrentMonth) {
+    const d = String(now.getDate()).padStart(2, '0');
+    return { date_from, date_to: `${ym}-${d}` };
+  }
+  const lastDay = new Date(y, m, 0).getDate();
+  return { date_from, date_to: `${ym}-${String(lastDay).padStart(2, '0')}` };
+}
+
+function MonthPicker({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [viewYear, setViewYear] = useState(() => Number(value.split('-')[0]));
+  const ref = useRef(null);
+
+  const [selY, selM] = value.split('-').map(Number);
+  const now = new Date();
+  const maxY = now.getFullYear();
+  const maxM = now.getMonth() + 1;
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const select = (m) => {
+    const ym = `${viewYear}-${String(m).padStart(2, '0')}`;
+    onChange(ym);
+    setOpen(false);
+  };
+
+  const displayLabel = `${MONTHS_FULL[selM - 1]} ${selY}`;
+
+  return (
+    <div className="relative" ref={ref}>
+      {/* Trigger button */}
+      <button
+        type="button"
+        onClick={() => { setViewYear(selY); setOpen(o => !o); }}
+        className={`flex items-center gap-2 pl-3 pr-4 py-2 rounded-xl border text-sm font-medium transition-all
+          ${open
+            ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+            : 'bg-white text-gray-700 border-gray-200 hover:border-blue-400 hover:text-blue-600 shadow-sm'
+          }`}
+      >
+        <CalendarDays className="w-4 h-4 flex-shrink-0" />
+        {displayLabel}
+        <ChevronRight className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-90' : ''}`} />
+      </button>
+
+      {/* Calendar dropdown */}
+      {open && (
+        <div className="absolute top-full left-0 mt-2 z-50 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 w-64"
+          style={{ boxShadow: '0 12px 32px -4px rgba(0,0,0,0.15), 0 4px 12px -2px rgba(0,0,0,0.08)' }}>
+
+          {/* Year navigation */}
+          <div className="flex items-center justify-between mb-3">
+            <button
+              onClick={() => setViewYear(y => y - 1)}
+              disabled={viewYear <= maxY - 4}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-30"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-sm font-bold text-gray-800">{viewYear}</span>
+            <button
+              onClick={() => setViewYear(y => y + 1)}
+              disabled={viewYear >= maxY}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-30"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Month grid — 4 cols × 3 rows */}
+          <div className="grid grid-cols-4 gap-1.5">
+            {MONTHS.map((mn, idx) => {
+              const mNum = idx + 1;
+              const isSel = viewYear === selY && mNum === selM;
+              const isToday = viewYear === maxY && mNum === maxM;
+              const isFuture = viewYear === maxY && mNum > maxM || viewYear > maxY;
+              return (
+                <button
+                  key={mn}
+                  disabled={isFuture}
+                  onClick={() => select(mNum)}
+                  className={`py-1.5 rounded-lg text-xs font-semibold transition-all
+                    ${isSel
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : isFuture
+                        ? 'text-gray-200 cursor-not-allowed'
+                        : isToday
+                          ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-200'
+                          : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                    }`}
+                >
+                  {mn}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function RevenueDispersion() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const hasData = useRef(false);
-  const [filters, setFilters] = useState(() => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const d = String(now.getDate()).padStart(2, '0');
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    return { date_from: `${y}-${m}-01`, date_to: `${y}-${m}-${d}` };
-  });
   const [activeTab, setActiveTab] = useState('revenue');
+
+  const [selectedYM, setSelectedYM] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
+
+  const [filters, setFilters] = useState({});
 
   useEffect(() => {
     let cancelled = false;
-    if (!hasData.current) setLoading(true);
-    fetchRevenueDispersion(filters)
-      .then(res => { if (!cancelled) { setData(res); hasData.current = true; } })
+    setLoading(true);
+    const { date_from, date_to } = getDateRange(selectedYM);
+    fetchRevenueDispersion({ date_from, date_to, ...filters })
+      .then(res => { if (!cancelled) setData(res); })
       .catch(err => { if (!cancelled) console.error(err); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [filters]);
+  }, [selectedYM, filters]);
 
   const rows = activeTab === 'revenue' ? (data?.revenue_dispersion || []) : (data?.sku_dispersion || []);
   const rangeKey = activeTab === 'revenue' ? 'billing_range' : 'sku_range';
@@ -102,9 +218,10 @@ export default function RevenueDispersion() {
   }, [rows, rangeKey, rangeOrder]);
 
   const getCell = (range, month) => rows.find(r => r[rangeKey] === range && r.month === month);
-
   const totalFor = (month, field) =>
     rows.filter(r => r.month === month).reduce((s, r) => s + (parseInt(r[field]) || 0), 0);
+
+  const { date_from, date_to } = getDateRange(selectedYM);
 
   return (
     <div className="space-y-6">
@@ -113,8 +230,27 @@ export default function RevenueDispersion() {
         <p className="text-sm text-gray-500 mt-1">Customer billing and SKU distribution — prev month vs current month vs YTD</p>
       </div>
 
-      <FilterPanel filters={filters} onChange={setFilters}
-        showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route']} />
+      {/* Unified Filter Panel */}
+      <div className="bg-white/70 border border-gray-200/60 rounded-xl p-4 pb-5 space-y-4">
+
+        {/* Month picker + other filters in one block */}
+        <div className="flex flex-wrap items-end gap-4">
+          <div>
+            <label className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+              Month
+            </label>
+            <MonthPicker value={selectedYM} onChange={setSelectedYM} />
+          </div>
+        </div>
+
+        {/* Other filters (flat — no wrapper div) */}
+        <FilterPanel
+          flat
+          filters={filters}
+          onChange={setFilters}
+          showFields={['sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route']}
+        />
+      </div>
 
       {loading ? <Loading /> : !data ? (
         <div className="text-center py-20">
@@ -147,30 +283,24 @@ export default function RevenueDispersion() {
                     <th className="px-5 py-3.5 text-left text-xs text-gray-500 uppercase font-semibold tracking-wider sticky left-0 bg-gray-50/80 z-10" rowSpan={2}>
                       {activeTab === 'revenue' ? 'Billing Range (AED)' : 'SKU Range'}
                     </th>
-                    {/* Current Month */}
                     <th colSpan={3} className="px-2 py-3 text-center text-xs font-semibold text-blue-600 uppercase tracking-wider border-l border-blue-200">
                       {monthLabel(selectedMonth)} <span className="font-normal text-blue-400">(Current)</span>
                     </th>
-                    {/* Prev Month */}
                     <th colSpan={4} className="px-2 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-l border-gray-200">
                       {monthLabel(prevMonth)} <span className="font-normal text-gray-400">(Prev)</span>
                     </th>
-                    {/* YTD */}
                     <th colSpan={3} className="px-2 py-3 text-center text-xs font-semibold text-violet-600 uppercase tracking-wider border-l border-violet-200">
                       YTD
                     </th>
                   </tr>
                   <tr className="bg-gray-50/50 border-b border-gray-200">
-                    {/* Current sub-headers */}
                     <th className="px-3 py-2 text-center text-[11px] font-medium text-blue-400 uppercase border-l border-blue-100">Invoices</th>
                     <th className="px-3 py-2 text-center text-[11px] font-medium text-blue-400 uppercase">Customers</th>
                     <th className="px-3 py-2 text-center text-[11px] font-medium text-blue-400 uppercase">%</th>
-                    {/* Prev sub-headers */}
                     <th className="px-3 py-2 text-center text-[11px] font-medium text-gray-400 uppercase border-l border-gray-200">Invoices</th>
                     <th className="px-3 py-2 text-center text-[11px] font-medium text-gray-400 uppercase">Customers</th>
                     <th className="px-3 py-2 text-center text-[11px] font-medium text-gray-400 uppercase">%</th>
                     <th className="px-3 py-2 text-center text-[11px] font-medium text-gray-400 uppercase">Change</th>
-                    {/* YTD sub-headers */}
                     <th className="px-3 py-2 text-center text-[11px] font-medium text-violet-400 uppercase border-l border-violet-100">Invoices</th>
                     <th className="px-3 py-2 text-center text-[11px] font-medium text-violet-400 uppercase">Customers</th>
                     <th className="px-3 py-2 text-center text-[11px] font-medium text-violet-400 uppercase">%</th>
@@ -186,16 +316,13 @@ export default function RevenueDispersion() {
                         <td className="px-5 py-3 font-semibold text-gray-700 whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-100">
                           {range}
                         </td>
-                        {/* Current */}
                         <td className="px-3 py-3 text-center text-gray-800 tabular-nums font-medium border-l border-blue-100">{curr?.invoice_count ?? '—'}</td>
                         <td className="px-3 py-3 text-center text-gray-800 tabular-nums font-medium">{curr?.customer_count ?? '—'}</td>
                         <PctBadge cell={curr} />
-                        {/* Prev */}
                         <td className="px-3 py-3 text-center text-gray-500 tabular-nums border-l border-gray-100">{prev?.invoice_count ?? '—'}</td>
                         <td className="px-3 py-3 text-center text-gray-500 tabular-nums">{prev?.customer_count ?? '—'}</td>
                         <PctBadge cell={prev} />
                         <ChangeCell current={curr?.customer_count} prev={prev?.customer_count} />
-                        {/* YTD */}
                         <td className="px-3 py-3 text-center text-violet-700 tabular-nums font-medium border-l border-violet-100">{ytd?.invoice_count ?? '—'}</td>
                         <td className="px-3 py-3 text-center text-violet-700 tabular-nums font-medium">{ytd?.customer_count ?? '—'}</td>
                         <PctBadge cell={ytd} />
@@ -216,11 +343,9 @@ export default function RevenueDispersion() {
                   <tfoot>
                     <tr className="bg-gray-50 border-t-2 border-gray-200 font-bold">
                       <td className="px-5 py-3 text-gray-700 sticky left-0 bg-gray-50 z-10">Total</td>
-                      {/* Current totals */}
                       <td className="px-3 py-3 text-center text-gray-800 tabular-nums border-l border-blue-100">{totalFor(selectedMonth, 'invoice_count') || '—'}</td>
                       <td className="px-3 py-3 text-center text-gray-800 tabular-nums">{totalFor(selectedMonth, 'customer_count') || '—'}</td>
                       <td className="px-3 py-3 text-center text-gray-600">100%</td>
-                      {/* Prev totals */}
                       <td className="px-3 py-3 text-center text-gray-600 tabular-nums border-l border-gray-200">{totalFor(prevMonth, 'invoice_count') || '—'}</td>
                       <td className="px-3 py-3 text-center text-gray-600 tabular-nums">{totalFor(prevMonth, 'customer_count') || '—'}</td>
                       <td className="px-3 py-3 text-center text-gray-500">100%</td>
@@ -228,7 +353,6 @@ export default function RevenueDispersion() {
                         current={totalFor(selectedMonth, 'customer_count')}
                         prev={totalFor(prevMonth, 'customer_count')}
                       />
-                      {/* YTD totals */}
                       <td className="px-3 py-3 text-center text-violet-700 tabular-nums border-l border-violet-100">{totalFor(YTD, 'invoice_count') || '—'}</td>
                       <td className="px-3 py-3 text-center text-violet-700 tabular-nums">{totalFor(YTD, 'customer_count') || '—'}</td>
                       <td className="px-3 py-3 text-center text-violet-600">100%</td>

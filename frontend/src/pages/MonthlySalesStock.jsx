@@ -89,7 +89,7 @@ export default function MonthlySalesStock() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-[22px] font-bold text-gray-900 tracking-tight">Monthly Sales & Stock</h1>
+          <h1 className="text-[22px] font-bold text-gray-900 tracking-tight">Monthly Sales By Channel</h1>
           <p className="text-[13px] text-gray-400 mt-0.5 font-medium">Item-level sales across channels with MTD and YTD comparison</p>
         </div>
         {!loading && items.length > 0 && (

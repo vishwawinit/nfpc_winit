@@ -215,7 +215,7 @@ function MultiSelect({ options, value, onChange, placeholder = 'All', loading = 
   );
 }
 
-export default function FilterPanel({ filters, onChange, showFields = [], onReset, rowBreakBefore = [] }) {
+export default function FilterPanel({ filters, onChange, showFields = [], onReset, rowBreakBefore = [], flat = false }) {
   const initialFiltersRef = useRef(filters);
   const [salesOrgs, setSalesOrgs] = useState([]);
   const [hosList, setHosList] = useState([]);
@@ -456,8 +456,8 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
     : multiFields.length <= 7 ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7'
     : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7';
 
-  return (
-    <div className="bg-white/70 border border-gray-200/60 rounded-xl p-4 pb-5 space-y-4">
+  const content = (
+    <>
       {/* Row 1: Date range */}
       {(hasDateFrom || hasDateTo) && (
         <div className="flex flex-wrap items-end gap-3">
@@ -590,6 +590,14 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
           )}
         </div>
       )}
+    </>
+  );
+
+  if (flat) return content;
+
+  return (
+    <div className="bg-white/70 border border-gray-200/60 rounded-xl p-4 pb-5 space-y-4">
+      {content}
     </div>
   );
 }

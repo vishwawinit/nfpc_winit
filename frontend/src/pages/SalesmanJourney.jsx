@@ -20,13 +20,26 @@ const ROUTE_COLOR        = '#6366f1';
 
 const aed = (v) => v != null ? `AED ${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-';
 
+const toSecs = (t) => {
+  if (!t) return null;
+  const s = String(t).trim();
+  if (s.includes(' ') || s.includes('T')) {
+    const d = new Date(s.replace(' ', 'T'));
+    return isNaN(d.getTime()) ? null : d.getTime() / 1000;
+  }
+  const parts = s.split(':').map(Number);
+  if (parts.some(isNaN)) return null;
+  return parts[0] * 3600 + (parts[1] || 0) * 60 + (parts[2] || 0);
+};
+
 const calcDuration = (checkIn, checkOut) => {
   if (!checkIn || !checkOut) return '-';
-  const a = new Date(checkIn), b = new Date(checkOut);
-  const diff = Math.round((b - a) / 1000);
-  if (isNaN(diff) || diff < 0) return '-';
-  const m = Math.floor(diff / 60), s = diff % 60;
-  return `${m}m ${s}s`;
+  const s = toSecs(checkIn), e = toSecs(checkOut);
+  if (s === null || e === null || isNaN(s) || isNaN(e)) return '-';
+  const diff = Math.round(e - s);
+  if (diff <= 0) return '-';
+  const m = Math.floor(diff / 60), sec = diff % 60;
+  return `${m}m ${String(sec).padStart(2, '0')}s`;
 };
 
 const fmtTime = (ts) => {
@@ -523,9 +536,9 @@ export default function SalesmanJourney() {
   const startIdx   = (safePage - 1) * pageSize;
   const paged      = filtered.slice(startIdx, startIdx + pageSize);
 
-  const totalSales     = users.reduce((s, u) => s + (Number(u.total_sales)    || 0), 0);
-  const totalCustomers = users.reduce((s, u) => s + (Number(u.customer_count) || 0), 0);
-  const totalSku       = users.reduce((s, u) => s + (Number(u.sku_count)      || 0), 0);
+  const totalSales     = users.reduce((s, u) => s + (Number(u.total_sales)   || 0), 0);
+  const totalCustomers = users.reduce((s, u) => s + (Number(u.total_visits)  || 0), 0);
+  const totalSku       = users.reduce((s, u) => s + (Number(u.sku_count)     || 0), 0);
 
   const openModal = (user) => {
     setModalUser(user);
@@ -549,7 +562,7 @@ export default function SalesmanJourney() {
     const header = ['User Code', 'Salesman', 'Route Code', 'Route Name', 'Sales', 'Customers', 'SKUs', 'Productive', 'Non-Productive'].join('\t');
     const rows = filtered.map(u => [
       u.user_code, u.user_name, u.route_code, u.route_name,
-      u.total_sales, u.customer_count, u.sku_count,
+      u.total_sales, u.total_visits, u.sku_count,
       u.productive_count, u.non_productive_count
     ].join('\t'));
     const blob = new Blob([header + '\n' + rows.join('\n')], { type: 'application/vnd.ms-excel' });
@@ -648,7 +661,7 @@ export default function SalesmanJourney() {
                         <td className="px-4 py-2.5 font-mono text-xs text-gray-500">{u.route_code}</td>
                         <td className="px-4 py-2.5 text-xs text-gray-600">{u.route_name}</td>
                         <td className="px-4 py-2.5 text-right tabular-nums text-emerald-700 font-medium">{aed(u.total_sales)}</td>
-                        <td className="px-4 py-2.5 text-right tabular-nums">{u.customer_count}</td>
+                        <td className="px-4 py-2.5 text-right tabular-nums">{u.total_visits}</td>
                         <td className="px-4 py-2.5 text-right tabular-nums">{u.sku_count}</td>
                         <td className="px-4 py-2.5 text-right tabular-nums text-emerald-600">{u.productive_count}</td>
                         <td className="px-4 py-2.5 text-right tabular-nums text-rose-500">{u.non_productive_count}</td>
@@ -733,35 +746,57 @@ export default function SalesmanJourney() {
                 <div className="py-16 text-center"><Loading /></div>
               ) : detail ? (
                 <>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-3 text-center">
-                      <div className="text-[10px] text-emerald-600 uppercase font-semibold">Sales</div>
-                      <div className="text-base font-bold text-emerald-700">{aed(detail.kpis?.total_sales)}</div>
-                    </div>
-                    <div className="bg-purple-50 rounded-xl border border-purple-100 p-3 text-center">
-                      <div className="text-[10px] text-purple-600 uppercase font-semibold">Collection</div>
-                      <div className="text-base font-bold text-purple-700">{aed(detail.kpis?.collection)}</div>
-                    </div>
-                    <div className="bg-blue-50 rounded-xl border border-blue-100 p-3 text-center">
-                      <div className="text-[10px] text-blue-600 uppercase font-semibold">Journey Start</div>
-                      <div className="text-base font-bold text-blue-700">{fmtTime(detail.journey_info?.journey_start)}</div>
-                    </div>
-                    <div className="bg-gray-50 rounded-xl border border-gray-100 p-3 text-center">
-                      <div className="text-[10px] text-gray-500 uppercase font-semibold">Journey End</div>
-                      <div className="text-base font-bold text-gray-700">{fmtTime(detail.journey_info?.journey_end)}</div>
-                    </div>
-                  </div>
+                  {(() => {
+                    const visits = detail.visits || [];
+                    const totalStops   = visits.length;
+                    const prodCusts    = visits.filter(v => v.productive).length;
+                    const nonProdCusts = visits.filter(v => !v.productive).length;
+                    return (
+                      <>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-3 text-center">
+                            <div className="text-[10px] text-emerald-600 uppercase font-semibold">Sales</div>
+                            <div className="text-base font-bold text-emerald-700">{aed(detail.kpis?.total_sales)}</div>
+                          </div>
+                          <div className="bg-purple-50 rounded-xl border border-purple-100 p-3 text-center">
+                            <div className="text-[10px] text-purple-600 uppercase font-semibold">Collection</div>
+                            <div className="text-base font-bold text-purple-700">{aed(detail.kpis?.collection)}</div>
+                          </div>
+                          <div className="bg-blue-50 rounded-xl border border-blue-100 p-3 text-center">
+                            <div className="text-[10px] text-blue-600 uppercase font-semibold">Journey Start</div>
+                            <div className="text-base font-bold text-blue-700">{fmtTime(detail.journey_info?.journey_start)}</div>
+                          </div>
+                          <div className="bg-gray-50 rounded-xl border border-gray-100 p-3 text-center">
+                            <div className="text-[10px] text-gray-500 uppercase font-semibold">Journey End</div>
+                            <div className="text-base font-bold text-gray-700">{fmtTime(detail.journey_info?.journey_end)}</div>
+                          </div>
+                        </div>
 
-                  <div className="flex items-center gap-4 px-1">
-                    <span className="text-xs font-semibold text-gray-500">{detail.visits?.length || 0} Total Stops</span>
-                    <span className="w-1 h-1 rounded-full bg-gray-300" />
-                    <span className="text-xs font-semibold text-emerald-600">{detail.visits?.filter(v => v.productive).length || 0} Productive</span>
-                    <span className="w-1 h-1 rounded-full bg-gray-300" />
-                    <span className="text-xs font-semibold text-rose-500">{detail.visits?.filter(v => !v.productive).length || 0} Non-Productive</span>
-                    {detail.journey_info?.vehicle && (
-                      <><span className="w-1 h-1 rounded-full bg-gray-300" /><span className="text-xs text-gray-400">Vehicle: {detail.journey_info.vehicle}</span></>
-                    )}
-                  </div>
+                        <div className="grid grid-cols-4 gap-2">
+                          <div className="bg-indigo-50 rounded-xl border border-indigo-100 p-3 text-center">
+                            <div className="text-[10px] text-indigo-500 uppercase font-semibold">Customers Visited</div>
+                            <div className="text-xl font-bold text-indigo-700">{totalStops}</div>
+                          </div>
+                          <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-3 text-center">
+                            <div className="text-[10px] text-emerald-600 uppercase font-semibold">Productive</div>
+                            <div className="text-xl font-bold text-emerald-700">{prodCusts}</div>
+                          </div>
+                          <div className="bg-rose-50 rounded-xl border border-rose-100 p-3 text-center">
+                            <div className="text-[10px] text-rose-500 uppercase font-semibold">Non-Productive</div>
+                            <div className="text-xl font-bold text-rose-600">{nonProdCusts}</div>
+                          </div>
+                          <div className="bg-gray-50 rounded-xl border border-gray-100 p-3 text-center">
+                            <div className="text-[10px] text-gray-500 uppercase font-semibold">Total Stops</div>
+                            <div className="text-xl font-bold text-gray-700">{totalStops}</div>
+                          </div>
+                        </div>
+
+                        {detail.journey_info?.vehicle && (
+                          <div className="px-1 text-xs text-gray-400">Vehicle: {detail.journey_info.vehicle}</div>
+                        )}
+                      </>
+                    );
+                  })()}
 
                   <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
                     <div className="overflow-x-auto">

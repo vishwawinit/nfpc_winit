@@ -1,0 +1,18 @@
+INFO:     Started server process [28164]
+INFO:     Waiting for application startup.
+INFO:warmup:Starting cache warmup in background...
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+WARNING:api.routes.daily_sales_overview:RETURNS_DEBUG row={'total_returns': 176838.3668999983} retp=[datetime.date(2026, 3, 1), datetime.date(2026, 3, 1)] val=176838.3668999983
+INFO:warmup:  Warmed: dashboard.get_dashboard
+INFO:     127.0.0.1:54446 - "GET /api/daily-sales-overview?date_from=2026-03-01&date_to=2026-03-01 HTTP/1.1" 200 OK
+INFO:warmup:  Warmed: sales_performance.get_sales_performance
+WARNING:warmup:  Skip:  top_customers.get_top_customers - can't adapt type 'Query'
+WARNING:warmup:  Skip:  top_products.get_top_products - can't adapt type 'Query'
+INFO:warmup:  Warmed: market_sales.get_market_sales_performance
+INFO:warmup:  Warmed: target_achievement.get_target_vs_achievement
+WARNING:api.routes.daily_sales_overview:RETURNS_DEBUG row={'total_returns': 0.0} retp=[datetime.date(2026, 4, 1), datetime.date(2026, 4, 2)] val=0.0
+INFO:warmup:  Warmed: daily_sales_overview.get_daily_sales_overview
+INFO:warmup:  Warmed: mtd_wastage.get_mtd_wastage_summary
+INFO:warmup:  Warmed: weekly_sales_returns.get_weekly_sales_returns
+INFO:warmup:  Warmed: brand_wise_sales.get_brand_wise_sales

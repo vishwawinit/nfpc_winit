@@ -184,6 +184,22 @@ def get_daily_sales_overview(
         cash_sales = 0
         credit_sales = 0
 
+    # Total Returns: GR + Damage + Expiry from RSIC (separate query to avoid cache collision)
+    try:
+        f_rsic_ret = {k: v for k, v in filters.items() if k in RSIC_KEYS}
+        retw, retp = build_where(f_rsic_ret, date_col='date', prefix='r')
+        ret_join = _rsic_org_join.replace("{alias}", "r") if _rsic_org_join else ""
+        ret_row = query_one(
+            f"SELECT COALESCE(SUM(COALESCE(r.total_gr_sales,0) + COALESCE(r.total_damage_sales,0) + COALESCE(r.total_expiry_sales,0)), 0) AS total_returns "
+            f"FROM rpt_route_sales_by_item_customer r "
+            f"{ret_join}{_brand_dim_join}"
+            f"WHERE {retw}{channel_cond}",
+            _rsic_org_params + _brand_dim_join_params + retp + channel_params
+        )
+        rsic_total_returns = float(ret_row["total_returns"]) if ret_row else 0
+    except Exception:
+        rsic_total_returns = 0
+
     # Daily Sales: exact same logic as dashboard total_sales KPI
     # Primary: rpt_route_sales_summary_by_item DISTINCT ON (route_code, item_code, date)
     # Fallback: rpt_invoice_totals when RSSI has no data (e.g. Feb — data gap in RSSI)
@@ -229,6 +245,8 @@ def get_daily_sales_overview(
             total_sales = cash_sales + credit_sales
     else:
         total_sales = cash_sales + credit_sales
+    # Always use RSIC for returns — RSSI.total_wastage is not populated
+    total_returns = rsic_total_returns
 
     # Discount: SUM of line-level discounts (dedup by trx_code+line_no to avoid ETL duplicates)
     # SUM of all detail discounts per trx = header TotalDiscountAmount
@@ -339,6 +357,7 @@ def get_daily_sales_overview(
         "cash_sales": round(cash_sales, 2),
         "credit_sales": round(credit_sales, 2),
         "daily_sales": round(total_sales, 2),
+        "total_returns": round(total_returns, 2),
         "discount": round(discount, 2),
         "invoice_short": total_invoices,
         "total_cash_due": round(total_cash_due, 2),

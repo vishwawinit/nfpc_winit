@@ -92,7 +92,6 @@ export default function BrandWiseSales() {
   const brands = data?.brands || [];
 
   const brandColumns = [
-    { key: 'brand_code', label: 'Brand Code' },
     { key: 'brand_name', label: 'Brand Name' },
     { key: 'target', label: 'Target' },
     { key: 'sales', label: 'Sales' },
@@ -156,7 +155,6 @@ export default function BrandWiseSales() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50/80 border-b border-gray-100">
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Brand Code</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Brand Name</th>
                     <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Target</th>
                     <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Sales</th>
@@ -169,7 +167,6 @@ export default function BrandWiseSales() {
                 <tbody>
                   {brands.map((b, i) => (
                     <tr key={i} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/70 transition-colors">
-                      <td className="px-6 py-3.5 font-mono text-xs text-gray-500">{b.brand_code}</td>
                       <td className="px-6 py-3.5 font-medium text-gray-900">{b.brand_name}</td>
                       <td className="px-6 py-3.5 text-right text-gray-700 tabular-nums">{aed(b.target)}</td>
                       <td className="px-6 py-3.5 text-right text-gray-700 tabular-nums">{aed(b.sales)}</td>

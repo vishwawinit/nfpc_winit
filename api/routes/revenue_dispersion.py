@@ -1,24 +1,140 @@
-"""Revenue Dispersion report endpoint.
-Revenue: bucket customers by net billing amount range (per month)
-SKU: bucket customers by distinct item count (per month)
+"""Revenue Dispersion — optimized single-pass approach.
 
-Source: rpt_sales_detail — same as daily_sales_overview, so invoice/customer counts match.
-Returns: current month + previous month + YTD for comparison.
+Revenue: bucket customers by net billing amount range.
+SKU: bucket customers by distinct item count.
+
+Strategy: 2 parallel queries (revenue + SKU), each scanning rpt_sales_detail
+ONCE from ytd_start to date_to. SQL UNION combines monthly + YTD in a single pass.
+Previously made 6 separate CTE queries → now 2 parallel queries.
 """
 from fastapi import APIRouter
 from typing import Optional
 from datetime import date
 import calendar as cal
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from api.database import query
-from api.models import build_where, resolve_user_codes
+from api.models import resolve_user_codes
 
 router = APIRouter()
 
-SD_KEYS = {'date_from', 'date_to', 'route', 'user_code'}
+REVENUE_ORDER = ['0-200', '200-500', '500-1000', '1000-2500', '2500-5000', '5000+']
+SKU_ORDER = ['0-5', '5-10', '10-15', '15-20', '20+']
 
 
-def _bucket_pct(rows):
-    """Compute % of total customers per month for each bucket row."""
+def _build_where(route, user_code, ytd_start, date_to, sales_org):
+    """Single WHERE covering ytd_start→date_to with all filters."""
+    conditions = ["trx_date >= %s", "trx_date <= %s", "trx_type IN (1, 4)", "trx_status = 200"]
+    params = [ytd_start, date_to]
+    if user_code == "__NO_MATCH__":
+        conditions.append("1=0")
+    elif user_code:
+        u_vals = [v.strip() for v in user_code.split(',') if v.strip()]
+        conditions.append(f"user_code IN ({','.join(['%s']*len(u_vals))})")
+        params.extend(u_vals)
+    if route:
+        r_vals = [v.strip() for v in route.split(',') if v.strip()]
+        conditions.append(f"route_code IN ({','.join(['%s']*len(r_vals))})")
+        params.extend(r_vals)
+    if sales_org:
+        o_vals = [v.strip() for v in sales_org.split(',') if v.strip()]
+        conditions.append(f"sales_org_code IN ({','.join(['%s']*len(o_vals))})")
+        params.extend(o_vals)
+    return ' AND '.join(conditions), params
+
+
+def _run_revenue(whr, params):
+    """Revenue dispersion — one scan, monthly + YTD via UNION."""
+    return query(
+        f"""
+        WITH customer_totals AS (
+            SELECT
+                TO_CHAR(trx_date, 'YYYY-MM') AS month,
+                customer_code,
+                COUNT(DISTINCT trx_code) AS invoice_count,
+                SUM(net_amount) AS total_amount
+            FROM rpt_sales_detail
+            WHERE {whr}
+            GROUP BY TO_CHAR(trx_date, 'YYYY-MM'), customer_code
+        ),
+        bucketed AS (
+            SELECT month, customer_code, invoice_count,
+                CASE
+                    WHEN total_amount BETWEEN 0 AND 200       THEN '0-200'
+                    WHEN total_amount BETWEEN 200.01 AND 500  THEN '200-500'
+                    WHEN total_amount BETWEEN 500.01 AND 1000 THEN '500-1000'
+                    WHEN total_amount BETWEEN 1000.01 AND 2500 THEN '1000-2500'
+                    WHEN total_amount BETWEEN 2500.01 AND 5000 THEN '2500-5000'
+                    ELSE '5000+'
+                END AS billing_range
+            FROM customer_totals
+            WHERE total_amount >= 0
+        ),
+        monthly_agg AS (
+            SELECT month, billing_range,
+                SUM(invoice_count)::int       AS invoice_count,
+                COUNT(DISTINCT customer_code) AS customer_count
+            FROM bucketed GROUP BY month, billing_range
+        ),
+        ytd_agg AS (
+            SELECT 'YTD' AS month, billing_range,
+                SUM(invoice_count)::int       AS invoice_count,
+                COUNT(DISTINCT customer_code) AS customer_count
+            FROM bucketed GROUP BY billing_range
+        )
+        SELECT month, billing_range, invoice_count, customer_count FROM monthly_agg
+        UNION ALL
+        SELECT month, billing_range, invoice_count, customer_count FROM ytd_agg
+        """,
+        params
+    )
+
+
+def _run_sku(whr, params):
+    """SKU dispersion — one scan, monthly + YTD via UNION."""
+    return query(
+        f"""
+        WITH customer_items AS (
+            SELECT
+                TO_CHAR(trx_date, 'YYYY-MM') AS month,
+                customer_code,
+                COUNT(DISTINCT trx_code)  AS invoice_count,
+                COUNT(DISTINCT item_code) AS item_count
+            FROM rpt_sales_detail
+            WHERE {whr} AND net_amount >= 0
+            GROUP BY TO_CHAR(trx_date, 'YYYY-MM'), customer_code
+        ),
+        bucketed AS (
+            SELECT month, customer_code, invoice_count,
+                CASE
+                    WHEN item_count BETWEEN 0  AND 5  THEN '0-5'
+                    WHEN item_count BETWEEN 6  AND 10 THEN '5-10'
+                    WHEN item_count BETWEEN 11 AND 15 THEN '10-15'
+                    WHEN item_count BETWEEN 16 AND 20 THEN '15-20'
+                    ELSE '20+'
+                END AS sku_range
+            FROM customer_items
+        ),
+        monthly_agg AS (
+            SELECT month, sku_range,
+                SUM(invoice_count)::int       AS invoice_count,
+                COUNT(DISTINCT customer_code) AS customer_count
+            FROM bucketed GROUP BY month, sku_range
+        ),
+        ytd_agg AS (
+            SELECT 'YTD' AS month, sku_range,
+                SUM(invoice_count)::int       AS invoice_count,
+                COUNT(DISTINCT customer_code) AS customer_count
+            FROM bucketed GROUP BY sku_range
+        )
+        SELECT month, sku_range, invoice_count, customer_count FROM monthly_agg
+        UNION ALL
+        SELECT month, sku_range, invoice_count, customer_count FROM ytd_agg
+        """,
+        params
+    )
+
+
+def _bucket_pct(rows, range_key):
     totals = {}
     for r in rows:
         m = r["month"]
@@ -27,127 +143,6 @@ def _bucket_pct(rows):
         total = totals.get(r["month"], 1)
         r["pct"] = round(int(r["customer_count"]) / total * 100, 2)
     return rows
-
-
-def _where_sd(filters, sales_org=None, period_label=None):
-    """Build WHERE clause and params for rpt_sales_detail inner dedup subquery (no table prefix)."""
-    f = {k: v for k, v in filters.items() if k in SD_KEYS}
-    rw, rp = build_where(f, date_col='trx_date')  # no prefix — used inside DISTINCT ON subquery
-    # Match daily_sales_overview: only sale/collection types, completed status
-    rw = rw + " AND trx_type IN (1, 4) AND trx_status = 200"
-    if sales_org:
-        orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
-        ph = ','.join(['%s'] * len(orgs))
-        rw += f" AND sales_org_code IN ({ph})"
-        rp = rp + orgs
-    return rw, rp
-
-
-def _run_revenue_query(filters, sales_org, period_label=None):
-    rw, rp = _where_sd(filters, sales_org, period_label)
-    if period_label:
-        month_select = f"'{period_label}' AS month"
-        month_group = ""
-    else:
-        month_select = "TO_CHAR(sd.trx_date, 'YYYY-MM') AS month"
-        month_group = "TO_CHAR(sd.trx_date, 'YYYY-MM'),"
-    return query(
-        f"""
-        WITH customer_totals AS (
-            SELECT {month_select},
-                sd.customer_code,
-                COUNT(DISTINCT sd.trx_code) AS invoice_count,
-                SUM(sd.net_amount) AS total_amount
-            FROM (
-                SELECT DISTINCT ON (trx_code, line_no) *
-                FROM rpt_sales_detail
-                WHERE {rw}
-                ORDER BY trx_code, line_no
-            ) sd
-            GROUP BY {month_group} sd.customer_code
-        ),
-        bucketed AS (
-            SELECT month, customer_code, invoice_count,
-                CASE
-                    WHEN total_amount BETWEEN 0 AND 200 THEN '0-200'
-                    WHEN total_amount BETWEEN 200.01 AND 500 THEN '200-500'
-                    WHEN total_amount BETWEEN 500.01 AND 1000 THEN '500-1000'
-                    WHEN total_amount BETWEEN 1000.01 AND 2500 THEN '1000-2500'
-                    WHEN total_amount BETWEEN 2500.01 AND 5000 THEN '2500-5000'
-                    ELSE '5000+'
-                END AS billing_range
-            FROM customer_totals
-            WHERE total_amount >= 0
-        )
-        SELECT month, billing_range,
-            SUM(invoice_count) AS invoice_count,
-            COUNT(DISTINCT customer_code) AS customer_count
-        FROM bucketed
-        GROUP BY month, billing_range
-        ORDER BY month,
-            CASE billing_range
-                WHEN '0-200' THEN 1 WHEN '200-500' THEN 2 WHEN '500-1000' THEN 3
-                WHEN '1000-2500' THEN 4 WHEN '2500-5000' THEN 5 WHEN '5000+' THEN 6
-            END
-        """,
-        rp
-    )
-
-
-def _run_sku_query(filters, sales_org, period_label=None):
-    rw, rp = _where_sd(filters, sales_org, period_label)
-    if period_label:
-        month_select = f"'{period_label}' AS month"
-        month_group = ""
-    else:
-        month_select = "TO_CHAR(sd.trx_date, 'YYYY-MM') AS month"
-        month_group = "TO_CHAR(sd.trx_date, 'YYYY-MM'),"
-    return query(
-        f"""
-        WITH customer_items AS (
-            SELECT {month_select},
-                sd.customer_code,
-                COUNT(DISTINCT sd.item_code) AS item_count,
-                COUNT(DISTINCT sd.trx_code) AS invoice_count
-            FROM (
-                SELECT DISTINCT ON (trx_code, line_no) *
-                FROM rpt_sales_detail
-                WHERE net_amount >= 0 AND {rw}
-                ORDER BY trx_code, line_no
-            ) sd
-            GROUP BY {month_group} sd.customer_code
-        ),
-        bucketed AS (
-            SELECT month, customer_code, invoice_count,
-                CASE
-                    WHEN item_count BETWEEN 0 AND 5 THEN '0-5'
-                    WHEN item_count BETWEEN 6 AND 10 THEN '5-10'
-                    WHEN item_count BETWEEN 11 AND 15 THEN '10-15'
-                    WHEN item_count BETWEEN 16 AND 20 THEN '15-20'
-                    ELSE '20+'
-                END AS sku_range
-            FROM customer_items
-        )
-        SELECT month, sku_range,
-            SUM(invoice_count) AS invoice_count,
-            COUNT(DISTINCT customer_code) AS customer_count
-        FROM bucketed
-        GROUP BY month, sku_range
-        ORDER BY month,
-            CASE sku_range
-                WHEN '0-5' THEN 1 WHEN '5-10' THEN 2 WHEN '10-15' THEN 3
-                WHEN '15-20' THEN 4 WHEN '20+' THEN 5
-            END
-        """,
-        rp
-    )
-
-
-def _make_filters(route, user_code, date_from, date_to):
-    return {k: v for k, v in {
-        'route': route, 'user_code': user_code,
-        'date_from': date_from, 'date_to': date_to,
-    }.items() if v is not None}
 
 
 @router.get("/revenue-dispersion")
@@ -189,31 +184,28 @@ def get_revenue_dispersion(
     else:
         prev_year, prev_month_num = date_from.year, date_from.month - 1
     prev_month_start = date(prev_year, prev_month_num, 1)
-    prev_month_last_day = cal.monthrange(prev_year, prev_month_num)[1]
-    prev_month_end = date(prev_year, prev_month_num, prev_month_last_day)
+    prev_month_str = prev_month_start.strftime('%Y-%m')
 
-    # YTD: Jan 1 of selected year to date_to
+    # YTD start: Jan 1 of selected year
     ytd_start = date(date_from.year, 1, 1)
 
-    curr_f = _make_filters(route, user_code, date_from, date_to)
-    prev_f = _make_filters(route, user_code, prev_month_start, prev_month_end)
-    ytd_f  = _make_filters(route, user_code, ytd_start, date_to)
+    # Single WHERE covering full range ytd_start → date_to
+    whr, wparams = _build_where(route, user_code, ytd_start, date_to, sales_org)
 
-    # Revenue dispersion
-    rev_curr = _run_revenue_query(curr_f, sales_org)
-    rev_prev = _run_revenue_query(prev_f, sales_org)
-    rev_ytd  = _run_revenue_query(ytd_f,  sales_org, period_label='YTD')
-    revenue_dispersion = _bucket_pct(rev_curr + rev_prev + rev_ytd)
+    # Run revenue + SKU in parallel — 2 queries instead of 6
+    with ThreadPoolExecutor(max_workers=2) as ex:
+        rev_future = ex.submit(_run_revenue, whr, wparams)
+        sku_future = ex.submit(_run_sku, whr, wparams)
+        all_rev = rev_future.result()
+        all_sku = sku_future.result()
 
-    # SKU dispersion
-    sku_curr = _run_sku_query(curr_f, sales_org)
-    sku_prev = _run_sku_query(prev_f, sales_org)
-    sku_ytd  = _run_sku_query(ytd_f,  sales_org, period_label='YTD')
-    sku_dispersion = _bucket_pct(sku_curr + sku_prev + sku_ytd)
+    # Filter to curr / prev / YTD (YTD rows already labelled 'YTD' by SQL)
+    rev_rows = [r for r in all_rev if r['month'] in (selected_month, prev_month_str, 'YTD')]
+    sku_rows = [r for r in all_sku if r['month'] in (selected_month, prev_month_str, 'YTD')]
 
     return {
-        "revenue_dispersion": revenue_dispersion,
-        "sku_dispersion": sku_dispersion,
+        "revenue_dispersion": _bucket_pct(rev_rows, 'billing_range'),
+        "sku_dispersion": _bucket_pct(sku_rows, 'sku_range'),
         "selected_month": selected_month,
-        "prev_month": prev_month_start.strftime('%Y-%m'),
+        "prev_month": prev_month_str,
     }

@@ -51,7 +51,7 @@ export default function Endorsement() {
       </div>
 
       <FilterPanel filters={filters} onChange={setFilters}
-        showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'channel', 'category', 'brand']} />
+        showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route']} />
 
       {refreshing && (
         <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
@@ -105,17 +105,7 @@ export default function Endorsement() {
                 },
                 { key: 'check_in', label: 'Check In', render: (v) => v || '-' },
                 { key: 'check_out', label: 'Check Out', render: (v) => v || '-' },
-                {
-                  key: 'check_in', label: 'Time Spent',
-                  render: (v, row) => {
-                    if (!row.check_in || !row.check_out) return '-';
-                    const toSecs = (t) => { const [h, m, s] = t.split(':').map(Number); return h * 3600 + m * 60 + (s || 0); };
-                    const diff = toSecs(row.check_out) - toSecs(row.check_in);
-                    if (diff <= 0) return '-';
-                    const mins = Math.floor(diff / 60), secs = diff % 60;
-                    return secs > 0 ? `${mins}m ${secs}s` : `${mins} mins`;
-                  }
-                },
+                { key: 'time_spent', label: 'Time Spent' },
                 {
                   key: 'is_productive', label: 'Productive',
                   render: (v) => {
@@ -133,11 +123,23 @@ export default function Endorsement() {
                 { key: 'total_value', label: 'Sales Value', format: 'currency' },
                 { key: 'total_returns', label: 'Returns', format: 'currency' },
               ]}
-              data={customers.map(c => ({
-                ...c,
-                is_planned: c.is_planned ? 'Yes' : 'No',
-                is_productive: c.is_productive ? 'Yes' : 'No',
-              }))}
+              data={customers.map(c => {
+                let time_spent = '-';
+                if (c.check_in && c.check_out) {
+                  const toSecs = (t) => { const [h, m, s] = t.split(':').map(Number); return h * 3600 + m * 60 + (s || 0); };
+                  const diff = toSecs(c.check_out) - toSecs(c.check_in);
+                  if (diff > 0) {
+                    const mins = Math.floor(diff / 60), secs = diff % 60;
+                    time_spent = secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
+                  }
+                }
+                return {
+                  ...c,
+                  is_planned: c.is_planned ? 'Yes' : 'No',
+                  is_productive: c.is_productive ? 'Yes' : 'No',
+                  time_spent,
+                };
+              })}
               exportName="endorsement-report"
             />
           </div>

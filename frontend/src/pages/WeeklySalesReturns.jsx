@@ -181,8 +181,8 @@ export default function WeeklySalesReturns() {
     setExporting(true);
     fetchOrderDetailsExport(filters)
       .then(rows => {
-        const cols = ['order_no','salesman','customer','order_date','route','qty_cases','qty_pieces','gross_amount','discount_amount','net_amount','action'];
-        const header = ['Order No','Salesman','Customer','Order Date','Route','Cases','Pieces','Gross','Discount','Net','Action'];
+        const cols = ['order_no','route_code','salesman_code','salesman','customer_code','customer','order_date','route','qty_cases','qty_pieces','gross_amount','discount_amount','net_amount','action'];
+        const header = ['Order No','Route Code','Salesman Code','Salesman','Customer Code','Customer','Order Date','Route','Cases','Pieces','Gross','Discount','Net','Action'];
         const csv = [header.join(','), ...rows.map(r => cols.map(k => {
           const v = r[k] ?? '';
           return typeof v === 'string' && v.includes(',') ? `"${v}"` : v;
@@ -260,7 +260,7 @@ export default function WeeklySalesReturns() {
             <KpiCard title="Total Sales" value={aed(totals.total_sales)} color="blue" icon={TrendingUp} variant="solid" />
             <KpiCard title="Total Returns" value={aed(totals.total_returns)} color="red" icon={TrendingDown} variant="solid" />
             <KpiCard title="Net Amount" value={aed(totals.net_amount)} color="green" icon={Banknote} variant="solid" />
-            <KpiCard title="Return %" value={totals.return_pct != null ? `${Number(totals.return_pct).toFixed(1)}%` : '-'} color="yellow" icon={Percent} variant="light" />
+            <KpiCard title="Return" value={totals.return_pct != null ? `${Number(totals.return_pct).toFixed(1)}` : '-'} color="yellow" icon={Percent} variant="light" />
           </div>
 
           {/* Chart */}
@@ -325,7 +325,10 @@ export default function WeeklySalesReturns() {
                       columns={[
                         { key: 'order_date', label: 'Order Date' },
                         { key: 'order_no', label: 'Order No' },
+                        { key: 'route_code', label: 'Route Code' },
+                        { key: 'salesman_code', label: 'Salesman Code' },
                         { key: 'salesman', label: 'Salesman' },
+                        { key: 'customer_code', label: 'Customer Code' },
                         { key: 'customer', label: 'Customer' },
                         { key: 'route', label: 'Route' },
                         { key: 'gross_amount', label: 'Gross', format: 'currency' },

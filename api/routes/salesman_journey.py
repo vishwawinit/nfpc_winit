@@ -57,33 +57,41 @@ def get_salesman_journey(
                 filters['date_from'] = latest
                 filters['date_to'] = latest
 
-    # User list: visits + sales joined (fast, single query)
+    # User list: visit-row-level productive/non-productive (consistent with detail endpoint)
     vw, vp = build_where(filters, date_col='date', prefix='cv')
     rw, rp = build_where({k: v for k, v in filters.items() if k in RSIC_KEYS}, date_col='date', prefix='rc')
 
     users = query(
-        f"SELECT v.user_code, v.user_name, v.route_code, v.route_name, "
-        f"  v.total_visits, v.customer_count, "
-        f"  COALESCE(s.total_sales, 0) AS total_sales, "
-        f"  COALESCE(s.sku_count, 0) AS sku_count, "
-        f"  COALESCE(s.productive_count, 0) AS productive_count, "
-        f"  v.total_visits - COALESCE(s.productive_count, 0) AS non_productive_count "
-        f"FROM ( "
+        f"WITH prod_set AS ( "
+        f"  SELECT DISTINCT rc.route_code, rc.customer_code, rc.date "
+        f"  FROM rpt_route_sales_by_item_customer rc WHERE rc.total_sales > 0 AND {rw} "
+        f"), "
+        f"visit_stats AS ( "
         f"  SELECT cv.user_code, cv.user_name, cv.route_code, cv.route_name, "
-        f"    COUNT(*) AS total_visits, COUNT(DISTINCT cv.customer_code) AS customer_count "
-        f"  FROM rpt_customer_visits cv WHERE {vw} "
+        f"    COUNT(*) AS total_visits, "
+        f"    COUNT(ps.customer_code) AS productive_count, "
+        f"    COUNT(*) - COUNT(ps.customer_code) AS non_productive_count "
+        f"  FROM rpt_customer_visits cv "
+        f"  LEFT JOIN prod_set ps "
+        f"    ON cv.route_code = ps.route_code AND cv.customer_code = ps.customer_code AND cv.date = ps.date "
+        f"  WHERE {vw} "
         f"  GROUP BY cv.user_code, cv.user_name, cv.route_code, cv.route_name "
-        f") v "
-        f"LEFT JOIN ( "
+        f"), "
+        f"sales_stats AS ( "
         f"  SELECT rc.user_code, "
         f"    ROUND(SUM(rc.total_sales)::numeric, 2) AS total_sales, "
-        f"    COUNT(DISTINCT rc.item_code) AS sku_count, "
-        f"    COUNT(DISTINCT rc.customer_code) FILTER (WHERE rc.total_sales > 0) AS productive_count "
+        f"    COUNT(DISTINCT rc.item_code) AS sku_count "
         f"  FROM rpt_route_sales_by_item_customer rc WHERE {rw} "
         f"  GROUP BY rc.user_code "
-        f") s ON v.user_code = s.user_code "
+        f") "
+        f"SELECT vs.user_code, vs.user_name, vs.route_code, vs.route_name, "
+        f"  vs.total_visits, vs.productive_count, vs.non_productive_count, "
+        f"  COALESCE(ss.total_sales, 0) AS total_sales, "
+        f"  COALESCE(ss.sku_count, 0) AS sku_count "
+        f"FROM visit_stats vs "
+        f"LEFT JOIN sales_stats ss ON vs.user_code = ss.user_code "
         f"ORDER BY total_sales DESC NULLS LAST",
-        vp + rp
+        rp + vp + rp
     )
 
     return {

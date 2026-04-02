@@ -22,7 +22,7 @@ const sections = [
       { path: '/weekly-sales-returns', label: 'Weekly Sales/Returns', icon: RotateCcw },
       { path: '/brand-wise-sales', label: 'Brand Wise Sales', icon: Layers },
       { path: '/market-sales', label: 'Market Sales', icon: PieChart },
-      { path: '/monthly-sales-stock', label: 'Monthly Sales Stock', icon: Package },
+      { path: '/monthly-sales-stock', label: 'Monthly Sales By Channel', icon: Package },
       { path: '/revenue-dispersion', label: 'Revenue Dispersion', icon: CirclePercent },
     ],
   },

@@ -46,12 +46,21 @@ export default function DataTable({ columns, data, onRowClick, exportName, pageS
 
   const exportCsv = () => {
     if (onExportAll) { onExportAll(); return; }
-    const header = columns.filter(c => c.key !== '_view').map(c => c.label).join(',');
-    const rows = filtered.map(row => columns.filter(c => c.key !== '_view').map(c => {
-      const v = row[c.key] ?? '';
-      return typeof v === 'string' && v.includes(',') ? `"${v}"` : v;
-    }).join(','));
-    const blob = new Blob([header + '\n' + rows.join('\n')], { type: 'text/csv' });
+    const fmtExport = (v, col) => {
+      if (v == null || v === '') return '';
+      const num = Number(v);
+      if (!isNaN(num) && v !== '') {
+        if (col.format === 'currency2') return num.toFixed(2);
+        if (col.format === 'currency')  return num.toFixed(2);
+        if (col.format === 'percent')   return num.toFixed(2) + '%';
+        if (col.format === 'number')    return Number.isInteger(num) ? num : num.toFixed(2);
+      }
+      const s = String(v);
+      return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const header = columns.filter(c => c.key !== '_view' && c.key !== '_action').map(c => c.label).join(',');
+    const rows = filtered.map(row => columns.filter(c => c.key !== '_view' && c.key !== '_action').map(c => fmtExport(row[c.key], c)).join(','));
+    const blob = new Blob(['\uFEFF' + header + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `${exportName || 'export'}.csv`;
     a.click(); URL.revokeObjectURL(url);

@@ -170,7 +170,7 @@ export default function MtdWastage() {
                   }
                 },
                 { key: 'qty', label: 'Return Qty', format: 'number' },
-                { key: 'amount', label: 'Return Amount', format: 'currency' },
+                { key: 'amount', label: 'Return Amount', format: 'currency2' },
                 {
                   key: '_action', label: 'Action',
                   render: (_, row) => (

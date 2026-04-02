@@ -328,8 +328,9 @@ def get_order_details(
     rows = query(
         f"WITH deduped AS ("
         f"  SELECT trx_code, line_no, "
-        f"    MAX(user_name) AS user_name, MAX(customer_name) AS customer_name, "
-        f"    MAX(trx_date) AS trx_date, MAX(route_name) AS route_name, "
+        f"    MAX(user_code) AS user_code, MAX(user_name) AS user_name, "
+        f"    MAX(customer_code) AS customer_code, MAX(customer_name) AS customer_name, "
+        f"    MAX(trx_date) AS trx_date, MAX(route_code) AS route_code, MAX(route_name) AS route_name, "
         f"    MAX(qty_cases) AS qty_cases, MAX(qty_pieces) AS qty_pieces, "
         f"    MAX(gross_amount) AS gross_amount, MAX(discount_amount) AS discount_amount, "
         f"    MAX(trx_type) AS trx_type, MAX(trx_status) AS trx_status, "
@@ -340,9 +341,12 @@ def get_order_details(
         f"), _grouped AS ("
         f"  SELECT "
         f"    sd.trx_code AS order_no, "
+        f"    MAX(sd.user_code) AS salesman_code, "
         f"    MAX(sd.user_name) AS salesman, "
+        f"    MAX(sd.customer_code) AS customer_code, "
         f"    TRIM(MAX(sd.customer_name)) AS customer, "
         f"    MAX(sd.trx_date) AS order_date, "
+        f"    MAX(sd.route_code) AS route_code, "
         f"    MAX(sd.route_name) AS route, "
         f"    ROUND(SUM(sd.qty_cases)::numeric, 0) AS qty_cases, "
         f"    ROUND(SUM(sd.qty_pieces)::numeric, 0) AS qty_pieces, "
@@ -373,9 +377,12 @@ def get_order_details(
     orders = [
         {
             "order_no": r["order_no"],
+            "salesman_code": r["salesman_code"],
             "salesman": r["salesman"],
+            "customer_code": r["customer_code"],
             "customer": r["customer"],
             "order_date": str(r["order_date"]),
+            "route_code": r["route_code"],
             "route": r["route"],
             "qty_cases": int(r["qty_cases"]) if r["qty_cases"] else 0,
             "qty_pieces": int(r["qty_pieces"]) if r["qty_pieces"] else 0,

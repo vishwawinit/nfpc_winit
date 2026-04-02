@@ -5,7 +5,7 @@ import Loading from '../components/Loading';
 import KpiCard from '../components/KpiCard';
 import {
   ShoppingCart, Banknote, Wallet,
-  MapPin, BarChart3, ChevronRight, Search, ChevronLeft
+  MapPin, BarChart3, ChevronRight, Search, ChevronLeft, Download
 } from 'lucide-react';
 
 const aed = (v) => v != null ? `AED ${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-';
@@ -17,11 +17,43 @@ const fmtDateTime = (dt) => {
 };
 const fmtDateTimeFull = (dt) => {
   if (!dt) return '-';
-  // Remove microseconds if present (e.g. .213000)
   return dt.replace(/\.\d+$/, '');
 };
 
 const PAGE_SIZE = 20;
+
+const getStatus = (u) => (u.unload_datetime ? 'Submitted' : 'Not Submitted');
+
+const STATUS_TABS = [
+  { key: 'all',           label: 'All' },
+  { key: 'Submitted',     label: 'Submitted' },
+  { key: 'Not Submitted', label: 'Not Submitted' },
+];
+
+function exportCsv(rows, filename) {
+  const cols = [
+    { key: 'eot_time',             label: 'EOT Date & Time',      fmt: fmtDateTime },
+    { key: 'user_code',            label: 'User Code' },
+    { key: 'user_name',            label: 'User Name' },
+    { key: 'route_code',           label: 'Route Code' },
+    { key: 'route_start_datetime', label: 'Route Start',           fmt: fmtDateTimeFull },
+    { key: 'unload_datetime',      label: 'Unload Date & Time',    fmt: fmtDateTimeFull },
+    { key: '_status',               label: 'EOT Status' },
+  ];
+  const escape = (v) => {
+    const s = String(v ?? '');
+    return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const header = cols.map(c => c.label).join(',');
+  const dataRows = rows.map(row =>
+    cols.map(c => escape(c.fmt ? c.fmt(row[c.key]) : (row[c.key] ?? '-'))).join(',')
+  );
+  const blob = new Blob(['\uFEFF' + [header, ...dataRows].join('\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `${filename}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
 
 export default function EotStatus() {
   const [data, setData] = useState(null);
@@ -37,6 +69,7 @@ export default function EotStatus() {
   });
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [statusTab, setStatusTab] = useState('all');
 
   useEffect(() => {
     let cancelled = false;
@@ -51,22 +84,38 @@ export default function EotStatus() {
     return () => { cancelled = true; };
   }, [filters]);
 
+  // Reset page when tab or search changes
+  useEffect(() => { setPage(1); }, [statusTab, search]);
+
   const kpis = data?.kpis || {};
   const callMetrics = data?.call_metrics || {};
   const users = data?.users || [];
 
+  // Status filter counts (dynamic from data)
+  const counts = {
+    all: users.length,
+    Submitted: users.filter(u => getStatus(u) === 'Submitted').length,
+    'Not Submitted': users.filter(u => getStatus(u) === 'Not Submitted').length,
+  };
+
+  // Apply status tab filter
+  const statusFiltered = statusTab === 'all'
+    ? users
+    : users.filter(u => getStatus(u) === statusTab);
+
+  // Apply search
   const q = search.toLowerCase();
   const filteredUsers = q
-    ? users.filter(u =>
+    ? statusFiltered.filter(u =>
         u.user_name?.toLowerCase().includes(q) ||
         u.user_code?.toLowerCase().includes(q) ||
         u.route_name?.toLowerCase().includes(q) ||
         u.route_code?.toLowerCase().includes(q)
       )
-    : users;
+    : statusFiltered;
+
   const totalPages = Math.ceil(filteredUsers.length / PAGE_SIZE);
   const pagedUsers = filteredUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
 
   return (
     <div className="space-y-6">
@@ -97,13 +146,13 @@ export default function EotStatus() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
             <div className="grid grid-cols-3 md:grid-cols-7 gap-3 text-center">
               {[
-                { label: 'Planned', value: callMetrics.planned, color: 'blue' },
-                { label: 'Visited', value: callMetrics.visited, color: 'indigo' },
-                { label: 'Productive', value: callMetrics.productive, color: 'emerald' },
-                { label: 'Unproductive', value: callMetrics.unproductive, color: 'amber' },
-                { label: 'Missed', value: callMetrics.missed, color: 'rose' },
-                { label: 'Total Calls', value: callMetrics.total_calls, color: 'violet' },
-                { label: 'Strike %', value: callMetrics.strike_rate != null ? `${callMetrics.strike_rate}%` : '-', color: 'cyan' },
+                { label: 'Planned',      value: callMetrics.planned,      color: 'blue' },
+                { label: 'Visited',      value: callMetrics.visited,       color: 'indigo' },
+                { label: 'Productive',   value: callMetrics.productive,    color: 'emerald' },
+                { label: 'Unproductive', value: callMetrics.unproductive,  color: 'amber' },
+                { label: 'Missed',       value: callMetrics.missed,        color: 'rose' },
+                { label: 'Total Calls',  value: callMetrics.total_calls,   color: 'violet' },
+                { label: 'Strike %',     value: callMetrics.strike_rate != null ? `${callMetrics.strike_rate}%` : '-', color: 'cyan' },
               ].map((m, i) => (
                 <div key={i} className={`bg-${m.color}-50 rounded-xl px-3 py-2.5`}>
                   <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{m.label}</div>
@@ -115,19 +164,49 @@ export default function EotStatus() {
 
           {/* EOT Users Table */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-4">
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                EOT Users ({filteredUsers.length}{filteredUsers.length !== users.length ? ` / ${users.length}` : ''})
-              </h2>
-              <div className="relative max-w-xs w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={e => { setSearch(e.target.value); setPage(1); }}
-                  placeholder="Search name, code, route…"
-                  className="w-full pl-8 pr-3 py-1.5 text-[13px] rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400"
-                />
+            <div className="px-6 py-4 border-b border-gray-100 flex flex-wrap items-center gap-3 justify-between">
+
+              {/* Left: Status Tabs */}
+              <div className="flex items-center gap-1 bg-gray-100/80 rounded-xl p-1">
+                {STATUS_TABS.map(tab => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setStatusTab(tab.key)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      statusTab === tab.key
+                        ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-gray-200/50'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {tab.label}
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                      statusTab === tab.key ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      {counts[tab.key] ?? 0}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Right: Search + Export */}
+              <div className="flex items-center gap-2 flex-1 justify-end">
+                <div className="relative max-w-xs w-full">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Search name, code, route…"
+                    className="w-full pl-8 pr-3 py-1.5 text-[13px] rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400"
+                  />
+                </div>
+                <button
+                  onClick={() => exportCsv(filteredUsers.map(u => ({ ...u, _status: getStatus(u) })), `eot-status-${statusTab}`)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm whitespace-nowrap"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Export
+                </button>
               </div>
             </div>
 
@@ -150,21 +229,21 @@ export default function EotStatus() {
                       <td className="px-4 py-3 text-gray-600 whitespace-nowrap tabular-nums">{fmtDateTimeFull(u.route_start_datetime)}</td>
                       <td className="px-4 py-3 text-gray-600 whitespace-nowrap tabular-nums">{fmtDateTimeFull(u.unload_datetime)}</td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-                          u.eot_status === 'Submitted'
-                            ? 'bg-emerald-50 text-emerald-700'
-                            : 'bg-amber-50 text-amber-700'
-                        }`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${u.eot_status === 'Submitted' ? 'bg-emerald-500' : 'bg-amber-400'}`} />
-                          {u.eot_status || 'Submitted'}
-                        </span>
+                        {(() => { const s = getStatus(u); return (
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                            s === 'Submitted' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${s === 'Submitted' ? 'bg-emerald-500' : 'bg-amber-400'}`} />
+                            {s}
+                          </span>
+                        ); })()}
                       </td>
                     </tr>
                   ))}
                   {filteredUsers.length === 0 && (
                     <tr>
                       <td colSpan={7} className="px-6 py-16 text-center text-gray-400">
-                        {search ? `No users matching "${search}"` : 'No EOT data found'}
+                        {search ? `No users matching "${search}"` : `No ${statusTab === 'all' ? '' : statusTab + ' '}EOT data found`}
                       </td>
                     </tr>
                   )}
@@ -202,7 +281,6 @@ export default function EotStatus() {
           </div>
         </>
       )}
-
     </div>
   );
 }
