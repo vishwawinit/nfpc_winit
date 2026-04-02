@@ -13,3 +13,4 @@ playwright-report/
 etl/logs/
 frontend/dist/
 .claude/settings.local.json
+etl/check_attr17.py
