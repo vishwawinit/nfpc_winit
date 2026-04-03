@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchOutstandingCollection, fetchOutstandingInvoices } from '../api';
 import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
@@ -10,8 +10,6 @@ const aed = (v) => v != null ? `AED ${Number(v).toLocaleString('en-US', { maximu
 export default function OutstandingCollection() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const hasData = useRef(false);
   const [filters, setFilters] = useState({ year: new Date().getFullYear() });
   const [selectedBucket, setSelectedBucket] = useState(null);
   const [invoiceCustomer, setInvoiceCustomer] = useState(null);
@@ -20,12 +18,11 @@ export default function OutstandingCollection() {
 
   useEffect(() => {
     let cancelled = false;
-    if (!hasData.current) setLoading(true);
-    else setRefreshing(true);
+    setLoading(true);
     fetchOutstandingCollection({ ...filters, ...(selectedBucket ? { bucket: selectedBucket } : {}) })
-      .then(res => { if (!cancelled) { setData(res); hasData.current = true; } })
+      .then(res => { if (!cancelled) setData(res); })
       .catch(err => { if (!cancelled) console.error(err); })
-      .finally(() => { if (!cancelled) { setLoading(false); setRefreshing(false); } });
+      .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [filters, selectedBucket]);
 
@@ -64,15 +61,7 @@ export default function OutstandingCollection() {
       <FilterPanel filters={filters} onChange={(f) => { setFilters(f); setSelectedBucket(null); }}
         showFields={['year', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route']} />
 
-      {/* Refreshing indicator */}
-      {refreshing && (
-        <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
-          <div className="h-1 bg-indigo-500 rounded-full animate-pulse" style={{ width: '60%' }} />
-        </div>
-      )}
-
-      {/* Data area */}
-      {loading && !data ? <Loading /> : !data || !buckets.length ? (
+      {loading ? <Loading /> : !data || !buckets.length ? (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100/80 p-12 text-center">
           <AlertCircle className="w-10 h-10 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-400 font-medium">No outstanding collection data available</p>

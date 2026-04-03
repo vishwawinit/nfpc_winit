@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { fetchJourneyPlanCompliance } from '../api';
 import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
@@ -30,8 +30,6 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export default function JourneyPlanCompliance() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const hasData = useRef(false);
   const [filters, setFilters] = useState(() => {
     const now = new Date();
     const y = now.getFullYear();
@@ -46,12 +44,11 @@ export default function JourneyPlanCompliance() {
 
   useEffect(() => {
     let cancelled = false;
-    if (!hasData.current) setLoading(true);
-    else setRefreshing(true);
+    setLoading(true);
     fetchJourneyPlanCompliance(filters)
-      .then(res => { if (!cancelled) { setData(res); hasData.current = true; } })
+      .then(res => { if (!cancelled) setData(res); })
       .catch(err => { if (!cancelled) console.error(err); })
-      .finally(() => { if (!cancelled) { setLoading(false); setRefreshing(false); } });
+      .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [filters]);
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'; // useRef kept for map/marker refs
 import { GoogleMap, Marker, InfoWindow, Polyline, useJsApiLoader } from '@react-google-maps/api';
 import { fetchSalesmanJourney, fetchSalesmanJourneyDetail } from '../api';
 import FilterPanel from '../components/FilterPanel';
@@ -484,8 +484,6 @@ export default function SalesmanJourney() {
   const [activeTab, setActiveTab]     = useState('details');
   const [data, setData]               = useState(null);
   const [loading, setLoading]         = useState(true);
-  const [refreshing, setRefreshing]   = useState(false);
-  const hasData = useRef(false);
   const [filters, setFilters] = useState(() => {
     const now = new Date();
     const y = now.getFullYear();
@@ -505,12 +503,11 @@ export default function SalesmanJourney() {
 
   useEffect(() => {
     let cancelled = false;
-    if (!hasData.current) setLoading(true);
-    else setRefreshing(true);
+    setLoading(true);
     fetchSalesmanJourney(filters)
-      .then(res => { if (!cancelled) { setData(res); hasData.current = true; } })
+      .then(res => { if (!cancelled) setData(res); })
       .catch(err => { if (!cancelled) console.error(err); })
-      .finally(() => { if (!cancelled) { setLoading(false); setRefreshing(false); } });
+      .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [filters]);
 

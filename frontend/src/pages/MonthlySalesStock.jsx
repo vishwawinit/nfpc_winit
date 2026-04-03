@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { fetchMonthlySalesStock } from '../api';
 import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
@@ -28,8 +28,6 @@ function exportToExcel(items, channels, filename) {
 export default function MonthlySalesStock() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const hasData = useRef(false);
   const [filters, setFilters] = useState(() => {
     const now = new Date();
     const y = now.getFullYear();
@@ -43,12 +41,11 @@ export default function MonthlySalesStock() {
 
   useEffect(() => {
     let cancelled = false;
-    if (!hasData.current) setLoading(true);
-    else setRefreshing(true);
+    setLoading(true);
     fetchMonthlySalesStock(filters)
-      .then(res => { if (!cancelled) { setData(res); hasData.current = true; } })
+      .then(res => { if (!cancelled) setData(res); })
       .catch(err => { if (!cancelled) console.error(err); })
-      .finally(() => { if (!cancelled) { setLoading(false); setRefreshing(false); } });
+      .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [filters]);
 
@@ -111,13 +108,7 @@ export default function MonthlySalesStock() {
       <FilterPanel filters={filters} onChange={setFilters}
         showFields={SHOW_FIELDS} />
 
-      {refreshing && (
-        <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
-          <div className="h-1 bg-indigo-500 rounded-full animate-pulse" style={{ width: '60%' }} />
-        </div>
-      )}
-
-      {loading && !data ? <Loading /> : items.length === 0 ? (
+      {loading ? <Loading /> : items.length === 0 ? (
         <div className="text-center py-16 text-gray-400 font-medium">No data available</div>
       ) : (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100">

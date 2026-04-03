@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchTopCustomers } from '../api';
 import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
@@ -27,20 +27,17 @@ function GrowthBadge({ value }) {
 export default function TopCustomers() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const hasData = useRef(false);
   const [filters, setFilters] = useState(() => {
     const now = new Date();
     return { month: now.getMonth() + 1, year: now.getFullYear() };
   });
   useEffect(() => {
     let cancelled = false;
-    if (!hasData.current) setLoading(true);
-    else setRefreshing(true);
+    setLoading(true);
     fetchTopCustomers(filters)
-      .then(res => { if (!cancelled) { setData(res.data || res); hasData.current = true; } })
+      .then(res => { if (!cancelled) setData(res.data || res); })
       .catch(err => { if (!cancelled) console.error(err); })
-      .finally(() => { if (!cancelled) { setLoading(false); setRefreshing(false); } });
+      .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [filters]);
 
@@ -67,16 +64,10 @@ export default function TopCustomers() {
       <FilterPanel filters={filters} onChange={setFilters}
         showFields={['month', 'year', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'channel']} />
 
-      {refreshing && (
-        <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
-          <div className="h-1 bg-indigo-500 rounded-full animate-pulse" style={{ width: '60%' }} />
-        </div>
-      )}
-
-      {loading && !data ? <Loading /> : customers.length === 0 ? (
+      {loading ? <Loading /> : customers.length === 0 ? (
         <div className="text-center py-20 text-gray-400">No data available</div>
       ) : (
-        <div className={refreshing ? 'opacity-60 pointer-events-none space-y-6' : 'space-y-6'}>
+        <div className="space-y-6">
           {/* KPI Summary */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <KpiCard title="Total Sales" value={aed(totalSales)} icon={Banknote} color="blue" variant="light" />

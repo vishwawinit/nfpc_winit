@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchBrandWiseSales, fetchBrandItems } from '../api';
 import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
@@ -40,8 +40,6 @@ function exportToExcel(data, columns, filename) {
 export default function BrandWiseSales() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const hasData = useRef(false);
   const [filters, setFilters] = useState(() => {
     const now = new Date();
     const y = now.getFullYear();
@@ -55,12 +53,11 @@ export default function BrandWiseSales() {
 
   useEffect(() => {
     let cancelled = false;
-    if (!hasData.current) setLoading(true);
-    else setRefreshing(true);
+    setLoading(true);
     fetchBrandWiseSales(filters)
-      .then(res => { if (!cancelled) { setData(res); hasData.current = true; } })
+      .then(res => { if (!cancelled) setData(res); })
       .catch(err => { if (!cancelled) console.error(err); })
-      .finally(() => { if (!cancelled) { setLoading(false); setRefreshing(false); } });
+      .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [filters]);
 
@@ -121,13 +118,7 @@ export default function BrandWiseSales() {
       <FilterPanel filters={filters} onChange={setFilters}
         showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'channel', 'category', 'brand']} />
 
-      {refreshing && (
-        <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
-          <div className="h-1 bg-indigo-500 rounded-full animate-pulse" style={{ width: '60%' }} />
-        </div>
-      )}
-
-      {loading && !data ? <Loading /> : !data ? (
+      {loading ? <Loading /> : !data ? (
         <div className="text-center py-16 text-gray-400 font-medium">No data available</div>
       ) : (
         <>

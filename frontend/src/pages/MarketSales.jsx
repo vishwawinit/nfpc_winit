@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchMarketSales } from '../api';
 import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
@@ -15,18 +15,15 @@ const DEFAULT_FILTERS = { year: new Date().getFullYear() };
 export default function MarketSales() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const hasData = useRef(false);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
   useEffect(() => {
     let cancelled = false;
-    if (!hasData.current) setLoading(true);
-    else setRefreshing(true);
+    setLoading(true);
     fetchMarketSales(filters)
-      .then(res => { if (!cancelled) { setData(res); hasData.current = true; } })
+      .then(res => { if (!cancelled) setData(res); })
       .catch(err => { if (!cancelled) console.error(err); })
-      .finally(() => { if (!cancelled) { setLoading(false); setRefreshing(false); } });
+      .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [filters]);
 
@@ -82,18 +79,10 @@ export default function MarketSales() {
         filters={filters}
         onChange={setFilters}
         showFields={['year', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route']}
-        onReset={() => { hasData.current = false; setFilters(DEFAULT_FILTERS); }}
+        onReset={() => setFilters(DEFAULT_FILTERS)}
       />
 
-      {/* Refreshing indicator */}
-      {refreshing && (
-        <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
-          <div className="h-1 bg-indigo-500 rounded-full animate-pulse" style={{ width: '60%' }} />
-        </div>
-      )}
-
-      {/* Data area */}
-      {loading && !data ? <Loading /> : !data ? (
+      {loading ? <Loading /> : !data ? (
         <div className="text-center py-16 text-gray-400 font-medium">No data available</div>
       ) : (<>
 
