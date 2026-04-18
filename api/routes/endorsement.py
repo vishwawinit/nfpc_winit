@@ -111,7 +111,10 @@ def get_endorsement(
     jpw, jpp = build_where(filters, date_col='date')
     jp_row = query_one(f"SELECT COUNT(*) AS scheduled FROM rpt_journey_plan WHERE {jpw}", jpp)
     scheduled_calls = int(jp_row['scheduled']) if jp_row else 0
-    coverage_pct = min(100.0, round(planned_count / scheduled_calls * 100, 1)) if scheduled_calls else 0
+    total_visits = len(customers)
+    unplanned_count = max(0, total_visits - planned_count)
+    base = scheduled_calls + unplanned_count
+    coverage_pct = min(100.0, round((planned_count + unplanned_count) / base * 100, 1)) if base else 0
 
     # Header from first row or aggregate
     header = {}
