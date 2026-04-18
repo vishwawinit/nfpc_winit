@@ -7,17 +7,37 @@ import DataTable from '../components/DataTable';
 import { Target, TrendingUp, Percent, BarChart3, List } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer,
+  ResponsiveContainer, LabelList,
 } from 'recharts';
 
 const aed = (v) => `AED ${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 const pct = (v) => v != null ? `${Number(v).toFixed(1)}%` : '-';
+const fmt = (v) => v >= 1e6 ? `${(v/1e6).toFixed(1)}M` : v >= 1e3 ? `${(v/1e3).toFixed(0)}K` : v;
 
-const chartTooltipStyle = {
-  borderRadius: '12px',
-  border: '1px solid #e5e7eb',
-  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-};
+function ChartTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-white/95 backdrop-blur-xl rounded-xl border border-gray-200/50 px-4 py-3"
+      style={{ boxShadow: '0 20px 48px -12px rgba(0,0,0,0.18)' }}>
+      <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2 pb-2 border-b border-gray-100">{label}</p>
+      {payload.map((entry, i) => (
+        <div key={i} className="flex items-center gap-2.5 py-[3px]">
+          <span className="w-3 h-3 rounded-[4px] flex-shrink-0" style={{ background: entry.color }} />
+          <span className="text-[12px] text-gray-500 font-medium">{entry.name}</span>
+          <span className="text-[13px] font-bold text-gray-900 ml-auto pl-5 tabular-nums">{aed(entry.value)}</span>
+        </div>
+      ))}
+      {payload.length === 2 && payload[0].value > 0 && (
+        <div className="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between">
+          <span className="text-[11px] text-gray-400 font-medium">Achievement</span>
+          <span className={`text-[12px] font-bold tabular-nums ${(payload[1].value/payload[0].value*100) >= 100 ? 'text-emerald-600' : (payload[1].value/payload[0].value*100) >= 75 ? 'text-amber-600' : 'text-rose-600'}`}>
+            {(payload[1].value / payload[0].value * 100).toFixed(1)}%
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function TargetAchievement() {
   const [data, setData] = useState(null);
@@ -110,28 +130,45 @@ export default function TargetAchievement() {
 
       {view === 'chart' ? (
         /* Bar Chart */
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Route Wise Target vs Achievement</h2>
-          <ResponsiveContainer width="100%" height={400}>
-            <BarChart data={routeData} barGap={4}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis
-                dataKey="route_name"
-                tick={{ fontSize: 11 }}
-                angle={-30}
-                textAnchor="end"
-                height={70}
-              />
-              <YAxis
-                tick={{ fontSize: 12 }}
-                tickFormatter={v => v >= 1e6 ? `${(v/1e6).toFixed(1)}M` : v >= 1e3 ? `${(v/1e3).toFixed(0)}K` : v}
-              />
-              <Tooltip formatter={(v) => aed(v)} contentStyle={chartTooltipStyle} />
-              <Legend />
-              <Bar dataKey="target" fill="#6ee7b7" name="Target" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="achieved" fill="#fcd34d" name="Achieved" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="chart-container">
+          <div className="chart-header">
+            <div className="flex items-center gap-3 pb-4 border-b border-gray-100/60">
+              <div className="w-1 h-8 rounded-full bg-gradient-to-b from-orange-500 to-emerald-500" />
+              <div>
+                <h2 className="text-[14px] font-bold text-gray-800 tracking-tight">Route Wise Target vs Achievement</h2>
+                <p className="text-[11px] text-gray-400 mt-0.5 font-medium">Target and achieved sales per route</p>
+              </div>
+            </div>
+          </div>
+          <div className="chart-body overflow-x-auto">
+            <div style={{ minWidth: Math.max(600, routeData.length * 90) }}>
+              <ResponsiveContainer width="100%" height={420}>
+                <BarChart data={routeData} barGap={3} barCategoryGap="18%">
+                  <defs>
+                    <linearGradient id="gTarget" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#fb923c" />
+                      <stop offset="100%" stopColor="#ea580c" />
+                    </linearGradient>
+                    <linearGradient id="gAchieved" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#34d399" />
+                      <stop offset="100%" stopColor="#059669" />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="route_name" tick={{ fontSize: 10, fill: '#64748b' }} angle={-35} textAnchor="end" height={75} axisLine={false} tickLine={false} interval={0} />
+                  <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={fmt} axisLine={false} tickLine={false} width={50} />
+                  <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(234,88,12,0.04)', radius: 4 }} />
+                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '12px', color: '#64748b', paddingTop: '12px' }} />
+                  <Bar dataKey="target" fill="url(#gTarget)" name="Target" radius={[5, 5, 0, 0]}>
+                    <LabelList dataKey="target" position="top" formatter={fmt} style={{ fontSize: 9, fill: '#ea580c', fontWeight: 700 }} />
+                  </Bar>
+                  <Bar dataKey="achieved" fill="url(#gAchieved)" name="Achieved" radius={[5, 5, 0, 0]}>
+                    <LabelList dataKey="achieved" position="top" formatter={fmt} style={{ fontSize: 9, fill: '#059669', fontWeight: 700 }} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </div>
       ) : (
         /* List View as DataTable */

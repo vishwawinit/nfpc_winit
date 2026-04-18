@@ -3,7 +3,7 @@ import { fetchMtdWastage, fetchMtdWastageItems } from '../api';
 import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
 import DataTable from '../components/DataTable';
-import { RotateCcw, ShieldAlert, TrendingDown, Eye, X, Package } from 'lucide-react';
+import { RotateCcw, ShieldAlert, TrendingDown, Eye, X, Package, Download } from 'lucide-react';
 
 const aed = (v) => v != null ? `AED ${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-';
 const aedFull = (v) => v != null ? `AED ${Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-';
@@ -48,8 +48,30 @@ export default function MtdWastage() {
       flatRows.push({ date: d.date, customer_code: d.customer_code, customer_name: d.customer_name, return_type: 'bad', qty: d.bad_qty, amount: d.bad_value });
   }
 
+  const exportItems = (items, row) => {
+    const header = ['Item Code', 'Item Name', 'Qty', 'Amount'];
+    const csv = [
+      `Customer: ${row.customer_name?.trim() || row.customer_code}, Date: ${row.date}, Type: ${TYPE_META[row.return_type]?.label}`,
+      header.join(','),
+      ...items.map(r => [r.item_code, `"${r.item_name?.trim()}"`, r.qty, r.amount].join(',')),
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `wastage-${row.customer_code}-${row.date}-${row.return_type}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleRowExport = (row) => {
+    fetchMtdWastageItems({ customer_code: row.customer_code, date_val: row.date, return_type: row.return_type })
+      .then(res => exportItems(res.items || [], row))
+      .catch(console.error);
+  };
+
   const openModal = (row) => {
-    setModal({ open: true, loading: true, items: [], title: row.customer_name?.trim() || row.customer_code, subtitle: `${TYPE_META[row.return_type]?.label} — ${row.date}` });
+    setModal({ open: true, loading: true, items: [], _row: row, title: row.customer_name?.trim() || row.customer_code, subtitle: `${TYPE_META[row.return_type]?.label} — ${row.date}` });
     fetchMtdWastageItems({ customer_code: row.customer_code, date_val: row.date, return_type: row.return_type })
       .then(res => setModal(m => ({ ...m, loading: false, items: res.items || [] })))
       .catch(() => setModal(m => ({ ...m, loading: false })));
@@ -165,13 +187,16 @@ export default function MtdWastage() {
                 {
                   key: '_action', label: 'Action',
                   render: (_, row) => (
-                    <button
-                      onClick={() => openModal(row)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[12px] font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      View Items
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => openModal(row)} title="View Items"
+                        className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 transition-colors">
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleRowExport(row)} title="Export"
+                        className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors">
+                        <Download className="w-4 h-4" />
+                      </button>
+                    </div>
                   )
                 },
               ]}
@@ -186,7 +211,7 @@ export default function MtdWastage() {
       {modal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeModal} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
             {/* Modal Header */}
             <div className="flex items-start justify-between px-6 py-4 border-b border-gray-100">
               <div>
@@ -196,9 +221,20 @@ export default function MtdWastage() {
                 </div>
                 <span className="text-[12px] text-gray-400">{modal.subtitle}</span>
               </div>
-              <button onClick={closeModal} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-                <X className="w-4 h-4 text-gray-400" />
-              </button>
+              <div className="flex items-center gap-2">
+                {!modal.loading && modal.items.length > 0 && (
+                  <button
+                    onClick={() => exportItems(modal.items, modal._row)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Export
+                  </button>
+                )}
+                <button onClick={closeModal} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                  <X className="w-4 h-4 text-gray-400" />
+                </button>
+              </div>
             </div>
 
             {/* Modal Body */}

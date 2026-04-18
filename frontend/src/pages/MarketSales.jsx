@@ -4,7 +4,7 @@ import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer,
+  ResponsiveContainer, LabelList,
 } from 'recharts';
 
 const aed = (v) => `AED ${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
@@ -94,8 +94,8 @@ export default function MarketSales() {
           </div>
         </div>
         <div className="chart-body">
-          <ResponsiveContainer width="100%" height={360}>
-            <ComposedChart data={chartData}>
+          <ResponsiveContainer width="100%" height={400}>
+            <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <defs>
                 <linearGradient id="gradCurYear" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#818cf8" />
@@ -119,8 +119,12 @@ export default function MarketSales() {
                 cursor={{ fill: 'rgba(99,102,241,0.04)' }}
               />
               <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '12px', color: '#6b7280', paddingTop: '16px' }} />
-              <Bar yAxisId="left" dataKey="current_year_sales" fill="url(#gradCurYear)" name="Current Year" radius={[6, 6, 0, 0]} />
-              <Bar yAxisId="left" dataKey="last_year_sales" fill="#e0e7ff" name="Last Year" radius={[6, 6, 0, 0]} />
+              <Bar yAxisId="left" dataKey="current_year_sales" fill="url(#gradCurYear)" name="Current Year" radius={[6, 6, 0, 0]}>
+                <LabelList dataKey="current_year_sales" position="top" formatter={v => v >= 1e6 ? `${(v/1e6).toFixed(1)}M` : v >= 1e3 ? `${(v/1e3).toFixed(0)}K` : v} style={{ fontSize: 9, fill: '#6366f1', fontWeight: 700 }} />
+              </Bar>
+              <Bar yAxisId="left" dataKey="last_year_sales" fill="#e0e7ff" name="Last Year" radius={[6, 6, 0, 0]}>
+                <LabelList dataKey="last_year_sales" position="top" formatter={v => v >= 1e6 ? `${(v/1e6).toFixed(1)}M` : v >= 1e3 ? `${(v/1e3).toFixed(0)}K` : v} style={{ fontSize: 9, fill: '#a5b4fc', fontWeight: 700 }} />
+              </Bar>
               <Line yAxisId="right" dataKey="growth_pct" stroke="#f59e0b" name="Growth %" strokeWidth={2.5}
                 dot={{ r: 4, fill: '#fff', stroke: '#f59e0b', strokeWidth: 2 }}
                 activeDot={{ r: 6, fill: '#f59e0b', stroke: '#fff', strokeWidth: 2 }} />

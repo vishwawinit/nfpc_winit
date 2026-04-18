@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchFilters } from '../api';
 import {
   Calendar, Building2, Route, User, Radio, Tag, Layers, Hash, CalendarDays,
-  Warehouse, Users, ChevronDown, X, Check, Shield, Crown, RotateCcw, UserCircle, Package
+  Warehouse, Users, ChevronDown, X, Check, Shield, Crown, RotateCcw, UserCircle, Package, Network
 } from 'lucide-react';
 
 const fieldMeta = {
@@ -11,7 +11,7 @@ const fieldMeta = {
   sales_org: { label: 'Sales Org', icon: Building2, multi: true },
   hos: { label: 'HOS', icon: Crown, multi: true },
   asm: { label: 'ASM', icon: Shield, multi: true },
-  depot: { label: 'Depot', icon: Warehouse, multi: true },
+  depot: { label: 'NSM', icon: Network, multi: true },
   supervisor: { label: 'Supervisor', icon: Users, multi: true },
   user_code: { label: 'Salesman', icon: User, multi: true },
   route: { label: 'Route', icon: Route, multi: true },
@@ -511,7 +511,7 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
       {/* Row 2: All other filters in hierarchy order */}
       {multiFields.length > 0 && (
         <div className={`grid ${multiGridCols} gap-x-3 gap-y-4`}>
-          {['sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'channel', 'customer', 'brand', 'category', 'item'].map(field =>
+          {['sales_org', 'hos', 'depot', 'asm', 'supervisor', 'user_code', 'route', 'channel', 'customer', 'brand', 'category', 'item'].map(field =>
             show(field) && (
               <div key={field} className={rowBreakBefore.includes(field) ? 'col-start-1' : ''}>
                 <Label field={field} />

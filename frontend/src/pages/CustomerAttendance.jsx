@@ -94,6 +94,7 @@ export default function CustomerAttendance() {
               columns={[
                 { key: 'date', label: 'Date' },
                 { key: 'area', label: 'Route' },
+                { key: 'user_code', label: 'Salesman Code' },
                 { key: 'user_name', label: 'Salesman' },
                 { key: 'customer_code', label: 'Customer Code' },
                 { key: 'customer_name', label: 'Customer Name' },

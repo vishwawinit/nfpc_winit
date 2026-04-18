@@ -6,7 +6,7 @@ import KpiCard from '../components/KpiCard';
 import { Banknote, Wallet, Phone, Target } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, Cell, PieChart, Pie,
+  ResponsiveContainer, Cell, PieChart, Pie, LabelList,
 } from 'recharts';
 
 const aed = (v) => v != null ? `AED ${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-';
@@ -283,7 +283,7 @@ export default function Dashboard() {
           </SectionHeader>
           <div className="chart-body overflow-x-auto" style={dailyMerged.length > 10 ? { overflowX: 'auto', maxWidth: '100%' } : {}}>
             <div style={{ minWidth: dailyMerged.length > 10 ? dailyMerged.length * 70 : Math.max(600, dailyMerged.length * 56) }}>
-              <ResponsiveContainer width="100%" height={340}>
+              <ResponsiveContainer width="100%" height={370}>
                 <BarChart data={dailyMerged} barCategoryGap="18%" barGap={3}>
                   <ChartGradients />
                   <CartesianGrid strokeDasharray="3 3" stroke={PAL.grid} vertical={false} />
@@ -292,8 +292,12 @@ export default function Dashboard() {
                   <Tooltip content={<ChartTooltip formatter={aed} colorMap={{ Sales: PAL.daySales.solid, Collection: PAL.dayCollection.solid }} />}
                     cursor={{ fill: 'rgba(79, 70, 229, 0.04)', radius: 4 }} />
                   <Legend iconType="circle" iconSize={8} wrapperStyle={legendStyle} />
-                  <Bar dataKey="sales" fill="url(#gDaySales)" name="Sales" radius={[5, 5, 0, 0]} />
-                  <Bar dataKey="collection" fill="url(#gDayColl)" name="Collection" radius={[5, 5, 0, 0]} />
+                  <Bar dataKey="sales" fill="url(#gDaySales)" name="Sales" radius={[5, 5, 0, 0]}>
+                    <LabelList dataKey="sales" position="top" formatter={yAxisFmt} style={{ fontSize: 9, fill: PAL.daySales.solid, fontWeight: 700 }} />
+                  </Bar>
+                  <Bar dataKey="collection" fill="url(#gDayColl)" name="Collection" radius={[5, 5, 0, 0]}>
+                    <LabelList dataKey="collection" position="top" formatter={yAxisFmt} style={{ fontSize: 9, fill: PAL.dayCollection.solid, fontWeight: 700 }} />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -315,7 +319,7 @@ export default function Dashboard() {
           </SectionHeader>
           <div className="chart-body overflow-x-auto">
             <div style={{ minWidth: Math.max(600, routeSales.length * 100) }}>
-              <ResponsiveContainer width="100%" height={380}>
+              <ResponsiveContainer width="100%" height={410}>
                 <BarChart data={routeSales} barCategoryGap="18%" barGap={2}>
                   <ChartGradients />
                   <CartesianGrid strokeDasharray="3 3" stroke={PAL.grid} vertical={false} />
@@ -324,9 +328,15 @@ export default function Dashboard() {
                   <Tooltip content={<ChartTooltip formatter={aed} colorMap={{ Target: PAL.routeTarget.solid, Sales: PAL.routeSales.solid, Collection: PAL.routeColl.solid }} />}
                     cursor={{ fill: 'rgba(37, 99, 235, 0.04)', radius: 4 }} />
                   <Legend iconType="circle" iconSize={8} wrapperStyle={legendStyle} />
-                  <Bar dataKey="target" fill="url(#gRouteTarget)" name="Target" radius={[5, 5, 0, 0]} />
-                  <Bar dataKey="sales" fill="url(#gRouteSales)" name="Sales" radius={[5, 5, 0, 0]} />
-                  <Bar dataKey="collection" fill="url(#gRouteColl)" name="Collection" radius={[5, 5, 0, 0]} />
+                  <Bar dataKey="target" fill="url(#gRouteTarget)" name="Target" radius={[5, 5, 0, 0]}>
+                    <LabelList dataKey="target" position="top" formatter={yAxisFmt} style={{ fontSize: 9, fill: PAL.routeTarget.solid, fontWeight: 700 }} />
+                  </Bar>
+                  <Bar dataKey="sales" fill="url(#gRouteSales)" name="Sales" radius={[5, 5, 0, 0]}>
+                    <LabelList dataKey="sales" position="top" formatter={yAxisFmt} style={{ fontSize: 9, fill: PAL.routeSales.solid, fontWeight: 700 }} />
+                  </Bar>
+                  <Bar dataKey="collection" fill="url(#gRouteColl)" name="Collection" radius={[5, 5, 0, 0]}>
+                    <LabelList dataKey="collection" position="top" formatter={yAxisFmt} style={{ fontSize: 9, fill: PAL.routeColl.solid, fontWeight: 700 }} />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -349,7 +359,7 @@ export default function Dashboard() {
           </SectionHeader>
           <div className="chart-body overflow-x-auto">
             <div style={{ minWidth: Math.max(600, routeVisits.length * 100) }}>
-              <ResponsiveContainer width="100%" height={360}>
+              <ResponsiveContainer width="100%" height={390}>
                 <BarChart data={routeVisits} barCategoryGap="18%" barGap={4}>
                   <ChartGradients />
                   <CartesianGrid strokeDasharray="3 3" stroke={PAL.grid} vertical={false} />
@@ -358,8 +368,12 @@ export default function Dashboard() {
                   <Tooltip content={<ChartTooltip colorMap={{ Visited: PAL.visited.solid, Planned: PAL.planned.solid }} />}
                     cursor={{ fill: 'rgba(124, 58, 237, 0.04)', radius: 4 }} />
                   <Legend iconType="circle" iconSize={8} wrapperStyle={legendStyle} />
-                  <Bar dataKey="actual" fill="url(#gVisited)" name="Visited" radius={[5, 5, 0, 0]} />
-                  <Bar dataKey="scheduled" fill="url(#gPlanned)" name="Planned" radius={[5, 5, 0, 0]} />
+                  <Bar dataKey="actual" fill="url(#gVisited)" name="Visited" radius={[5, 5, 0, 0]}>
+                    <LabelList dataKey="actual" position="top" style={{ fontSize: 9, fill: PAL.visited.solid, fontWeight: 700 }} />
+                  </Bar>
+                  <Bar dataKey="scheduled" fill="url(#gPlanned)" name="Planned" radius={[5, 5, 0, 0]}>
+                    <LabelList dataKey="scheduled" position="top" style={{ fontSize: 9, fill: PAL.planned.solid, fontWeight: 700 }} />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>

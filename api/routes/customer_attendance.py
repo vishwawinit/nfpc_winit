@@ -62,6 +62,7 @@ def get_customer_attendance(
         SELECT
             date,
             route_name AS area,
+            user_code,
             user_name,
             customer_code,
             customer_name,
@@ -80,6 +81,7 @@ def get_customer_attendance(
         result.append({
             "date": str(r["date"]) if r["date"] else None,
             "area": r["area"],
+            "user_code": r["user_code"],
             "user_name": r["user_name"],
             "customer_code": r["customer_code"],
             "customer_name": r["customer_name"],

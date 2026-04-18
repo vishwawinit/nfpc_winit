@@ -79,7 +79,7 @@ export default function TopCustomers() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Sales Value by Customer</h2>
             <ResponsiveContainer width="100%" height={Math.max(customers.length * 40, 300)}>
-              <BarChart data={customers} layout="vertical" margin={{ left: 10, right: 90, top: 5, bottom: 5 }}>
+              <BarChart data={customers} layout="vertical" margin={{ left: 10, right: 130, top: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                 <XAxis type="number" tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                 <YAxis dataKey="customer_name" type="category" tick={{ fontSize: 11, fill: '#475569' }} width={160} axisLine={false} tickLine={false} />
@@ -97,15 +97,10 @@ export default function TopCustomers() {
                   }}
                 />
                 <Bar dataKey="total_sales" name="Sales" radius={[0, 6, 6, 0]}
-                  label={({ x, y, width, height, index }) => {
-                    const entry = customers[index];
-                    if (entry?.growth_pct == null) return null;
-                    const positive = entry.growth_pct >= 0;
+                  label={({ x, y, width, height, value, index }) => {
+                    const fmt = v => v >= 1e6 ? `${(v/1e6).toFixed(1)}M` : v >= 1e3 ? `${(v/1e3).toFixed(0)}K` : v;
                     return (
-                      <text x={x + width + 8} y={y + height / 2 + 4} fontSize={11} fontWeight="600"
-                        fill={positive ? '#059669' : '#e11d48'}>
-                        {positive ? '+' : ''}{entry.growth_pct.toFixed(1)}%
-                      </text>
+                      <text x={x + width + 8} y={y + height / 2 + 4} fontSize={11} fontWeight="700" fill={barColors[index] || '#c7d2fe'}>{fmt(value)}</text>
                     );
                   }}
                 >

@@ -4,7 +4,7 @@ import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
 import KpiCard from '../components/KpiCard';
 import DataTable from '../components/DataTable';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
 import { TrendingUp, TrendingDown, Banknote, Percent, X, Eye, Download } from 'lucide-react';
 
 const aed = (v) => v != null ? `AED ${Number(v).toLocaleString('en-US', { maximumFractionDigits: 2 })}` : '-';
@@ -257,19 +257,23 @@ export default function WeeklySalesReturns() {
           {/* Chart */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Sales vs Returns by Week</h2>
-            <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={chartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+            <ResponsiveContainer width="100%" height={380}>
+              <BarChart data={chartData} margin={{ top: 20, right: 20, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={{ stroke: '#e5e7eb' }} />
-                <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={{ stroke: '#e5e7eb' }} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
+                <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={{ stroke: '#e5e7eb' }} tickFormatter={(v) => v >= 1e6 ? `${(v/1e6).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
                 <Tooltip
                   formatter={(value) => aed(value)}
                   labelFormatter={(l) => `Week ${l.replace('W', '')}`}
                   contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 />
                 <Legend wrapperStyle={{ paddingTop: '16px' }} />
-                <Bar dataKey="sales_amount" name="Sales" fill="#818cf8" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="return_amount" name="Returns" fill="#fca5a5" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="sales_amount" name="Sales" fill="#818cf8" radius={[6, 6, 0, 0]}>
+                  <LabelList dataKey="sales_amount" position="top" formatter={(v) => v >= 1e6 ? `${(v/1e6).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} style={{ fontSize: 10, fill: '#6366f1', fontWeight: 700 }} />
+                </Bar>
+                <Bar dataKey="return_amount" name="Returns" fill="#fca5a5" radius={[6, 6, 0, 0]}>
+                  <LabelList dataKey="return_amount" position="top" formatter={(v) => v >= 1e6 ? `${(v/1e6).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} style={{ fontSize: 10, fill: '#f87171', fontWeight: 700 }} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
