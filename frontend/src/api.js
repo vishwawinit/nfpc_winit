@@ -2,6 +2,24 @@ import axios from 'axios';
 
 const api = axios.create({ baseURL: '/api' });
 
+// Automatically inject locked filters from the logged-in user into every GET request.
+// Locked filters always override page-level params to enforce role-based data access.
+api.interceptors.request.use(config => {
+  if (config.url?.startsWith('/auth')) return config; // skip auth endpoint itself
+  if (config.method === 'get') {
+    try {
+      const user = JSON.parse(localStorage.getItem('nfpc_user'));
+      if (user?.locked_filters && Object.keys(user.locked_filters).length > 0) {
+        // locked_filters override anything the page sends
+        config.params = { ...(config.params || {}), ...user.locked_filters };
+      }
+    } catch {}
+  }
+  return config;
+});
+
+export const loginUser = (userCode) => api.get('/auth/login', { params: { userCode } }).then(r => r.data);
+
 export const fetchFilters = {
   salesOrgs: () => api.get('/filters/sales-orgs').then(r => r.data),
   hos: (params) => api.get('/filters/hos', { params }).then(r => r.data),

@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchFilters } from '../api';
+import { useAuth } from '../context/AuthContext';
 import {
   Calendar, Building2, Route, User, Radio, Tag, Layers, Hash, CalendarDays,
-  Warehouse, Users, ChevronDown, X, Check, Shield, Crown, RotateCcw, UserCircle, Package, Network
+  Warehouse, Users, ChevronDown, X, Check, Shield, Crown, RotateCcw, UserCircle, Package, Network, Lock,
 } from 'lucide-react';
 
 const fieldMeta = {
@@ -40,7 +41,7 @@ const CHILD_MAP = {
   category:  ['item'],
 };
 
-function MultiSelect({ options, value, onChange, placeholder = 'All', loading = false, onSearch = null, searchByCode = false }) {
+function MultiSelect({ options, value, onChange, placeholder = 'All', loading = false, onSearch = null, searchByCode = false, disabled = false }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const btnRef = useRef(null);
@@ -119,13 +120,16 @@ function MultiSelect({ options, value, onChange, placeholder = 'All', loading = 
       <button
         ref={btnRef}
         type="button"
-        onClick={() => { setOpen(!open); setSearch(''); }}
-        className={`w-full bg-white border rounded-lg px-3 py-[7px] text-[13px] text-gray-700
-          focus:outline-none focus:ring-2 focus:ring-indigo-500/15 focus:border-indigo-400
-          transition-all duration-150 flex items-center justify-between gap-1 hover:border-gray-300
-          ${open ? 'border-indigo-400 ring-2 ring-indigo-500/15' : ''}
-          ${loading ? 'border-gray-200/60 opacity-60' : 'border-gray-200/80'}`}
-        disabled={loading}
+        onClick={() => { if (disabled) return; setOpen(!open); setSearch(''); }}
+        className={`w-full border rounded-lg px-3 py-[7px] text-[13px] text-gray-700
+          focus:outline-none transition-all duration-150 flex items-center justify-between gap-1
+          ${disabled
+            ? 'bg-indigo-50/60 border-indigo-200/60 cursor-not-allowed opacity-80'
+            : `bg-white hover:border-gray-300 focus:ring-2 focus:ring-indigo-500/15 focus:border-indigo-400
+               ${open ? 'border-indigo-400 ring-2 ring-indigo-500/15' : ''}
+               ${loading ? 'border-gray-200/60 opacity-60' : 'border-gray-200/80'}`
+          }`}
+        disabled={loading || disabled}
       >
         <span className={`truncate ${selected.length === 0 ? 'text-gray-400' : 'font-medium'}`}>
           {loading ? 'Loading...' : displayText}
@@ -216,7 +220,17 @@ function MultiSelect({ options, value, onChange, placeholder = 'All', loading = 
 }
 
 export default function FilterPanel({ filters, onChange, showFields = [], onReset, rowBreakBefore = [], flat = false }) {
+  const { user } = useAuth() || {};
+  const lockedFilters = user?.locked_filters || {};
   const initialFiltersRef = useRef(filters);
+
+  // On mount: if locked filters aren't in the page's current filter state, inject them.
+  // This ensures the UI reflects what the API interceptor enforces.
+  useEffect(() => {
+    if (!Object.keys(lockedFilters).length) return;
+    const needsSync = Object.entries(lockedFilters).some(([k, v]) => filters[k] !== v);
+    if (needsSync) onChange({ ...filters, ...lockedFilters });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [salesOrgs, setSalesOrgs] = useState([]);
   const [hosList, setHosList] = useState([]);
   const [asms, setAsms] = useState([]);
@@ -369,15 +383,22 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
   }, [filters.sales_org, allCustomers]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Cascade clearing: when parent changes, clear all children ───
+  const isLocked = (key) => key in lockedFilters;
+
   const set = (key, value) => {
+    if (isLocked(key)) return; // cannot override locked filters
     const newFilters = { ...filters, [key]: value || undefined };
 
     // Clear all downstream children defined in CHILD_MAP
     const children = CHILD_MAP[key];
     if (children) {
-      children.forEach(child => delete newFilters[child]);
+      children.forEach(child => {
+        if (!isLocked(child)) delete newFilters[child];
+      });
     }
 
+    // Always restore locked filters
+    Object.entries(lockedFilters).forEach(([k, v]) => { newFilters[k] = v; });
     onChange(newFilters);
   };
 
@@ -514,7 +535,12 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
           {['sales_org', 'hos', 'depot', 'asm', 'supervisor', 'user_code', 'route', 'channel', 'customer', 'brand', 'category', 'item'].map(field =>
             show(field) && (
               <div key={field} className={rowBreakBefore.includes(field) ? 'col-start-1' : ''}>
-                <Label field={field} />
+                <div className="flex items-center gap-1">
+                  <Label field={field} />
+                  {isLocked(field) && (
+                    <Lock className="w-3 h-3 text-indigo-400 opacity-60 -mt-1.5" title="Locked by your role" />
+                  )}
+                </div>
                 <MultiSelect
                   options={optionsFor(field)}
                   value={filters[field]}
@@ -522,6 +548,7 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
                   loading={loadingFor(field)}
                   onSearch={null}
                   searchByCode={field === 'item' || field === 'customer'}
+                  disabled={isLocked(field)}
                 />
               </div>
             )
