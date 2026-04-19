@@ -14,8 +14,8 @@ from api.models import build_where, resolve_user_codes
 
 router = APIRouter()
 
-RSSI_KEYS = {'date_from', 'date_to', 'sales_org', 'route', 'user_code'}
-RSIC_KEYS = {'date_from', 'date_to', 'route', 'user_code'}
+RSSI_KEYS = {'date_from', 'date_to', 'sales_org', 'route'}
+RSIC_KEYS = {'date_from', 'date_to', 'route'}
 
 
 @router.get("/target-vs-achievement")
@@ -52,8 +52,25 @@ def get_target_vs_achievement(
     month_start = date(cur_year, cur_month, 1)
     month_end = date(cur_year, 12, 31) if cur_month == 12 else date(cur_year, cur_month + 1, 1) - timedelta(days=1)
 
+    # rpt_route_sales_summary_by_item has NULL user_code — filter by route instead.
+    # Resolve user_code → route via dim_route.salesman_code
+    if user_code and user_code != "__NO_MATCH__":
+        codes = [c.strip() for c in user_code.split(',') if c.strip()]
+        ph = ','.join(['%s'] * len(codes))
+        mapped = query(f"SELECT code FROM dim_route WHERE salesman_code IN ({ph})", codes)
+        mapped_routes = [r['code'] for r in mapped]
+        if not mapped_routes:
+            return _empty()
+        if route:
+            existing = set(route.split(','))
+            mapped_routes = [r for r in mapped_routes if r in existing]
+            if not mapped_routes:
+                return _empty()
+        route = ','.join(mapped_routes)
+        user_code = None
+
     base_filters = {k: v for k, v in {
-        'route': route, 'user_code': user_code,
+        'route': route,
     }.items() if v}
 
     # Resolve sales_org to route JOIN

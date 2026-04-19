@@ -4,14 +4,8 @@ from api.database import query_one
 
 router = APIRouter()
 
-SALESMAN_ROLES  = {'C_PRESALES_VANSALES', 'Vansales', 'Storekeeper'}
+SALESMAN_ROLES   = {'C_PRESALES_VANSALES', 'Vansales', 'Storekeeper'}
 SUPERVISOR_ROLES = {'C_SALES_SUPERVISOR', 'FreshSup', 'AMBIENTSUP'}
-
-# Pages salesmen are allowed to see
-SALESMAN_PAGES = [
-    '/', '/salesman-journey', '/eot-status', '/customer-attendance',
-    '/log-report', '/time-management', '/productivity',
-]
 
 def _locked_filters(user: dict) -> dict:
     role  = user.get('role_code', '')
@@ -30,11 +24,6 @@ def _locked_filters(user: dict) -> dict:
         return {'user_code': code}
     # GCD and all other management roles — no filter lock
     return {}
-
-def _allowed_pages(role: str):
-    if role in SALESMAN_ROLES:
-        return SALESMAN_PAGES
-    return None  # None = all pages
 
 
 @router.get("/auth/login")
@@ -64,5 +53,5 @@ def login(userCode: str):
         "reports_to":       user['reports_to'],
         "reports_to_name":  (user['reports_to_name'] or '').strip(),
         "locked_filters":   _locked_filters(user),
-        "allowed_pages":    _allowed_pages(role),
+        "allowed_pages":    None,  # all pages accessible to all users; data is filtered by locked_filters
     }

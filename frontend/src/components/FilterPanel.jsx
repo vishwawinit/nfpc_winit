@@ -382,7 +382,19 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
     }
   }, [filters.sales_org, allCustomers]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Cascade clearing: when parent changes, clear all children ───
+  // ─── Hierarchy: hide filters above the user's locked level ───
+  const HIERARCHY = ['hos', 'depot', 'asm', 'supervisor', 'user_code'];
+  const lockedKey = Object.keys(lockedFilters)[0] || null;
+  const lockedIdx = lockedKey ? HIERARCHY.indexOf(lockedKey) : -1;
+
+  const isHidden = (key) => {
+    if (lockedIdx < 0) return false; // GCD sees everything
+    if (key === 'sales_org') return true; // non-GCD users don't switch orgs
+    const idx = HIERARCHY.indexOf(key);
+    if (idx < 0) return false; // non-hierarchy field (channel, brand, etc.)
+    return idx < lockedIdx; // hide fields above the user's locked level
+  };
+
   const isLocked = (key) => key in lockedFilters;
 
   const set = (key, value) => {
@@ -427,21 +439,41 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
     );
   };
 
-  const handleDateFrom = (val) => {
-    if (!show('date_to')) {
-      // Single-date mode: keep date_to in sync with date_from
-      onChange({ ...filters, date_from: val, date_to: val });
-      return;
-    }
+  // Local state buffers the displayed date while user browses months — no API call until confirmed
+  const [localDateFrom, setLocalDateFrom] = useState(filters.date_from || '');
+  const [localDateTo,   setLocalDateTo]   = useState(filters.date_to   || '');
+
+  // Sync when external reset fires
+  useEffect(() => { setLocalDateFrom(filters.date_from || ''); }, [filters.date_from]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setLocalDateTo(filters.date_to   || ''); }, [filters.date_to]);     // eslint-disable-line react-hooks/exhaustive-deps
+
+  const applyDateFrom = (val) => {
+    if (!val) return;
+    if (!show('date_to')) { onChange({ ...filters, date_from: val, date_to: val }); return; }
     if (filters.date_to && val > filters.date_to) {
       onChange({ ...filters, date_from: val, date_to: val });
+      setLocalDateTo(val);
       return;
     }
     set('date_from', val);
   };
-  const handleDateTo = (val) => {
+
+  const applyDateTo = (val) => {
+    if (!val) return;
     if (show('date_from') && filters.date_from && val < filters.date_from) return;
     set('date_to', val);
+  };
+
+  // onChange → only update what the input shows, no filter/API call
+  const handleDateFromChange = (val) => setLocalDateFrom(val);
+  const handleDateToChange   = (val) => setLocalDateTo(val);
+
+  // onBlur → user finished selecting, now apply to filter and trigger data load
+  const handleDateFromBlur = () => {
+    if (localDateFrom && localDateFrom !== filters.date_from) applyDateFrom(localDateFrom);
+  };
+  const handleDateToBlur = () => {
+    if (localDateTo && localDateTo !== filters.date_to) applyDateTo(localDateTo);
   };
 
   const optionsFor = (field) => {
@@ -497,9 +529,10 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
               )}
               <input
                 type="date"
-                value={filters.date_from || ''}
-                max={hasDateTo ? (filters.date_to || undefined) : undefined}
-                onChange={e => handleDateFrom(e.target.value)}
+                value={localDateFrom}
+                max={hasDateTo ? (localDateTo || undefined) : undefined}
+                onChange={e => handleDateFromChange(e.target.value)}
+                onBlur={handleDateFromBlur}
                 className={inputClass}
               />
             </div>
@@ -509,9 +542,10 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
               <Label field="date_to" />
               <input
                 type="date"
-                value={filters.date_to || ''}
-                min={filters.date_from || undefined}
-                onChange={e => handleDateTo(e.target.value)}
+                value={localDateTo}
+                min={localDateFrom || undefined}
+                onChange={e => handleDateToChange(e.target.value)}
+                onBlur={handleDateToBlur}
                 className={inputClass}
               />
             </div>
@@ -533,7 +567,7 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
       {multiFields.length > 0 && (
         <div className={`grid ${multiGridCols} gap-x-3 gap-y-4`}>
           {['sales_org', 'hos', 'depot', 'asm', 'supervisor', 'user_code', 'route', 'channel', 'customer', 'brand', 'category', 'item'].map(field =>
-            show(field) && (
+            show(field) && !isHidden(field) && (
               <div key={field} className={rowBreakBefore.includes(field) ? 'col-start-1' : ''}>
                 <div className="flex items-center gap-1">
                   <Label field={field} />

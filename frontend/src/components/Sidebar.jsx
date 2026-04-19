@@ -77,12 +77,9 @@ const ROLE_BADGE = {
 };
 
 export default function Sidebar() {
-  const { user, logout, canAccess } = useAuth();
+  const { user, logout } = useAuth();
 
-  const sections = ALL_SECTIONS.map(section => ({
-    ...section,
-    items: section.items.filter(item => canAccess(item.path)),
-  })).filter(section => section.items.length > 0);
+  const sections = ALL_SECTIONS;
 
   const badge = ROLE_BADGE[user?.role_code] || { label: user?.role_name || user?.role_code || '', color: 'bg-slate-500/20 text-slate-300' };
 
