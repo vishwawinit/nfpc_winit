@@ -1,0 +1,21 @@
+2026-03-25 11:09:58 [INFO] ════════════════════════════════════════════════════════════
+2026-03-25 11:09:58 [INFO]   NFPC Reports ETL
+2026-03-25 11:09:58 [INFO]   Date range: 2025-10-01 to 2026-03-31
+2026-03-25 11:09:58 [INFO]   Mode: sequential
+2026-03-25 11:09:58 [INFO]   Log file:   D:\vishwa\nfpc_winit\etl\logs\etl_20260325_110958.log
+2026-03-25 11:09:58 [INFO] ════════════════════════════════════════════════════════════
+2026-03-25 11:09:58 [INFO] Connecting to MSSQL...
+2026-03-25 11:09:59 [INFO]   MSSQL connected
+2026-03-25 11:09:59 [INFO] Connecting to PostgreSQL...
+2026-03-25 11:10:00 [INFO]   PostgreSQL connected
+2026-03-25 11:10:00 [INFO] 
+──────────────────────────────────────────────────
+2026-03-25 11:10:00 [INFO]   [1/1] rpt_outstanding [░░░░░░░░░░░░░░░░░░░░] 0%
+2026-03-25 11:10:00 [INFO]        Expected: ~5,000,000 rows
+2026-03-25 11:10:01 [DEBUG]   SQL: 
+        SELECT mpi.MiddleWarePendingInvoiceId, mpi.TrxCode,
+            mpi.OrgCode, so.Description, mpi.ClientCode, c.Description, ch.Description,
+            mpi.TrxDate, mpi.DueDate,
+            m...
+2026-03-25 11:10:01 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-25 11:10:02 [INFO]   MSSQL query returned - starting load with Python date conversion...

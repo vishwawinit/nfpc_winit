@@ -1,0 +1,70 @@
+2026-03-30 16:27:52 [INFO] ════════════════════════════════════════════════════════════
+2026-03-30 16:27:53 [INFO]   NFPC Reports ETL
+2026-03-30 16:27:53 [INFO]   Date range: 2026-01-01 to 2026-02-28
+2026-03-30 16:27:53 [INFO]   Mode: sequential
+2026-03-30 16:27:53 [INFO]   Log file:   D:\vishwa\nfpc_winit\etl\logs\etl_20260330_162752.log
+2026-03-30 16:27:53 [INFO] ════════════════════════════════════════════════════════════
+2026-03-30 16:27:53 [INFO] Connecting to MSSQL...
+2026-03-30 16:27:53 [INFO]   MSSQL connected
+2026-03-30 16:27:53 [INFO] Connecting to PostgreSQL...
+2026-03-30 16:27:55 [INFO]   PostgreSQL connected
+2026-03-30 16:27:55 [INFO] 
+──────────────────────────────────────────────────
+2026-03-30 16:27:55 [INFO]   [1/1] rpt_sales_detail [░░░░░░░░░░░░░░░░░░░░] 0%
+2026-03-30 16:27:55 [INFO]        Expected: ~12,000,000 rows
+2026-03-30 16:28:21 [INFO]     Processing 2026-01-01 to 2026-01-15...
+2026-03-30 16:28:21 [DEBUG]   SQL: 
+        SELECT
+            h.TrxCode, d.[LineNo], CAST(h.TrxDate AS DATE), CAST(h.TripDate AS DATE),
+            h.TrxType, h.PaymentType, h.TRXStatus,
+            h.UserCode, u.Description,
+        ...
+2026-03-30 16:28:21 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-30 16:28:48 [INFO]   MSSQL query returned in 27.1s - starting load...
+2026-03-30 16:29:16 [INFO]              50,000 rows | 617 rows/sec | 81s elapsed | ETA 19373s
+2026-03-30 16:30:01 [INFO]             100,000 rows | 790 rows/sec | 127s elapsed | ETA 15070s
+2026-03-30 16:30:59 [INFO]             150,000 rows | 815 rows/sec | 184s elapsed | ETA 14536s
+2026-03-30 16:32:13 [ERROR] FAILED on sales_detail: (20047, b'DB-Lib error message 20047, severity 9:\nDBPROCESS is dead or not enabled\n')
+2026-03-30 16:32:13 [DEBUG] Traceback:
+Traceback (most recent call last):
+  File "src/pymssql/_pymssql.pyx", line 535, in pymssql._pymssql.Cursor.fetchmany
+  File "src/pymssql/_pymssql.pyx", line 503, in pymssql._pymssql.Cursor.getrow
+  File "src/pymssql/_mssql.pyx", line 481, in pymssql._mssql.MSSQLRowIterator.__next__
+  File "src/pymssql/_mssql.pyx", line 1240, in pymssql._mssql.MSSQLConnection.fetch_next_row
+  File "src/pymssql/_mssql.pyx", line 1855, in pymssql._mssql.check_cancel_and_raise
+  File "src/pymssql/_mssql.pyx", line 1901, in pymssql._mssql.raise_MSSQLDatabaseException
+pymssql._mssql.MSSQLDatabaseException: (20047, b'DB-Lib error message 20047, severity 9:\nDBPROCESS is dead or not enabled\n')
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1307, in main
+    loader_fn(ms_conn, pg_conn)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 580, in load_sales_detail
+    total = extract_batch(ms_cur, query, (str(chunk_start), str(chunk_end)),
+                          pg_conn, 'rpt_sales_detail', columns)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 260, in extract_batch
+    rows = ms_cursor.fetchmany(batch_size)
+  File "src/pymssql/_pymssql.pyx", line 541, in pymssql._pymssql.Cursor.fetchmany
+pymssql.exceptions.OperationalError: (20047, b'DB-Lib error message 20047, severity 9:\nDBPROCESS is dead or not enabled\n')
+2026-03-30 16:32:13 [ERROR]   FAILED: (20047, b'DB-Lib error message 20047, severity 9:\nDBPROCESS is dead or not enabled\n')
+2026-03-30 16:32:13 [INFO]   Reconnecting to MSSQL...
+2026-03-30 16:32:13 [INFO] Connecting to MSSQL...
+2026-03-30 16:32:13 [INFO]   MSSQL connected
+2026-03-30 16:32:13 [INFO]   MSSQL reconnected
+2026-03-30 16:32:13 [INFO] 
+════════════════════════════════════════════════════════════
+2026-03-30 16:32:13 [INFO]   ETL COMPLETE
+2026-03-30 16:32:13 [INFO]   Total time:  4.3 minutes
+2026-03-30 16:32:13 [INFO]   Total rows:  0
+2026-03-30 16:32:13 [INFO]   Steps:       1/1
+2026-03-30 16:32:13 [INFO]   Log file:    D:\vishwa\nfpc_winit\etl\logs\etl_20260330_162752.log
+2026-03-30 16:32:13 [INFO] ════════════════════════════════════════════════════════════
+2026-03-30 16:32:13 [INFO] 
+  Step                                        Rows     Time         Rate Status
+2026-03-30 16:32:13 [INFO]   ─────────────────────────────────── ──────────── ──────── ──────────── ────────
+2026-03-30 16:32:13 [INFO]   rpt_sales_detail                               0   258.0s          0/s  FAILED
+2026-03-30 16:32:13 [INFO] 
+  FAILED STEPS: ['sales_detail']
+2026-03-30 16:32:13 [INFO]   Re-run with: python etl/extract.py --table <name>

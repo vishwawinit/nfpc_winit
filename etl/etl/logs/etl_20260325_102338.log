@@ -1,0 +1,86 @@
+2026-03-25 10:23:38 [INFO] Connecting to MSSQL...
+2026-03-25 10:23:38 [INFO]   MSSQL connected
+2026-03-25 10:23:38 [INFO] Connecting to PostgreSQL...
+2026-03-25 10:23:40 [INFO]   PostgreSQL connected
+2026-03-25 10:23:40 [INFO] 
+──────────────────────────────────────────────────
+2026-03-25 10:23:40 [INFO]   [1/0] rpt_route_sales_summary_by_item [░░░░░░░░░░░░░░░░░░░░] 0%
+2026-03-25 10:23:40 [INFO]        Expected: ~500,000 rows
+2026-03-25 10:23:41 [DEBUG]   SQL: 
+        SELECT CAST(R.Date AS DATE), R.RouteCode, RR.Name,
+            R.UserCode, U.Description, RR.SalesOrgCode,
+            R.ItemCode, I.Description, I.GroupLevel3, I.GroupLevel1,
+            R.T...
+2026-03-25 10:23:41 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-25 10:23:41 [INFO]   MSSQL query returned in 0.1s - starting load...
+2026-03-25 10:23:44 [INFO]              10,000 rows | 2,430 rows/sec | 4s elapsed | ETA 202s
+2026-03-25 10:23:45 [INFO]              20,000 rows | 3,611 rows/sec | 6s elapsed | ETA 133s
+2026-03-25 10:23:47 [INFO]              30,000 rows | 4,365 rows/sec | 7s elapsed | ETA 108s
+2026-03-25 10:23:48 [INFO]              40,000 rows | 4,814 rows/sec | 8s elapsed | ETA 96s
+2026-03-25 10:23:50 [INFO]              50,000 rows | 5,131 rows/sec | 10s elapsed | ETA 88s
+2026-03-25 10:23:51 [INFO]              60,000 rows | 5,404 rows/sec | 11s elapsed | ETA 81s
+2026-03-25 10:23:52 [INFO]              70,000 rows | 5,619 rows/sec | 12s elapsed | ETA 77s
+2026-03-25 10:23:54 [INFO]              80,000 rows | 5,794 rows/sec | 14s elapsed | ETA 72s
+2026-03-25 10:23:55 [INFO]              90,000 rows | 5,898 rows/sec | 15s elapsed | ETA 70s
+2026-03-25 10:23:56 [INFO]             100,000 rows | 6,013 rows/sec | 17s elapsed | ETA 67s
+2026-03-25 10:23:58 [INFO]             110,000 rows | 6,118 rows/sec | 18s elapsed | ETA 64s
+2026-03-25 10:23:59 [INFO]             120,000 rows | 6,195 rows/sec | 19s elapsed | ETA 61s
+2026-03-25 10:24:01 [INFO]             130,000 rows | 6,259 rows/sec | 21s elapsed | ETA 59s
+2026-03-25 10:24:02 [INFO]             140,000 rows | 6,319 rows/sec | 22s elapsed | ETA 57s
+2026-03-25 10:24:03 [INFO]             150,000 rows | 6,376 rows/sec | 24s elapsed | ETA 55s
+2026-03-25 10:24:05 [INFO]             160,000 rows | 6,429 rows/sec | 25s elapsed | ETA 53s
+2026-03-25 10:24:06 [INFO]             170,000 rows | 6,470 rows/sec | 26s elapsed | ETA 51s
+2026-03-25 10:24:08 [INFO]             180,000 rows | 6,465 rows/sec | 28s elapsed | ETA 49s
+2026-03-25 10:24:09 [INFO]             190,000 rows | 6,482 rows/sec | 29s elapsed | ETA 48s
+2026-03-25 10:24:11 [INFO]             200,000 rows | 6,502 rows/sec | 31s elapsed | ETA 46s
+2026-03-25 10:24:12 [INFO]             210,000 rows | 6,528 rows/sec | 32s elapsed | ETA 44s
+2026-03-25 10:24:13 [INFO]             220,000 rows | 6,556 rows/sec | 34s elapsed | ETA 43s
+2026-03-25 10:24:15 [INFO]             230,000 rows | 6,583 rows/sec | 35s elapsed | ETA 41s
+2026-03-25 10:24:17 [INFO]             240,000 rows | 6,500 rows/sec | 37s elapsed | ETA 40s
+2026-03-25 10:24:18 [INFO]             250,000 rows | 6,526 rows/sec | 38s elapsed | ETA 38s
+2026-03-25 10:24:20 [INFO]             260,000 rows | 6,547 rows/sec | 40s elapsed | ETA 37s
+2026-03-25 10:24:21 [INFO]             270,000 rows | 6,561 rows/sec | 41s elapsed | ETA 35s
+2026-03-25 10:24:22 [INFO]             280,000 rows | 6,569 rows/sec | 43s elapsed | ETA 33s
+2026-03-25 10:24:24 [INFO]             290,000 rows | 6,578 rows/sec | 44s elapsed | ETA 32s
+2026-03-25 10:24:25 [INFO]             300,000 rows | 6,597 rows/sec | 45s elapsed | ETA 30s
+2026-03-25 10:24:27 [INFO]             310,000 rows | 6,602 rows/sec | 47s elapsed | ETA 29s
+2026-03-25 10:24:28 [INFO]             320,000 rows | 6,608 rows/sec | 48s elapsed | ETA 27s
+2026-03-25 10:24:30 [INFO]             330,000 rows | 6,620 rows/sec | 50s elapsed | ETA 26s
+2026-03-25 10:24:31 [INFO]             340,000 rows | 6,635 rows/sec | 51s elapsed | ETA 24s
+2026-03-25 10:24:32 [INFO]             350,000 rows | 6,654 rows/sec | 53s elapsed | ETA 23s
+2026-03-25 10:24:34 [INFO]             360,000 rows | 6,673 rows/sec | 54s elapsed | ETA 21s
+2026-03-25 10:24:35 [INFO]             370,000 rows | 6,692 rows/sec | 55s elapsed | ETA 19s
+2026-03-25 10:24:37 [INFO]             380,000 rows | 6,701 rows/sec | 57s elapsed | ETA 18s
+2026-03-25 10:24:38 [INFO]             390,000 rows | 6,703 rows/sec | 58s elapsed | ETA 16s
+2026-03-25 10:24:39 [INFO]             400,000 rows | 6,713 rows/sec | 60s elapsed | ETA 15s
+2026-03-25 10:24:41 [INFO]             410,000 rows | 6,721 rows/sec | 61s elapsed | ETA 13s
+2026-03-25 10:24:42 [INFO]             420,000 rows | 6,726 rows/sec | 62s elapsed | ETA 12s
+2026-03-25 10:24:44 [INFO]             430,000 rows | 6,731 rows/sec | 64s elapsed | ETA 10s
+2026-03-25 10:24:45 [INFO]             440,000 rows | 6,742 rows/sec | 65s elapsed | ETA 9s
+2026-03-25 10:24:46 [INFO]             450,000 rows | 6,757 rows/sec | 67s elapsed | ETA 7s
+2026-03-25 10:24:48 [INFO]             460,000 rows | 6,763 rows/sec | 68s elapsed | ETA 6s
+2026-03-25 10:24:49 [INFO]             470,000 rows | 6,775 rows/sec | 69s elapsed | ETA 4s
+2026-03-25 10:24:51 [INFO]             480,000 rows | 6,785 rows/sec | 71s elapsed | ETA 3s
+2026-03-25 10:24:52 [INFO]             490,000 rows | 6,795 rows/sec | 72s elapsed | ETA 1s
+2026-03-25 10:24:53 [INFO]             500,000 rows | 6,804 rows/sec | 73s elapsed | ETA 0s
+2026-03-25 10:24:55 [INFO]             510,000 rows | 6,813 rows/sec | 75s elapsed | ETA 0s
+2026-03-25 10:24:56 [INFO]             520,000 rows | 6,819 rows/sec | 76s elapsed | ETA 0s
+2026-03-25 10:24:57 [INFO]             530,000 rows | 6,830 rows/sec | 78s elapsed | ETA 0s
+2026-03-25 10:24:59 [INFO]             540,000 rows | 6,836 rows/sec | 79s elapsed | ETA 0s
+2026-03-25 10:25:00 [INFO]             550,000 rows | 6,843 rows/sec | 80s elapsed | ETA 0s
+2026-03-25 10:25:02 [INFO]             560,000 rows | 6,849 rows/sec | 82s elapsed | ETA 0s
+2026-03-25 10:25:03 [INFO]             570,000 rows | 6,855 rows/sec | 83s elapsed | ETA 0s
+2026-03-25 10:25:04 [INFO]             580,000 rows | 6,861 rows/sec | 85s elapsed | ETA 0s
+2026-03-25 10:25:06 [INFO]             590,000 rows | 6,862 rows/sec | 86s elapsed | ETA 0s
+2026-03-25 10:25:07 [INFO]             600,000 rows | 6,863 rows/sec | 87s elapsed | ETA 0s
+2026-03-25 10:25:09 [INFO]             610,000 rows | 6,865 rows/sec | 89s elapsed | ETA 0s
+2026-03-25 10:25:10 [INFO]             620,000 rows | 6,865 rows/sec | 90s elapsed | ETA 0s
+2026-03-25 10:25:12 [INFO]             630,000 rows | 6,867 rows/sec | 92s elapsed | ETA 0s
+2026-03-25 10:25:13 [INFO]             640,000 rows | 6,869 rows/sec | 93s elapsed | ETA 0s
+2026-03-25 10:25:14 [INFO]             650,000 rows | 6,875 rows/sec | 95s elapsed | ETA 0s
+2026-03-25 10:25:16 [INFO]             660,000 rows | 6,881 rows/sec | 96s elapsed | ETA 0s
+2026-03-25 10:25:17 [INFO]             670,000 rows | 6,887 rows/sec | 97s elapsed | ETA 0s
+2026-03-25 10:25:19 [INFO]             680,000 rows | 6,887 rows/sec | 99s elapsed | ETA 0s
+2026-03-25 10:25:20 [INFO]             690,000 rows | 6,886 rows/sec | 100s elapsed | ETA 0s
+2026-03-25 10:25:21 [INFO]             700,000 rows | 6,889 rows/sec | 102s elapsed | ETA 0s
+2026-03-25 10:25:23 [INFO]   [OK] 709,915 rows in 103.1s (6,887 rows/sec)

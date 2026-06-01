@@ -1,0 +1,69 @@
+2026-03-23 19:05:04 [INFO] ════════════════════════════════════════════════════════════
+2026-03-23 19:05:04 [INFO]   NFPC Reports ETL
+2026-03-23 19:05:04 [INFO]   Date range: 2026-03-01 to 2026-03-24
+2026-03-23 19:05:04 [INFO]   Log file:   D:\vishwa\nfpc_winit\etl\logs\etl_20260323_190504.log
+2026-03-23 19:05:04 [INFO] ════════════════════════════════════════════════════════════
+2026-03-23 19:05:04 [INFO] Connecting to MSSQL...
+2026-03-23 19:05:05 [INFO]   MSSQL connected
+2026-03-23 19:05:05 [INFO] Connecting to PostgreSQL...
+2026-03-23 19:05:06 [INFO]   PostgreSQL connected
+2026-03-23 19:05:06 [INFO] 
+──────────────────────────────────────────────────
+2026-03-23 19:05:06 [INFO]   [1/1] rpt_sales_detail [░░░░░░░░░░░░░░░░░░░░] 0%
+2026-03-23 19:05:06 [INFO]        Expected: ~12,000,000 rows
+2026-03-23 19:05:07 [INFO]     Processing 2026-03-01 to 2026-03-15...
+2026-03-23 19:05:07 [DEBUG]   SQL: 
+        SELECT
+            h.TrxCode, d.[LineNo], CAST(h.TrxDate AS DATE), CAST(h.TripDate AS DATE),
+            h.TrxType, h.PaymentType, h.TRXStatus,
+            h.UserCode, u.Description,
+        ...
+2026-03-23 19:05:07 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-23 19:05:13 [INFO]   MSSQL query returned in 5.5s - starting load...
+2026-03-23 19:05:32 [INFO]              50,000 rows | 1,937 rows/sec | 26s elapsed | ETA 6168s
+2026-03-23 19:05:48 [INFO]             100,000 rows | 2,411 rows/sec | 41s elapsed | ETA 4936s
+2026-03-23 19:06:04 [INFO]             150,000 rows | 2,588 rows/sec | 58s elapsed | ETA 4578s
+2026-03-23 19:06:20 [INFO]             200,000 rows | 2,712 rows/sec | 74s elapsed | ETA 4350s
+2026-03-23 19:06:36 [INFO]             250,000 rows | 2,784 rows/sec | 90s elapsed | ETA 4221s
+2026-03-23 19:06:52 [INFO]             300,000 rows | 2,849 rows/sec | 105s elapsed | ETA 4106s
+2026-03-23 19:07:08 [INFO]             350,000 rows | 2,874 rows/sec | 122s elapsed | ETA 4054s
+2026-03-23 19:07:24 [INFO]             400,000 rows | 2,896 rows/sec | 138s elapsed | ETA 4005s
+2026-03-23 19:07:41 [INFO]             450,000 rows | 2,912 rows/sec | 155s elapsed | ETA 3966s
+2026-03-23 19:07:57 [INFO]             500,000 rows | 2,931 rows/sec | 171s elapsed | ETA 3924s
+2026-03-23 19:08:13 [INFO]             550,000 rows | 2,954 rows/sec | 186s elapsed | ETA 3876s
+2026-03-23 19:08:30 [INFO]             600,000 rows | 2,949 rows/sec | 203s elapsed | ETA 3865s
+2026-03-23 19:08:48 [INFO]             650,000 rows | 2,930 rows/sec | 222s elapsed | ETA 3874s
+2026-03-23 19:09:06 [INFO]             700,000 rows | 2,916 rows/sec | 240s elapsed | ETA 3875s
+2026-03-23 19:09:25 [INFO]             750,000 rows | 2,902 rows/sec | 258s elapsed | ETA 3876s
+2026-03-23 19:09:43 [INFO]             800,000 rows | 2,893 rows/sec | 277s elapsed | ETA 3871s
+2026-03-23 19:10:02 [INFO]             850,000 rows | 2,880 rows/sec | 295s elapsed | ETA 3872s
+2026-03-23 19:10:26 [INFO]             900,000 rows | 2,818 rows/sec | 319s elapsed | ETA 3939s
+2026-03-23 19:10:52 [INFO]             950,000 rows | 2,752 rows/sec | 345s elapsed | ETA 4016s
+2026-03-23 19:11:15 [INFO]           1,000,000 rows | 2,709 rows/sec | 369s elapsed | ETA 4061s
+2026-03-23 19:11:38 [INFO]           1,050,000 rows | 2,682 rows/sec | 391s elapsed | ETA 4083s
+2026-03-23 19:11:59 [INFO]           1,100,000 rows | 2,664 rows/sec | 413s elapsed | ETA 4091s
+2026-03-23 19:12:20 [INFO]           1,150,000 rows | 2,654 rows/sec | 433s elapsed | ETA 4089s
+2026-03-23 19:12:32 [INFO]     2026-03-01 to 2026-03-15: 1,179,408 rows
+2026-03-23 19:12:32 [INFO]     Processing 2026-03-15 to 2026-03-24...
+2026-03-23 19:12:32 [DEBUG]   SQL: 
+        SELECT
+            h.TrxCode, d.[LineNo], CAST(h.TrxDate AS DATE), CAST(h.TripDate AS DATE),
+            h.TrxType, h.PaymentType, h.TRXStatus,
+            h.UserCode, u.Description,
+        ...
+2026-03-23 19:12:32 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-23 19:12:32 [INFO]   MSSQL query returned in 0.1s - starting load...
+2026-03-23 19:12:32 [INFO]     2026-03-15 to 2026-03-24: 0 rows
+2026-03-23 19:12:32 [INFO]   [OK] 1,179,408 rows in 445.9s (2,645 rows/sec)
+2026-03-23 19:12:32 [INFO] 
+════════════════════════════════════════════════════════════
+2026-03-23 19:12:32 [INFO]   ETL COMPLETE
+2026-03-23 19:12:32 [INFO]   Total time:  7.5 minutes
+2026-03-23 19:12:32 [INFO]   Total rows:  1,179,408
+2026-03-23 19:12:32 [INFO]   Steps:       1/1
+2026-03-23 19:12:32 [INFO]   Log file:    D:\vishwa\nfpc_winit\etl\logs\etl_20260323_190504.log
+2026-03-23 19:12:32 [INFO] ════════════════════════════════════════════════════════════
+2026-03-23 19:12:32 [INFO] 
+  Step                                        Rows     Time         Rate Status
+2026-03-23 19:12:32 [INFO]   ─────────────────────────────────── ──────────── ──────── ──────────── ────────
+2026-03-23 19:12:32 [INFO]   rpt_sales_detail                       1,179,408   445.9s      2,645/s  done

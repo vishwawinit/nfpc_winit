@@ -1,0 +1,41 @@
+2026-03-31 12:25:33 [INFO] ════════════════════════════════════════════════════════════
+2026-03-31 12:25:33 [INFO]   NFPC Reports ETL
+2026-03-31 12:25:33 [INFO]   Date range: 2026-02-22 to 2026-02-28
+2026-03-31 12:25:33 [INFO]   Mode: sequential
+2026-03-31 12:25:33 [INFO]   Log file:   D:\vishwa\nfpc_winit\etl\logs\etl_20260331_122533.log
+2026-03-31 12:25:33 [INFO] ════════════════════════════════════════════════════════════
+2026-03-31 12:25:33 [INFO] Connecting to MSSQL...
+2026-03-31 12:25:34 [INFO]   MSSQL connected
+2026-03-31 12:25:34 [INFO] Connecting to PostgreSQL...
+2026-03-31 12:25:35 [INFO]   PostgreSQL connected
+2026-03-31 12:25:35 [INFO] 
+──────────────────────────────────────────────────
+2026-03-31 12:25:35 [INFO]   [1/1] rpt_route_sales_by_item_customer [░░░░░░░░░░░░░░░░░░░░] 0%
+2026-03-31 12:25:35 [INFO]        Expected: ~2,500,000 rows
+2026-03-31 12:25:36 [DEBUG]   SQL: 
+        SELECT RouteCode, UserCode, CustomerCode, ItemCode,
+            CAST(Date AS DATE), TotalQty, TotalGRQty, TotalDamageQty, TotalExpiryQty,
+            TotalSales, TotalGRSales, TotalDamageSale...
+2026-03-31 12:25:36 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-31 12:25:36 [INFO]   MSSQL query returned in 0.0s - starting load...
+2026-03-31 12:25:44 [INFO]              50,000 rows | 5,875 rows/sec | 9s elapsed | ETA 417s
+2026-03-31 12:25:50 [INFO]             100,000 rows | 6,979 rows/sec | 14s elapsed | ETA 344s
+2026-03-31 12:25:55 [INFO]             150,000 rows | 7,501 rows/sec | 20s elapsed | ETA 313s
+2026-03-31 12:26:01 [INFO]             200,000 rows | 7,774 rows/sec | 26s elapsed | ETA 296s
+2026-03-31 12:26:11 [INFO]             250,000 rows | 7,088 rows/sec | 35s elapsed | ETA 317s
+2026-03-31 12:26:18 [INFO]             300,000 rows | 7,112 rows/sec | 42s elapsed | ETA 309s
+2026-03-31 12:26:24 [INFO]             350,000 rows | 7,231 rows/sec | 48s elapsed | ETA 297s
+2026-03-31 12:26:36 [INFO]             400,000 rows | 6,644 rows/sec | 60s elapsed | ETA 316s
+2026-03-31 12:26:39 [INFO]   [OK] 424,151 rows in 63.5s (6,684 rows/sec)
+2026-03-31 12:26:39 [INFO] 
+════════════════════════════════════════════════════════════
+2026-03-31 12:26:39 [INFO]   ETL COMPLETE
+2026-03-31 12:26:39 [INFO]   Total time:  1.1 minutes
+2026-03-31 12:26:39 [INFO]   Total rows:  424,151
+2026-03-31 12:26:39 [INFO]   Steps:       1/1
+2026-03-31 12:26:39 [INFO]   Log file:    D:\vishwa\nfpc_winit\etl\logs\etl_20260331_122533.log
+2026-03-31 12:26:39 [INFO] ════════════════════════════════════════════════════════════
+2026-03-31 12:26:39 [INFO] 
+  Step                                        Rows     Time         Rate Status
+2026-03-31 12:26:39 [INFO]   ─────────────────────────────────── ──────────── ──────── ──────────── ────────
+2026-03-31 12:26:39 [INFO]   rpt_route_sales_by_item_customer         424,151    63.5s      6,684/s  done

@@ -1,0 +1,82 @@
+2026-03-30 16:04:38 [INFO] ════════════════════════════════════════════════════════════
+2026-03-30 16:04:38 [INFO]   NFPC Reports ETL
+2026-03-30 16:04:38 [INFO]   Date range: 2026-01-01 to 2026-02-28
+2026-03-30 16:04:38 [INFO]   Mode: sequential
+2026-03-30 16:04:38 [INFO]   Log file:   D:\vishwa\nfpc_winit\etl\logs\etl_20260330_160438.log
+2026-03-30 16:04:38 [INFO] ════════════════════════════════════════════════════════════
+2026-03-30 16:04:38 [INFO] Connecting to MSSQL...
+2026-03-30 16:04:38 [INFO]   MSSQL connected
+2026-03-30 16:04:38 [INFO] Connecting to PostgreSQL...
+2026-03-30 16:04:40 [INFO]   PostgreSQL connected
+2026-03-30 16:04:40 [INFO] 
+──────────────────────────────────────────────────
+2026-03-30 16:04:40 [INFO]   [1/1] rpt_daily_sales_summary [░░░░░░░░░░░░░░░░░░░░] 0%
+2026-03-30 16:04:40 [INFO]        Expected: ~5,000,000 rows
+2026-03-30 16:04:41 [INFO]     Processing 2026-01-01 to 2026-02-01...
+2026-03-30 16:04:41 [DEBUG]   SQL: 
+        SELECT
+            CAST(h.TrxDate AS DATE), h.RouteCode, rt.Name,
+            h.UserCode, u.Description, h.OrgCode, so.Description,
+            h.ClientCode, c.Description, cd.ChannelCode, ch...
+2026-03-30 16:04:41 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-30 16:10:36 [INFO]   MSSQL query returned in 355.1s - starting load...
+2026-03-30 16:10:50 [INFO]              50,000 rows | 135 rows/sec | 370s elapsed | ETA 36652s
+2026-03-30 16:11:01 [INFO]             100,000 rows | 262 rows/sec | 381s elapsed | ETA 18669s
+2026-03-30 16:11:12 [INFO]             150,000 rows | 383 rows/sec | 392s elapsed | ETA 12671s
+2026-03-30 16:11:23 [INFO]             200,000 rows | 496 rows/sec | 403s elapsed | ETA 9674s
+2026-03-30 16:11:35 [INFO]             250,000 rows | 602 rows/sec | 415s elapsed | ETA 7884s
+2026-03-30 16:11:46 [INFO]             300,000 rows | 704 rows/sec | 426s elapsed | ETA 6672s
+2026-03-30 16:11:57 [INFO]             350,000 rows | 801 rows/sec | 437s elapsed | ETA 5805s
+2026-03-30 16:12:08 [INFO]             400,000 rows | 893 rows/sec | 448s elapsed | ETA 5150s
+2026-03-30 16:12:21 [INFO]             450,000 rows | 975 rows/sec | 461s elapsed | ETA 4666s
+2026-03-30 16:12:34 [INFO]             500,000 rows | 1,055 rows/sec | 474s elapsed | ETA 4264s
+2026-03-30 16:12:46 [INFO]             550,000 rows | 1,131 rows/sec | 486s elapsed | ETA 3936s
+2026-03-30 16:12:58 [INFO]             600,000 rows | 1,204 rows/sec | 498s elapsed | ETA 3654s
+2026-03-30 16:13:12 [INFO]             650,000 rows | 1,270 rows/sec | 512s elapsed | ETA 3424s
+2026-03-30 16:13:23 [INFO]             700,000 rows | 1,338 rows/sec | 523s elapsed | ETA 3215s
+2026-03-30 16:13:34 [INFO]             750,000 rows | 1,403 rows/sec | 534s elapsed | ETA 3028s
+2026-03-30 16:13:47 [INFO]             800,000 rows | 1,463 rows/sec | 547s elapsed | ETA 2870s
+2026-03-30 16:13:58 [INFO]             850,000 rows | 1,522 rows/sec | 558s elapsed | ETA 2726s
+2026-03-30 16:14:09 [INFO]             900,000 rows | 1,581 rows/sec | 569s elapsed | ETA 2594s
+2026-03-30 16:14:21 [INFO]             950,000 rows | 1,634 rows/sec | 581s elapsed | ETA 2478s
+2026-03-30 16:14:33 [INFO]           1,000,000 rows | 1,686 rows/sec | 593s elapsed | ETA 2373s
+2026-03-30 16:14:44 [INFO]           1,050,000 rows | 1,738 rows/sec | 604s elapsed | ETA 2273s
+2026-03-30 16:14:58 [INFO]           1,100,000 rows | 1,780 rows/sec | 618s elapsed | ETA 2191s
+2026-03-30 16:15:11 [INFO]           1,150,000 rows | 1,823 rows/sec | 631s elapsed | ETA 2112s
+2026-03-30 16:15:23 [INFO]           1,200,000 rows | 1,867 rows/sec | 643s elapsed | ETA 2036s
+2026-03-30 16:15:35 [INFO]           1,250,000 rows | 1,907 rows/sec | 656s elapsed | ETA 1967s
+2026-03-30 16:15:50 [INFO]           1,300,000 rows | 1,941 rows/sec | 670s elapsed | ETA 1906s
+2026-03-30 16:16:02 [INFO]           1,350,000 rows | 1,978 rows/sec | 682s elapsed | ETA 1845s
+2026-03-30 16:16:14 [INFO]           1,400,000 rows | 2,017 rows/sec | 694s elapsed | ETA 1785s
+2026-03-30 16:16:26 [INFO]           1,450,000 rows | 2,054 rows/sec | 706s elapsed | ETA 1728s
+2026-03-30 16:16:38 [INFO]           1,500,000 rows | 2,089 rows/sec | 718s elapsed | ETA 1676s
+2026-03-30 16:16:50 [INFO]           1,550,000 rows | 2,122 rows/sec | 730s elapsed | ETA 1626s
+2026-03-30 16:17:06 [INFO]           1,600,000 rows | 2,144 rows/sec | 746s elapsed | ETA 1586s
+2026-03-30 16:17:19 [INFO]           1,650,000 rows | 2,174 rows/sec | 759s elapsed | ETA 1541s
+2026-03-30 16:17:32 [INFO]           1,700,000 rows | 2,203 rows/sec | 772s elapsed | ETA 1498s
+2026-03-30 16:17:44 [INFO]           1,750,000 rows | 2,233 rows/sec | 784s elapsed | ETA 1456s
+2026-03-30 16:17:56 [INFO]           1,800,000 rows | 2,261 rows/sec | 796s elapsed | ETA 1415s
+2026-03-30 16:18:09 [INFO]           1,850,000 rows | 2,287 rows/sec | 809s elapsed | ETA 1378s
+2026-03-30 16:18:21 [INFO]           1,900,000 rows | 2,314 rows/sec | 821s elapsed | ETA 1340s
+2026-03-30 16:18:33 [INFO]           1,950,000 rows | 2,339 rows/sec | 834s elapsed | ETA 1304s
+2026-03-30 16:18:47 [INFO]           2,000,000 rows | 2,362 rows/sec | 847s elapsed | ETA 1270s
+2026-03-30 16:19:00 [INFO]           2,050,000 rows | 2,383 rows/sec | 860s elapsed | ETA 1238s
+2026-03-30 16:19:12 [INFO]           2,100,000 rows | 2,408 rows/sec | 872s elapsed | ETA 1204s
+2026-03-30 16:19:23 [INFO]           2,150,000 rows | 2,433 rows/sec | 884s elapsed | ETA 1171s
+2026-03-30 16:19:35 [INFO]           2,200,000 rows | 2,457 rows/sec | 895s elapsed | ETA 1139s
+2026-03-30 16:19:48 [INFO]     2026-01: 2,247,053 rows
+2026-03-30 16:19:48 [INFO]     Processing 2026-02-01 to 2026-02-28...
+2026-03-30 16:19:48 [DEBUG]   SQL: 
+        SELECT
+            CAST(h.TrxDate AS DATE), h.RouteCode, rt.Name,
+            h.UserCode, u.Description, h.OrgCode, so.Description,
+            h.ClientCode, c.Description, cd.ChannelCode, ch...
+2026-03-30 16:19:48 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-30 16:22:54 [INFO]   MSSQL query returned in 186.1s - starting load...
+2026-03-30 16:23:09 [INFO]              50,000 rows | 45 rows/sec | 1109s elapsed | ETA 109788s
+2026-03-30 16:23:20 [INFO]             100,000 rows | 89 rows/sec | 1120s elapsed | ETA 54875s
+2026-03-30 16:23:33 [INFO]             150,000 rows | 132 rows/sec | 1133s elapsed | ETA 36625s
+2026-03-30 16:23:45 [INFO]             200,000 rows | 175 rows/sec | 1145s elapsed | ETA 27478s
+2026-03-30 16:24:04 [INFO]             250,000 rows | 215 rows/sec | 1164s elapsed | ETA 22117s
+2026-03-30 16:24:26 [INFO]             300,000 rows | 253 rows/sec | 1187s elapsed | ETA 18589s
+2026-03-30 16:24:49 [INFO]             350,000 rows | 290 rows/sec | 1209s elapsed | ETA 16059s

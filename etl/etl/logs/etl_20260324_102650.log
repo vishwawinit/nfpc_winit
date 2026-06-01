@@ -1,0 +1,314 @@
+2026-03-24 10:26:50 [INFO] ════════════════════════════════════════════════════════════
+2026-03-24 10:26:50 [INFO]   NFPC Reports ETL
+2026-03-24 10:26:50 [INFO]   Date range: 2026-03-01 to 2026-03-10
+2026-03-24 10:26:50 [INFO]   Mode: parallel (workers=4)
+2026-03-24 10:26:50 [INFO]   Log file:   D:\vishwa\nfpc_winit\etl\logs\etl_20260324_102650.log
+2026-03-24 10:26:50 [INFO] ════════════════════════════════════════════════════════════
+2026-03-24 10:26:50 [INFO] 
+  [Phase 1] Loading 4 dimension tables sequentially...
+2026-03-24 10:26:50 [INFO] Connecting to MSSQL...
+2026-03-24 10:26:51 [INFO]   MSSQL connected
+2026-03-24 10:26:51 [INFO] Connecting to PostgreSQL...
+2026-03-24 10:26:52 [INFO]   PostgreSQL connected
+2026-03-24 10:26:52 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:26:52 [INFO]   [1/16] Dimensions (6 simple tables) [░░░░░░░░░░░░░░░░░░░░] 0%
+2026-03-24 10:26:52 [INFO]        Expected: ~2,000 rows
+2026-03-24 10:26:53 [INFO]     dim_sales_org: 28 rows
+2026-03-24 10:26:55 [INFO]     dim_route: 470 rows
+2026-03-24 10:26:56 [INFO]     dim_channel: 15 rows
+2026-03-24 10:26:57 [INFO]     dim_country: 2 rows
+2026-03-24 10:26:58 [INFO]     dim_region: 3 rows
+2026-03-24 10:26:59 [INFO]     dim_city: 10 rows
+2026-03-24 10:26:59 [INFO]   [OK] 528 rows in 6.5s (81 rows/sec)
+2026-03-24 10:26:59 [INFO]        Progress: 1/16 steps | Est. remaining: 2.1 min
+2026-03-24 10:26:59 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:26:59 [INFO]   [2/16] dim_user (flat with roles/details/depot/location) [█░░░░░░░░░░░░░░░░░░░] 6%
+2026-03-24 10:26:59 [INFO]        Expected: ~1,200 rows
+2026-03-24 10:27:03 [INFO]     dim_user: 1133 rows
+2026-03-24 10:27:03 [INFO]   [OK] 1,133 rows in 3.8s (302 rows/sec)
+2026-03-24 10:27:03 [INFO]        Progress: 2/16 steps | Est. remaining: 1.4 min
+2026-03-24 10:27:03 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:27:03 [INFO]   [3/16] dim_item (flat with groups + UOM) [██░░░░░░░░░░░░░░░░░░] 12%
+2026-03-24 10:27:03 [INFO]        Expected: ~10,000 rows
+2026-03-24 10:27:16 [INFO]     Deduped 9924 -> 4962 items
+2026-03-24 10:27:16 [INFO]   [OK] 4,962 rows in 13.2s (376 rows/sec)
+2026-03-24 10:27:16 [INFO]        Progress: 3/16 steps | Est. remaining: 1.8 min
+2026-03-24 10:27:16 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:27:16 [INFO]   [4/16] dim_customer [███░░░░░░░░░░░░░░░░░] 19%
+2026-03-24 10:27:16 [INFO]        Expected: ~120,000 rows
+2026-03-24 10:31:54 [INFO]   [OK] 119,482 rows in 277.7s (430 rows/sec)
+2026-03-24 10:31:54 [INFO]        Progress: 4/16 steps | Est. remaining: 15.2 min
+2026-03-24 10:31:54 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:31:54 [INFO]   [5/16] rpt_holidays [█████░░░░░░░░░░░░░░░] 25%
+2026-03-24 10:31:54 [INFO]        Expected: ~60 rows
+2026-03-24 10:31:55 [INFO]   [OK] 58 rows in 1.4s (42 rows/sec)
+2026-03-24 10:31:55 [INFO]        Progress: 5/16 steps | Est. remaining: 11.2 min
+2026-03-24 10:31:55 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:31:55 [INFO]   [6/16] rpt_targets [██████░░░░░░░░░░░░░░] 31%
+2026-03-24 10:31:55 [INFO]        Expected: ~100 rows
+2026-03-24 10:31:56 [DEBUG]   SQL: 
+        SELECT t.TargetId, t.TimeFrame, CAST(t.StartDate AS DATE), CAST(t.EndDate AS DATE),
+            t.Year, t.Month, t.SalesmanCode, u.Description,
+            t.RouteCode, rt.Name, t.SalesorgCod...
+2026-03-24 10:31:56 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:31:56 [INFO]   MSSQL query returned in 0.0s - starting load...
+2026-03-24 10:31:57 [INFO]   [OK] 162 rows in 1.6s (103 rows/sec)
+2026-03-24 10:31:57 [INFO]        Progress: 6/16 steps | Est. remaining: 8.5 min
+2026-03-24 10:31:57 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:31:57 [INFO]   [7/16] rpt_coverage_summary [███████░░░░░░░░░░░░░] 38%
+2026-03-24 10:31:57 [INFO]        Expected: ~25,000 rows
+2026-03-24 10:31:57 [DEBUG]   SQL: 
+        SELECT cs.Id, CAST(cs.VisitDate AS DATE),
+            cs.RouteCode, cs.RouteDescription, cs.UserCode, cs.UserDescription,
+            rt.SalesOrgCode,
+            cs.ScheduledCalls, cs.TotalA...
+2026-03-24 10:31:57 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:31:57 [INFO]   MSSQL query returned in 0.0s - starting load...
+2026-03-24 10:31:58 [INFO]   [OK] 2,511 rows in 1.9s (1,346 rows/sec)
+2026-03-24 10:31:58 [INFO]        Progress: 7/16 steps | Est. remaining: 6.6 min
+2026-03-24 10:31:58 [INFO] 
+  [Phase 2] Loading 12 fact tables in parallel (workers=4)...
+2026-03-24 10:31:58 [INFO] Connecting to MSSQL...
+2026-03-24 10:31:58 [INFO] Connecting to MSSQL...
+2026-03-24 10:31:58 [INFO] Connecting to MSSQL...
+2026-03-24 10:31:58 [INFO] Connecting to MSSQL...
+2026-03-24 10:31:59 [INFO]   MSSQL connected
+2026-03-24 10:31:59 [INFO] Connecting to PostgreSQL...
+2026-03-24 10:31:59 [INFO]   MSSQL connected
+2026-03-24 10:31:59 [INFO] Connecting to PostgreSQL...
+2026-03-24 10:31:59 [INFO]   MSSQL connected
+2026-03-24 10:31:59 [INFO] Connecting to PostgreSQL...
+2026-03-24 10:31:59 [INFO]   MSSQL connected
+2026-03-24 10:31:59 [INFO] Connecting to PostgreSQL...
+2026-03-24 10:32:00 [INFO]   PostgreSQL connected
+2026-03-24 10:32:00 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:32:00 [INFO]   PostgreSQL connected
+2026-03-24 10:32:00 [INFO]   PostgreSQL connected
+2026-03-24 10:32:00 [INFO]   [8/16] rpt_route_sales_summary_by_item [████████░░░░░░░░░░░░] 44%
+2026-03-24 10:32:00 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:32:00 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:32:00 [INFO]        Expected: ~500,000 rows
+2026-03-24 10:32:01 [INFO]   [8/16] rpt_invoice_totals [████████░░░░░░░░░░░░] 44%
+2026-03-24 10:32:01 [INFO]   [8/16] rpt_route_sales_by_item_customer [████████░░░░░░░░░░░░] 44%
+2026-03-24 10:32:01 [INFO]        Expected: ~2,500,000 rows
+2026-03-24 10:32:01 [INFO]        Expected: ~500,000 rows
+2026-03-24 10:32:01 [INFO]   PostgreSQL connected
+2026-03-24 10:32:01 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:32:01 [INFO]   [8/16] rpt_route_sales_collection [████████░░░░░░░░░░░░] 44%
+2026-03-24 10:32:01 [INFO]        Expected: ~25,000 rows
+2026-03-24 10:32:01 [DEBUG]   SQL: 
+        SELECT CAST(R.Date AS DATE), R.RouteCode, RR.Name,
+            R.UserCode, U.Description, RR.SalesOrgCode,
+            R.ItemCode, I.Description, I.GroupLevel3, I.GroupLevel1,
+            R.T...
+2026-03-24 10:32:01 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:32:01 [DEBUG]   SQL: 
+        SELECT RouteCode, UserCode, CustomerCode, ItemCode,
+            CAST(Date AS DATE), TotalQty, TotalGRQty, TotalDamageQty, TotalExpiryQty,
+            TotalSales, TotalGRSales, TotalDamageSale...
+2026-03-24 10:32:01 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:32:01 [INFO]     Processing 2026-03-01 to 2026-03-10...
+2026-03-24 10:32:01 [DEBUG]   SQL: 
+        SELECT
+            CAST(h.TrxDate AS DATE),
+            h.RouteCode, ISNULL(rt.Name, ''),
+            h.UserCode, ISNULL(u.Description, ''),
+            ISNULL(rt.SalesOrgCode, h.OrgCode),
+  ...
+2026-03-24 10:32:01 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:32:01 [INFO]   MSSQL query returned in 0.1s - starting load...
+2026-03-24 10:32:01 [INFO]   MSSQL query returned in 0.1s - starting load...
+2026-03-24 10:32:01 [DEBUG]   SQL: 
+        SELECT rsc.Id, CAST(rsc.Date AS DATE),
+            rsc.RouteCode, rsc.RouteDescription, rsc.UserCode, rsc.UserDescription,
+            rt.SalesOrgCode,
+            rsc.TotalSales, rsc.TotalCo...
+2026-03-24 10:32:01 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:32:01 [INFO]   MSSQL query returned in 0.0s - starting load...
+2026-03-24 10:32:02 [INFO]   MSSQL query returned in 0.7s - starting load...
+2026-03-24 10:32:03 [INFO]   [OK] 2,101 rows in 2.5s (851 rows/sec)
+2026-03-24 10:32:03 [INFO]        Progress: 8/16 steps | Est. remaining: 5.2 min
+2026-03-24 10:32:03 [INFO] Connecting to MSSQL...
+2026-03-24 10:32:03 [INFO]   MSSQL connected
+2026-03-24 10:32:03 [INFO] Connecting to PostgreSQL...
+2026-03-24 10:32:05 [INFO]   PostgreSQL connected
+2026-03-24 10:32:05 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:32:05 [INFO]   [9/16] rpt_eot [██████████░░░░░░░░░░] 50%
+2026-03-24 10:32:05 [INFO]        Expected: ~80,000 rows
+2026-03-24 10:32:05 [INFO]              10,000 rows | 136,814 rows/sec | 0s elapsed | ETA 1s
+2026-03-24 10:32:05 [INFO]              20,000 rows | 65,938 rows/sec | 0s elapsed | ETA 1s
+2026-03-24 10:32:06 [DEBUG]   SQL: 
+        SELECT e.EOTId, e.UserCode, u.Description,
+            e.RouteCode, rt.Name, e.SalesOrgCode,
+            e.EOTType, e.EOTTime, CAST(e.TripDate AS DATE)
+        FROM tblEOT e
+        LEFT JOIN...
+2026-03-24 10:32:06 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:32:06 [INFO]              20,000 rows | 22,933 rows/sec | 1s elapsed | ETA 3s
+2026-03-24 10:32:06 [INFO]   MSSQL query returned in 0.1s - starting load...
+2026-03-24 10:32:07 [INFO]              30,000 rows | 17,025 rows/sec | 2s elapsed | ETA 3s
+2026-03-24 10:32:07 [INFO]              20,000 rows | 10,172 rows/sec | 2s elapsed | ETA 6s
+2026-03-24 10:32:08 [INFO]              40,000 rows | 12,490 rows/sec | 3s elapsed | ETA 3s
+2026-03-24 10:32:09 [INFO]   [OK] 2,057 rows in 3.5s (582 rows/sec)
+2026-03-24 10:32:09 [INFO]        Progress: 9/16 steps | Est. remaining: 4.1 min
+2026-03-24 10:32:09 [INFO] Connecting to MSSQL...
+2026-03-24 10:32:09 [INFO]   MSSQL connected
+2026-03-24 10:32:09 [INFO] Connecting to PostgreSQL...
+2026-03-24 10:32:11 [INFO]   PostgreSQL connected
+2026-03-24 10:32:11 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:32:11 [INFO]   [10/16] rpt_journeys [███████████░░░░░░░░░] 56%
+2026-03-24 10:32:11 [INFO]        Expected: ~80,000 rows
+2026-03-24 10:32:11 [INFO]              60,000 rows | 482,803 rows/sec | 0s elapsed | ETA 0s
+2026-03-24 10:32:12 [DEBUG]   SQL: 
+        SELECT j.JourneyId, j.JourneyCode, CAST(j.Date AS DATE),
+            j.UserCode, u.Description, rt.Code, rt.Name, u.SalesOrgCode,
+            j.StartTime, j.EndTime, j.VehicleCode
+        FRO...
+2026-03-24 10:32:12 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:32:12 [INFO]   MSSQL query returned in 0.1s - starting load...
+2026-03-24 10:32:12 [INFO]              70,000 rows | 46,254 rows/sec | 2s elapsed | ETA 0s
+2026-03-24 10:32:13 [INFO]              50,000 rows | 27,692 rows/sec | 2s elapsed | ETA 1s
+2026-03-24 10:32:14 [INFO]              80,000 rows | 28,174 rows/sec | 3s elapsed | ETA 0s
+2026-03-24 10:32:14 [INFO]   [OK] 2,156 rows in 2.9s (752 rows/sec)
+2026-03-24 10:32:14 [INFO]        Progress: 10/16 steps | Est. remaining: 3.2 min
+2026-03-24 10:32:14 [INFO] Connecting to MSSQL...
+2026-03-24 10:32:14 [INFO]   MSSQL connected
+2026-03-24 10:32:14 [INFO] Connecting to PostgreSQL...
+2026-03-24 10:32:15 [INFO]     2026-03-01 to 2026-03-10: 59,742 rows
+2026-03-24 10:32:15 [ERROR] FAILED on invoice_totals: 'NoneType' object is not subscriptable
+2026-03-24 10:32:15 [INFO] Connecting to MSSQL...
+2026-03-24 10:32:15 [INFO]   MSSQL connected
+2026-03-24 10:32:15 [INFO] Connecting to PostgreSQL...
+2026-03-24 10:32:16 [INFO]   PostgreSQL connected
+2026-03-24 10:32:16 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:32:16 [INFO]   [11/16] rpt_collections [████████████░░░░░░░░] 62%
+2026-03-24 10:32:16 [INFO]        Expected: ~1,500,000 rows
+2026-03-24 10:32:16 [INFO]             100,000 rows | 171,757 rows/sec | 1s elapsed | ETA 8s
+2026-03-24 10:32:16 [DEBUG]   SQL: 
+        SELECT ph.ReceiptId, ph.Receipt_Number,
+            CAST(ph.ReceiptDate AS DATE), CAST(ph.TripDate AS DATE),
+            ph.EmpNo, u.Description, ph.RouteCode, rt.Name,
+            ph.SalesOr...
+2026-03-24 10:32:16 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:32:17 [INFO]   MSSQL query returned in 0.0s - starting load...
+2026-03-24 10:32:17 [INFO]   PostgreSQL connected
+2026-03-24 10:32:17 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:32:17 [INFO]   [11/16] rpt_customer_visits [████████████░░░░░░░░] 62%
+2026-03-24 10:32:17 [INFO]        Expected: ~3,000,000 rows
+2026-03-24 10:32:18 [DEBUG]   SQL: 
+        SELECT CAST(cv.CustomerVisitId AS VARCHAR(50)),
+            CAST(cv.Date AS DATE), CAST(cv.TripDate AS DATE),
+            cv.UserCode, u.Description, cv.RouteCode, rt.Name,
+            COALES...
+2026-03-24 10:32:18 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:32:18 [INFO]   MSSQL query returned in 0.0s - starting load...
+2026-03-24 10:32:22 [INFO]             150,000 rows | 26,628 rows/sec | 6s elapsed | ETA 107s
+2026-03-24 10:32:29 [INFO]             200,000 rows | 16,905 rows/sec | 12s elapsed | ETA 166s
+2026-03-24 10:32:34 [INFO]              50,000 rows | 2,854 rows/sec | 18s elapsed | ETA 1034s
+2026-03-24 10:32:36 [INFO]             250,000 rows | 13,320 rows/sec | 19s elapsed | ETA 206s
+2026-03-24 10:32:42 [INFO]              50,000 rows | 2,013 rows/sec | 25s elapsed | ETA 1466s
+2026-03-24 10:32:44 [INFO]   [OK] 85,539 rows in 27.1s (3,156 rows/sec)
+2026-03-24 10:32:44 [INFO]        Progress: 11/16 steps | Est. remaining: 2.7 min
+2026-03-24 10:32:44 [INFO] Connecting to MSSQL...
+2026-03-24 10:32:44 [INFO]   MSSQL connected
+2026-03-24 10:32:44 [INFO] Connecting to PostgreSQL...
+2026-03-24 10:32:46 [INFO]   PostgreSQL connected
+2026-03-24 10:32:46 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:32:46 [INFO]   [12/16] rpt_journey_plan [█████████████░░░░░░░] 69%
+2026-03-24 10:32:46 [INFO]        Expected: ~2,000,000 rows
+2026-03-24 10:32:47 [DEBUG]   SQL: 
+        SELECT jp.DailyJourneyPlanId, CAST(jp.JourneyDate AS DATE),
+            ISNULL(jp.SalesmanCode, jp.UserCode),
+            ISNULL(u.Description, ''),
+            jp.CustomerCode, ISNULL(c.Desc...
+2026-03-24 10:32:47 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:32:47 [INFO]   MSSQL query returned in 0.1s - starting load...
+2026-03-24 10:32:50 [INFO]             350,000 rows | 80,502 rows/sec | 4s elapsed | ETA 20s
+2026-03-24 10:32:52 [INFO]   [OK] 77,675 rows in 6.0s (13,016 rows/sec)
+2026-03-24 10:32:52 [INFO]        Progress: 12/16 steps | Est. remaining: 2.0 min
+2026-03-24 10:32:52 [INFO] Connecting to MSSQL...
+2026-03-24 10:32:52 [INFO]   MSSQL connected
+2026-03-24 10:32:52 [INFO] Connecting to PostgreSQL...
+2026-03-24 10:32:56 [INFO]   PostgreSQL connected
+2026-03-24 10:32:56 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:32:56 [INFO]   [13/16] rpt_outstanding [███████████████░░░░░] 75%
+2026-03-24 10:32:56 [INFO]        Expected: ~5,000,000 rows
+2026-03-24 10:32:57 [INFO]             400,000 rows | 322,588 rows/sec | 1s elapsed | ETA 14s
+2026-03-24 10:32:58 [INFO]              50,000 rows | 26,800 rows/sec | 2s elapsed | ETA 185s
+2026-03-24 10:32:58 [DEBUG]   SQL: 
+        SELECT mpi.MiddleWarePendingInvoiceId, mpi.TrxCode,
+            mpi.OrgCode, so.Description, mpi.ClientCode, c.Description, ch.Description,
+            mpi.TrxDate, mpi.DueDate,
+            m...
+2026-03-24 10:32:58 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:32:58 [INFO]   MSSQL query returned - starting load with Python date conversion...
+2026-03-24 10:33:04 [INFO]             100,000 rows | 12,012 rows/sec | 8s elapsed | ETA 408s
+2026-03-24 10:33:04 [INFO]             450,000 rows | 54,017 rows/sec | 8s elapsed | ETA 84s
+2026-03-24 10:33:06 [INFO]   [OK] 105,993 rows in 9.6s (11,067 rows/sec)
+2026-03-24 10:33:06 [INFO]        Progress: 13/16 steps | Est. remaining: 1.4 min
+2026-03-24 10:33:06 [INFO] Connecting to MSSQL...
+2026-03-24 10:33:06 [INFO]   MSSQL connected
+2026-03-24 10:33:06 [INFO] Connecting to PostgreSQL...
+2026-03-24 10:33:08 [INFO]   PostgreSQL connected
+2026-03-24 10:33:08 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:33:08 [INFO]   [14/16] rpt_daily_sales_summary [████████████████░░░░] 81%
+2026-03-24 10:33:08 [INFO]        Expected: ~5,000,000 rows
+2026-03-24 10:33:08 [INFO]     Processing 2026-03-01 to 2026-03-10...
+2026-03-24 10:33:08 [DEBUG]   SQL: 
+        SELECT
+            CAST(h.TrxDate AS DATE), h.RouteCode, rt.Name,
+            h.UserCode, u.Description, h.OrgCode, so.Description,
+            h.ClientCode, c.Description, cd.ChannelCode, ch...
+2026-03-24 10:33:08 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:33:14 [INFO]   [OK] 498,611 rows in 6.0s (83,420 rows/sec)
+2026-03-24 10:33:14 [INFO]        Progress: 14/16 steps | Est. remaining: 0.9 min
+2026-03-24 10:33:14 [INFO] Connecting to MSSQL...
+2026-03-24 10:33:14 [INFO]   MSSQL connected
+2026-03-24 10:33:14 [INFO] Connecting to PostgreSQL...
+2026-03-24 10:33:16 [INFO]   PostgreSQL connected
+2026-03-24 10:33:16 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:33:16 [INFO]   [15/16] rpt_sales_detail [█████████████████░░░] 88%
+2026-03-24 10:33:16 [INFO]        Expected: ~12,000,000 rows
+2026-03-24 10:33:16 [INFO]     Processing 2026-03-01 to 2026-03-10...
+2026-03-24 10:33:16 [DEBUG]   SQL: 
+        SELECT
+            h.TrxCode, d.[LineNo], CAST(h.TrxDate AS DATE), CAST(h.TripDate AS DATE),
+            h.TrxType, h.PaymentType, h.TRXStatus,
+            h.UserCode, u.Description,
+        ...
+2026-03-24 10:33:16 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:33:18 [INFO]   MSSQL query returned in 9.8s - starting load...
+2026-03-24 10:33:19 [INFO]              50,000 rows | 15,433 rows/sec | 3s elapsed | ETA 774s
+2026-03-24 10:33:22 [INFO]   MSSQL query returned in 5.8s - starting load...
+2026-03-24 10:33:26 [INFO]              50,000 rows | 4,691 rows/sec | 11s elapsed | ETA 2547s
+2026-03-24 10:33:32 [INFO]             100,000 rows | 6,261 rows/sec | 16s elapsed | ETA 1901s
+2026-03-24 10:33:46 [INFO]              50,000 rows | 1,653 rows/sec | 30s elapsed | ETA 7228s
+2026-03-24 10:33:49 [INFO]             100,000 rows | 3,037 rows/sec | 33s elapsed | ETA 3918s
+2026-03-24 10:33:49 [INFO]             150,000 rows | 4,513 rows/sec | 33s elapsed | ETA 2626s
+2026-03-24 10:34:02 [INFO]              50,000 rows | 1,078 rows/sec | 46s elapsed | ETA 11089s
+2026-03-24 10:34:07 [INFO]             200,000 rows | 3,902 rows/sec | 51s elapsed | ETA 3024s
+2026-03-24 10:34:09 [INFO]   [OK] 205,992 rows in 52.9s (3,891 rows/sec)
+2026-03-24 10:34:09 [INFO]        Progress: 15/16 steps | Est. remaining: 0.5 min
+2026-03-24 10:36:51 [INFO]     2026-03: 497,848 rows
+2026-03-24 10:36:51 [ERROR] FAILED on daily_sales_summary: 'NoneType' object is not subscriptable
+2026-03-24 10:44:59 [INFO]     2026-03-01 to 2026-03-10: 1,179,408 rows
+2026-03-24 10:44:59 [ERROR] FAILED on sales_detail: 'NoneType' object is not subscriptable

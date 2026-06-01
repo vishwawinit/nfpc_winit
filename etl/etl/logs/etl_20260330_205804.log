@@ -1,0 +1,34 @@
+2026-03-30 20:58:04 [INFO] ════════════════════════════════════════════════════════════
+2026-03-30 20:58:04 [INFO]   NFPC Reports ETL
+2026-03-30 20:58:04 [INFO]   Date range: 2026-02-01 to 2026-02-28
+2026-03-30 20:58:04 [INFO]   Mode: sequential
+2026-03-30 20:58:04 [INFO]   Log file:   D:\vishwa\nfpc_winit\etl\logs\etl_20260330_205804.log
+2026-03-30 20:58:04 [INFO] ════════════════════════════════════════════════════════════
+2026-03-30 20:58:04 [INFO] Connecting to MSSQL...
+2026-03-30 20:58:05 [INFO]   MSSQL connected
+2026-03-30 20:58:05 [INFO] Connecting to PostgreSQL...
+2026-03-30 20:58:06 [INFO]   PostgreSQL connected
+2026-03-30 20:58:06 [INFO] 
+──────────────────────────────────────────────────
+2026-03-30 20:58:06 [INFO]   [1/1] rpt_route_sales_collection [░░░░░░░░░░░░░░░░░░░░] 0%
+2026-03-30 20:58:06 [INFO]        Expected: ~25,000 rows
+2026-03-30 20:58:07 [DEBUG]   SQL: 
+        SELECT rsc.Id, CAST(rsc.Date AS DATE),
+            rsc.RouteCode, rsc.RouteDescription, rsc.UserCode, rsc.UserDescription,
+            rt.SalesOrgCode,
+            rsc.TotalSales, rsc.TotalCo...
+2026-03-30 20:58:07 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-30 20:58:07 [INFO]   MSSQL query returned in 0.0s - starting load...
+2026-03-30 20:58:10 [INFO]   [OK] 8,091 rows in 3.3s (2,456 rows/sec)
+2026-03-30 20:58:10 [INFO] 
+════════════════════════════════════════════════════════════
+2026-03-30 20:58:10 [INFO]   ETL COMPLETE
+2026-03-30 20:58:10 [INFO]   Total time:  0.1 minutes
+2026-03-30 20:58:10 [INFO]   Total rows:  8,091
+2026-03-30 20:58:10 [INFO]   Steps:       1/1
+2026-03-30 20:58:10 [INFO]   Log file:    D:\vishwa\nfpc_winit\etl\logs\etl_20260330_205804.log
+2026-03-30 20:58:10 [INFO] ════════════════════════════════════════════════════════════
+2026-03-30 20:58:10 [INFO] 
+  Step                                        Rows     Time         Rate Status
+2026-03-30 20:58:10 [INFO]   ─────────────────────────────────── ──────────── ──────── ──────────── ────────
+2026-03-30 20:58:10 [INFO]   rpt_route_sales_collection                 8,091     3.3s      2,456/s  done

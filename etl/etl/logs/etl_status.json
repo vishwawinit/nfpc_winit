@@ -1,0 +1,18 @@
+{
+  "started_at": "2026-03-31T12:25:33.758341",
+  "completed_steps": 1,
+  "total_steps": 1,
+  "total_rows": 424151,
+  "current_step": null,
+  "current_step_rows": 0,
+  "elapsed_seconds": 65.61176753044128,
+  "log_file": "D:\\vishwa\\nfpc_winit\\etl\\logs\\etl_20260331_122533.log",
+  "steps": [
+    {
+      "name": "rpt_route_sales_by_item_customer",
+      "rows": 424151,
+      "elapsed": 63.45644664764404,
+      "status": "done"
+    }
+  ]
+}

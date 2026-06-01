@@ -1,0 +1,243 @@
+2026-03-24 10:17:56 [INFO] ════════════════════════════════════════════════════════════
+2026-03-24 10:17:56 [INFO]   NFPC Reports ETL
+2026-03-24 10:17:56 [INFO]   Date range: 2026-03-01 to 2026-03-10
+2026-03-24 10:17:56 [INFO]   Log file:   D:\vishwa\nfpc_winit\etl\logs\etl_20260324_101756.log
+2026-03-24 10:17:56 [INFO] ════════════════════════════════════════════════════════════
+2026-03-24 10:17:56 [INFO] Connecting to MSSQL...
+2026-03-24 10:17:56 [INFO]   MSSQL connected
+2026-03-24 10:17:56 [INFO] Connecting to PostgreSQL...
+2026-03-24 10:17:58 [INFO]   PostgreSQL connected
+2026-03-24 10:17:58 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:17:58 [INFO]   [1/16] Dimensions (6 simple tables) [░░░░░░░░░░░░░░░░░░░░] 0%
+2026-03-24 10:17:58 [INFO]        Expected: ~2,000 rows
+2026-03-24 10:17:58 [INFO]     dim_sales_org: 28 rows
+2026-03-24 10:18:00 [INFO]     dim_route: 470 rows
+2026-03-24 10:18:01 [INFO]     dim_channel: 15 rows
+2026-03-24 10:18:02 [INFO]     dim_country: 2 rows
+2026-03-24 10:18:03 [INFO]     dim_region: 3 rows
+2026-03-24 10:18:04 [INFO]     dim_city: 10 rows
+2026-03-24 10:18:04 [INFO]   [OK] 528 rows in 6.5s (81 rows/sec)
+2026-03-24 10:18:04 [INFO]        Progress: 1/16 steps | Est. remaining: 2.1 min
+2026-03-24 10:18:04 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:18:04 [INFO]   [2/16] dim_user (flat with roles/details/depot/location) [█░░░░░░░░░░░░░░░░░░░] 6%
+2026-03-24 10:18:04 [INFO]        Expected: ~1,200 rows
+2026-03-24 10:18:08 [INFO]     dim_user: 1133 rows
+2026-03-24 10:18:08 [INFO]   [OK] 1,133 rows in 3.8s (297 rows/sec)
+2026-03-24 10:18:08 [INFO]        Progress: 2/16 steps | Est. remaining: 1.4 min
+2026-03-24 10:18:08 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:18:08 [INFO]   [3/16] dim_item (flat with groups + UOM) [██░░░░░░░░░░░░░░░░░░] 12%
+2026-03-24 10:18:08 [INFO]        Expected: ~10,000 rows
+2026-03-24 10:18:21 [INFO]     Deduped 9924 -> 4962 items
+2026-03-24 10:18:21 [INFO]   [OK] 4,962 rows in 13.3s (374 rows/sec)
+2026-03-24 10:18:21 [INFO]        Progress: 3/16 steps | Est. remaining: 1.9 min
+2026-03-24 10:18:21 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:18:21 [INFO]   [4/16] dim_customer [███░░░░░░░░░░░░░░░░░] 19%
+2026-03-24 10:18:21 [INFO]        Expected: ~120,000 rows
+2026-03-24 10:23:02 [INFO]   [OK] 119,482 rows in 280.3s (426 rows/sec)
+2026-03-24 10:23:02 [INFO]        Progress: 4/16 steps | Est. remaining: 15.3 min
+2026-03-24 10:23:02 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:23:02 [INFO]   [5/16] rpt_holidays [█████░░░░░░░░░░░░░░░] 25%
+2026-03-24 10:23:02 [INFO]        Expected: ~60 rows
+2026-03-24 10:23:03 [INFO]   [OK] 58 rows in 1.4s (42 rows/sec)
+2026-03-24 10:23:03 [INFO]        Progress: 5/16 steps | Est. remaining: 11.3 min
+2026-03-24 10:23:03 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:23:03 [INFO]   [6/16] rpt_targets [██████░░░░░░░░░░░░░░] 31%
+2026-03-24 10:23:03 [INFO]        Expected: ~100 rows
+2026-03-24 10:23:04 [DEBUG]   SQL: 
+        SELECT t.TargetId, t.TimeFrame, CAST(t.StartDate AS DATE), CAST(t.EndDate AS DATE),
+            t.Year, t.Month, t.SalesmanCode, u.Description,
+            t.RouteCode, rt.Name, t.SalesorgCod...
+2026-03-24 10:23:04 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:23:04 [INFO]   MSSQL query returned in 0.1s - starting load...
+2026-03-24 10:23:04 [INFO]   [OK] 162 rows in 1.4s (114 rows/sec)
+2026-03-24 10:23:04 [INFO]        Progress: 6/16 steps | Est. remaining: 8.6 min
+2026-03-24 10:23:04 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:23:04 [INFO]   [7/16] rpt_coverage_summary [███████░░░░░░░░░░░░░] 38%
+2026-03-24 10:23:04 [INFO]        Expected: ~25,000 rows
+2026-03-24 10:23:05 [DEBUG]   SQL: 
+        SELECT cs.Id, CAST(cs.VisitDate AS DATE),
+            cs.RouteCode, cs.RouteDescription, cs.UserCode, cs.UserDescription,
+            rt.SalesOrgCode,
+            cs.ScheduledCalls, cs.TotalA...
+2026-03-24 10:23:05 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:23:05 [INFO]   MSSQL query returned in 0.1s - starting load...
+2026-03-24 10:23:06 [INFO]   [OK] 2,511 rows in 1.9s (1,335 rows/sec)
+2026-03-24 10:23:06 [INFO]        Progress: 7/16 steps | Est. remaining: 6.7 min
+2026-03-24 10:23:06 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:23:06 [INFO]   [8/16] rpt_route_sales_collection [████████░░░░░░░░░░░░] 44%
+2026-03-24 10:23:06 [INFO]        Expected: ~25,000 rows
+2026-03-24 10:23:07 [DEBUG]   SQL: 
+        SELECT rsc.Id, CAST(rsc.Date AS DATE),
+            rsc.RouteCode, rsc.RouteDescription, rsc.UserCode, rsc.UserDescription,
+            rt.SalesOrgCode,
+            rsc.TotalSales, rsc.TotalCo...
+2026-03-24 10:23:07 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:23:07 [INFO]   MSSQL query returned in 0.1s - starting load...
+2026-03-24 10:23:08 [INFO]   [OK] 2,101 rows in 1.7s (1,245 rows/sec)
+2026-03-24 10:23:08 [INFO]        Progress: 8/16 steps | Est. remaining: 5.2 min
+2026-03-24 10:23:08 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:23:08 [INFO]   [9/16] rpt_route_sales_summary_by_item [██████████░░░░░░░░░░] 50%
+2026-03-24 10:23:08 [INFO]        Expected: ~500,000 rows
+2026-03-24 10:23:09 [DEBUG]   SQL: 
+        SELECT CAST(R.Date AS DATE), R.RouteCode, RR.Name,
+            R.UserCode, U.Description, RR.SalesOrgCode,
+            R.ItemCode, I.Description, I.GroupLevel3, I.GroupLevel1,
+            R.T...
+2026-03-24 10:23:09 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:23:09 [INFO]   MSSQL query returned in 0.1s - starting load...
+2026-03-24 10:23:11 [INFO]              10,000 rows | 2,863 rows/sec | 3s elapsed | ETA 171s
+2026-03-24 10:23:13 [INFO]              20,000 rows | 4,119 rows/sec | 5s elapsed | ETA 117s
+2026-03-24 10:23:14 [INFO]              30,000 rows | 4,812 rows/sec | 6s elapsed | ETA 98s
+2026-03-24 10:23:16 [INFO]              40,000 rows | 5,257 rows/sec | 8s elapsed | ETA 87s
+2026-03-24 10:23:17 [INFO]              50,000 rows | 5,568 rows/sec | 9s elapsed | ETA 81s
+2026-03-24 10:23:18 [INFO]              60,000 rows | 5,799 rows/sec | 10s elapsed | ETA 76s
+2026-03-24 10:23:20 [INFO]              70,000 rows | 5,972 rows/sec | 12s elapsed | ETA 72s
+2026-03-24 10:23:21 [INFO]              80,000 rows | 6,116 rows/sec | 13s elapsed | ETA 69s
+2026-03-24 10:23:22 [INFO]              90,000 rows | 6,228 rows/sec | 14s elapsed | ETA 66s
+2026-03-24 10:23:24 [INFO]             100,000 rows | 6,326 rows/sec | 16s elapsed | ETA 63s
+2026-03-24 10:23:25 [INFO]             110,000 rows | 6,401 rows/sec | 17s elapsed | ETA 61s
+2026-03-24 10:23:26 [INFO]             120,000 rows | 6,467 rows/sec | 19s elapsed | ETA 59s
+2026-03-24 10:23:28 [INFO]             130,000 rows | 6,518 rows/sec | 20s elapsed | ETA 57s
+2026-03-24 10:23:29 [INFO]             140,000 rows | 6,573 rows/sec | 21s elapsed | ETA 55s
+2026-03-24 10:23:31 [INFO]             150,000 rows | 6,590 rows/sec | 23s elapsed | ETA 53s
+2026-03-24 10:23:32 [INFO]             160,000 rows | 6,609 rows/sec | 24s elapsed | ETA 51s
+2026-03-24 10:23:34 [INFO]             170,000 rows | 6,643 rows/sec | 26s elapsed | ETA 50s
+2026-03-24 10:23:35 [INFO]             180,000 rows | 6,676 rows/sec | 27s elapsed | ETA 48s
+2026-03-24 10:23:36 [INFO]             190,000 rows | 6,670 rows/sec | 28s elapsed | ETA 46s
+2026-03-24 10:23:38 [INFO]             200,000 rows | 6,700 rows/sec | 30s elapsed | ETA 45s
+2026-03-24 10:23:39 [INFO]   [OK] 205,992 rows in 30.9s (6,657 rows/sec)
+2026-03-24 10:23:39 [INFO]        Progress: 9/16 steps | Est. remaining: 4.5 min
+2026-03-24 10:23:39 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:23:39 [INFO]   [10/16] rpt_route_sales_by_item_customer [███████████░░░░░░░░░] 56%
+2026-03-24 10:23:39 [INFO]        Expected: ~2,500,000 rows
+2026-03-24 10:23:40 [DEBUG]   SQL: 
+        SELECT RouteCode, UserCode, CustomerCode, ItemCode,
+            CAST(Date AS DATE), TotalQty, TotalGRQty, TotalDamageQty, TotalExpiryQty,
+            TotalSales, TotalGRSales, TotalDamageSale...
+2026-03-24 10:23:40 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:23:40 [INFO]   MSSQL query returned in 0.0s - starting load...
+2026-03-24 10:23:45 [INFO]              50,000 rows | 8,792 rows/sec | 6s elapsed | ETA 279s
+2026-03-24 10:23:49 [INFO]             100,000 rows | 9,566 rows/sec | 10s elapsed | ETA 251s
+2026-03-24 10:23:54 [INFO]             150,000 rows | 9,841 rows/sec | 15s elapsed | ETA 239s
+2026-03-24 10:23:59 [INFO]             200,000 rows | 9,983 rows/sec | 20s elapsed | ETA 230s
+2026-03-24 10:24:04 [INFO]             250,000 rows | 10,099 rows/sec | 25s elapsed | ETA 223s
+2026-03-24 10:24:08 [INFO]             300,000 rows | 10,186 rows/sec | 29s elapsed | ETA 216s
+2026-03-24 10:24:13 [INFO]             350,000 rows | 10,205 rows/sec | 34s elapsed | ETA 211s
+2026-03-24 10:24:18 [INFO]             400,000 rows | 10,252 rows/sec | 39s elapsed | ETA 205s
+2026-03-24 10:24:23 [INFO]             450,000 rows | 10,283 rows/sec | 44s elapsed | ETA 199s
+2026-03-24 10:24:27 [INFO]   [OK] 498,611 rows in 48.5s (10,286 rows/sec)
+2026-03-24 10:24:27 [INFO]        Progress: 10/16 steps | Est. remaining: 3.9 min
+2026-03-24 10:24:27 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:24:27 [INFO]   [11/16] rpt_invoice_totals [████████████░░░░░░░░] 62%
+2026-03-24 10:24:27 [INFO]        Expected: ~500,000 rows
+2026-03-24 10:24:28 [INFO]     Processing 2026-03-01 to 2026-03-10...
+2026-03-24 10:24:28 [DEBUG]   SQL: 
+        SELECT
+            CAST(h.TrxDate AS DATE),
+            h.RouteCode, ISNULL(rt.Name, ''),
+            h.UserCode, ISNULL(u.Description, ''),
+            ISNULL(rt.SalesOrgCode, h.OrgCode),
+  ...
+2026-03-24 10:24:28 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:24:29 [INFO]   MSSQL query returned in 0.7s - starting load...
+2026-03-24 10:24:31 [INFO]              10,000 rows | 3,180 rows/sec | 3s elapsed | ETA 154s
+2026-03-24 10:24:32 [INFO]              20,000 rows | 4,344 rows/sec | 5s elapsed | ETA 110s
+2026-03-24 10:24:34 [INFO]              30,000 rows | 4,818 rows/sec | 6s elapsed | ETA 98s
+2026-03-24 10:24:35 [INFO]              40,000 rows | 5,223 rows/sec | 8s elapsed | ETA 88s
+2026-03-24 10:24:36 [INFO]              50,000 rows | 5,490 rows/sec | 9s elapsed | ETA 82s
+2026-03-24 10:24:38 [INFO]     2026-03-01 to 2026-03-10: 59,742 rows
+2026-03-24 10:24:38 [INFO]   [OK] 59,742 rows in 10.6s (5,647 rows/sec)
+2026-03-24 10:24:38 [INFO]        Progress: 11/16 steps | Est. remaining: 3.0 min
+2026-03-24 10:24:38 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:24:38 [INFO]   [12/16] rpt_eot [█████████████░░░░░░░] 69%
+2026-03-24 10:24:38 [INFO]        Expected: ~80,000 rows
+2026-03-24 10:24:39 [DEBUG]   SQL: 
+        SELECT e.EOTId, e.UserCode, u.Description,
+            e.RouteCode, rt.Name, e.SalesOrgCode,
+            e.EOTType, e.EOTTime, CAST(e.TripDate AS DATE)
+        FROM tblEOT e
+        LEFT JOIN...
+2026-03-24 10:24:39 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:24:39 [INFO]   MSSQL query returned in 0.1s - starting load...
+2026-03-24 10:24:40 [INFO]   [OK] 2,057 rows in 1.6s (1,291 rows/sec)
+2026-03-24 10:24:40 [INFO]        Progress: 12/16 steps | Est. remaining: 2.2 min
+2026-03-24 10:24:40 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:24:40 [INFO]   [13/16] rpt_journeys [███████████████░░░░░] 75%
+2026-03-24 10:24:40 [INFO]        Expected: ~80,000 rows
+2026-03-24 10:24:40 [DEBUG]   SQL: 
+        SELECT j.JourneyId, j.JourneyCode, CAST(j.Date AS DATE),
+            j.UserCode, u.Description, rt.Code, rt.Name, u.SalesOrgCode,
+            j.StartTime, j.EndTime, j.VehicleCode
+        FRO...
+2026-03-24 10:24:40 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:24:40 [INFO]   MSSQL query returned in 0.2s - starting load...
+2026-03-24 10:24:42 [INFO]   [OK] 2,156 rows in 2.0s (1,066 rows/sec)
+2026-03-24 10:24:42 [INFO]        Progress: 13/16 steps | Est. remaining: 1.6 min
+2026-03-24 10:24:42 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:24:42 [INFO]   [14/16] rpt_collections [████████████████░░░░] 81%
+2026-03-24 10:24:42 [INFO]        Expected: ~1,500,000 rows
+2026-03-24 10:24:42 [DEBUG]   SQL: 
+        SELECT ph.ReceiptId, ph.Receipt_Number,
+            CAST(ph.ReceiptDate AS DATE), CAST(ph.TripDate AS DATE),
+            ph.EmpNo, u.Description, ph.RouteCode, rt.Name,
+            ph.SalesOr...
+2026-03-24 10:24:42 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:24:42 [INFO]   MSSQL query returned in 0.1s - starting load...
+2026-03-24 10:24:50 [INFO]              50,000 rows | 6,092 rows/sec | 8s elapsed | ETA 238s
+2026-03-24 10:24:54 [INFO]   [OK] 77,675 rows in 12.4s (6,286 rows/sec)
+2026-03-24 10:24:54 [INFO]        Progress: 14/16 steps | Est. remaining: 1.0 min
+2026-03-24 10:24:54 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:24:54 [INFO]   [15/16] rpt_customer_visits [█████████████████░░░] 88%
+2026-03-24 10:24:54 [INFO]        Expected: ~3,000,000 rows
+2026-03-24 10:24:55 [DEBUG]   SQL: 
+        SELECT CAST(cv.CustomerVisitId AS VARCHAR(50)),
+            CAST(cv.Date AS DATE), CAST(cv.TripDate AS DATE),
+            cv.UserCode, u.Description, cv.RouteCode, rt.Name,
+            COALES...
+2026-03-24 10:24:55 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:24:55 [INFO]   MSSQL query returned in 0.1s - starting load...
+2026-03-24 10:25:08 [INFO]              50,000 rows | 3,681 rows/sec | 14s elapsed | ETA 801s
+2026-03-24 10:25:17 [INFO]   [OK] 85,539 rows in 22.7s (3,773 rows/sec)
+2026-03-24 10:25:17 [INFO]        Progress: 15/16 steps | Est. remaining: 0.5 min
+2026-03-24 10:25:17 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:25:17 [INFO]   [16/16] rpt_journey_plan [██████████████████░░] 94%
+2026-03-24 10:25:17 [INFO]        Expected: ~2,000,000 rows
+2026-03-24 10:25:17 [DEBUG]   SQL: 
+        SELECT jp.DailyJourneyPlanId, CAST(jp.JourneyDate AS DATE),
+            ISNULL(jp.SalesmanCode, jp.UserCode),
+            ISNULL(u.Description, ''),
+            jp.CustomerCode, ISNULL(c.Desc...
+2026-03-24 10:25:17 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:25:17 [INFO]   MSSQL query returned in 0.1s - starting load...
+2026-03-24 10:25:22 [INFO]              50,000 rows | 8,519 rows/sec | 6s elapsed | ETA 229s
+2026-03-24 10:25:27 [INFO]             100,000 rows | 9,293 rows/sec | 11s elapsed | ETA 204s
+2026-03-24 10:25:28 [INFO]   [OK] 105,993 rows in 11.8s (8,974 rows/sec)
+2026-03-24 10:25:28 [INFO] 
+──────────────────────────────────────────────────
+2026-03-24 10:25:28 [INFO]   [17/16] rpt_outstanding [████████████████████] 100%
+2026-03-24 10:25:28 [INFO]        Expected: ~5,000,000 rows
+2026-03-24 10:25:29 [DEBUG]   SQL: 
+        SELECT mpi.MiddleWarePendingInvoiceId, mpi.TrxCode,
+            mpi.OrgCode, so.Description, mpi.ClientCode, c.Description, ch.Description,
+            mpi.TrxDate, mpi.DueDate,
+            m...
+2026-03-24 10:25:29 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-24 10:25:29 [INFO]   MSSQL query returned - starting load with Python date conversion...
+2026-03-24 10:25:39 [INFO]              50,000 rows | 4,728 rows/sec | 11s elapsed | ETA 1047s
+2026-03-24 10:25:49 [INFO]             100,000 rows | 4,906 rows/sec | 20s elapsed | ETA 999s

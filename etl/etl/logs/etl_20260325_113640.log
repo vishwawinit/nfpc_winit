@@ -1,0 +1,38 @@
+2026-03-25 11:36:40 [INFO] ════════════════════════════════════════════════════════════
+2026-03-25 11:36:40 [INFO]   NFPC Reports ETL
+2026-03-25 11:36:40 [INFO]   Date range: 2025-10-01 to 2026-03-31
+2026-03-25 11:36:40 [INFO]   Mode: sequential
+2026-03-25 11:36:40 [INFO]   Log file:   D:\vishwa\nfpc_winit\etl\logs\etl_20260325_113640.log
+2026-03-25 11:36:40 [INFO] ════════════════════════════════════════════════════════════
+2026-03-25 11:36:40 [INFO] Connecting to MSSQL...
+2026-03-25 11:36:40 [INFO]   MSSQL connected
+2026-03-25 11:36:40 [INFO] Connecting to PostgreSQL...
+2026-03-25 11:36:42 [INFO]   PostgreSQL connected
+2026-03-25 11:36:42 [INFO] 
+──────────────────────────────────────────────────
+2026-03-25 11:36:42 [INFO]   [1/1] rpt_eot [░░░░░░░░░░░░░░░░░░░░] 0%
+2026-03-25 11:36:42 [INFO]        Expected: ~80,000 rows
+2026-03-25 11:36:42 [DEBUG]   SQL: 
+        SELECT e.EOTId, e.UserCode, u.Description,
+            e.RouteCode, rt.Name, e.SalesOrgCode,
+            e.EOTType, e.EOTTime, CAST(e.TripDate AS DATE),
+            j.Date AS RouteStartDateti...
+2026-03-25 11:36:42 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-25 11:36:43 [INFO]   MSSQL query returned in 0.4s - starting load...
+2026-03-25 11:36:46 [INFO]              10,000 rows | 2,424 rows/sec | 4s elapsed | ETA 29s
+2026-03-25 11:36:47 [INFO]              20,000 rows | 3,508 rows/sec | 6s elapsed | ETA 17s
+2026-03-25 11:36:49 [INFO]              30,000 rows | 4,027 rows/sec | 7s elapsed | ETA 12s
+2026-03-25 11:36:51 [INFO]              40,000 rows | 4,141 rows/sec | 10s elapsed | ETA 10s
+2026-03-25 11:36:54 [INFO]   [OK] 48,569 rows in 11.8s (4,110 rows/sec)
+2026-03-25 11:36:54 [INFO] 
+════════════════════════════════════════════════════════════
+2026-03-25 11:36:54 [INFO]   ETL COMPLETE
+2026-03-25 11:36:54 [INFO]   Total time:  0.2 minutes
+2026-03-25 11:36:54 [INFO]   Total rows:  48,569
+2026-03-25 11:36:54 [INFO]   Steps:       1/1
+2026-03-25 11:36:54 [INFO]   Log file:    D:\vishwa\nfpc_winit\etl\logs\etl_20260325_113640.log
+2026-03-25 11:36:54 [INFO] ════════════════════════════════════════════════════════════
+2026-03-25 11:36:54 [INFO] 
+  Step                                        Rows     Time         Rate Status
+2026-03-25 11:36:54 [INFO]   ─────────────────────────────────── ──────────── ──────── ──────────── ────────
+2026-03-25 11:36:54 [INFO]   rpt_eot                                   48,569    11.8s      4,110/s  done

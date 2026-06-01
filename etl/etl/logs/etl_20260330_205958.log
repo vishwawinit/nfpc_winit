@@ -1,0 +1,75 @@
+2026-03-30 20:59:58 [INFO] ════════════════════════════════════════════════════════════
+2026-03-30 20:59:58 [INFO]   NFPC Reports ETL
+2026-03-30 20:59:58 [INFO]   Date range: 2026-02-01 to 2026-02-28
+2026-03-30 20:59:58 [INFO]   Mode: sequential
+2026-03-30 20:59:58 [INFO]   Log file:   D:\vishwa\nfpc_winit\etl\logs\etl_20260330_205958.log
+2026-03-30 20:59:58 [INFO] ════════════════════════════════════════════════════════════
+2026-03-30 20:59:58 [INFO] Connecting to MSSQL...
+2026-03-30 20:59:59 [INFO]   MSSQL connected
+2026-03-30 20:59:59 [INFO] Connecting to PostgreSQL...
+2026-03-30 21:00:00 [INFO]   PostgreSQL connected
+2026-03-30 21:00:00 [INFO] 
+──────────────────────────────────────────────────
+2026-03-30 21:00:00 [INFO]   [1/1] rpt_route_sales_by_item_customer [░░░░░░░░░░░░░░░░░░░░] 0%
+2026-03-30 21:00:00 [INFO]        Expected: ~2,500,000 rows
+2026-03-30 21:00:12 [DEBUG]   SQL: 
+        SELECT RouteCode, UserCode, CustomerCode, ItemCode,
+            CAST(Date AS DATE), TotalQty, TotalGRQty, TotalDamageQty, TotalExpiryQty,
+            TotalSales, TotalGRSales, TotalDamageSale...
+2026-03-30 21:00:12 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-30 21:00:12 [INFO]   MSSQL query returned in 0.0s - starting load...
+2026-03-30 21:00:24 [INFO]              50,000 rows | 2,143 rows/sec | 23s elapsed | ETA 1143s
+2026-03-30 21:00:32 [INFO]             100,000 rows | 3,170 rows/sec | 32s elapsed | ETA 757s
+2026-03-30 21:00:56 [INFO]             150,000 rows | 2,696 rows/sec | 56s elapsed | ETA 872s
+2026-03-30 21:01:11 [INFO]             200,000 rows | 2,845 rows/sec | 70s elapsed | ETA 808s
+2026-03-30 21:01:22 [INFO]             250,000 rows | 3,062 rows/sec | 82s elapsed | ETA 735s
+2026-03-30 21:01:39 [INFO]             300,000 rows | 3,047 rows/sec | 98s elapsed | ETA 722s
+2026-03-30 21:01:56 [INFO]             350,000 rows | 3,020 rows/sec | 116s elapsed | ETA 712s
+2026-03-30 21:02:04 [INFO]             400,000 rows | 3,227 rows/sec | 124s elapsed | ETA 651s
+2026-03-30 21:02:21 [INFO]             450,000 rows | 3,199 rows/sec | 141s elapsed | ETA 641s
+2026-03-30 21:02:30 [INFO]             500,000 rows | 3,333 rows/sec | 150s elapsed | ETA 600s
+2026-03-30 21:02:42 [INFO]             550,000 rows | 3,392 rows/sec | 162s elapsed | ETA 575s
+2026-03-30 21:02:59 [INFO]             600,000 rows | 3,350 rows/sec | 179s elapsed | ETA 567s
+2026-03-30 21:04:09 [ERROR] FAILED on route_sales_by_item_customer: (20047, b'DB-Lib error message 20047, severity 9:\nDBPROCESS is dead or not enabled\n')
+2026-03-30 21:04:09 [DEBUG] Traceback:
+Traceback (most recent call last):
+  File "src/pymssql/_pymssql.pyx", line 535, in pymssql._pymssql.Cursor.fetchmany
+  File "src/pymssql/_pymssql.pyx", line 503, in pymssql._pymssql.Cursor.getrow
+  File "src/pymssql/_mssql.pyx", line 481, in pymssql._mssql.MSSQLRowIterator.__next__
+  File "src/pymssql/_mssql.pyx", line 1240, in pymssql._mssql.MSSQLConnection.fetch_next_row
+  File "src/pymssql/_mssql.pyx", line 1855, in pymssql._mssql.check_cancel_and_raise
+  File "src/pymssql/_mssql.pyx", line 1901, in pymssql._mssql.raise_MSSQLDatabaseException
+pymssql._mssql.MSSQLDatabaseException: (20047, b'DB-Lib error message 20047, severity 9:\nDBPROCESS is dead or not enabled\n')
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1308, in main
+    loader_fn(ms_conn, pg_conn)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1165, in load_route_sales_by_item_customer
+    total = extract_batch(ms_cur, query, (DATE_FROM, DATE_TO), pg_conn,
+                          'rpt_route_sales_by_item_customer', columns)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 261, in extract_batch
+    rows = ms_cursor.fetchmany(batch_size)
+  File "src/pymssql/_pymssql.pyx", line 541, in pymssql._pymssql.Cursor.fetchmany
+pymssql.exceptions.OperationalError: (20047, b'DB-Lib error message 20047, severity 9:\nDBPROCESS is dead or not enabled\n')
+2026-03-30 21:04:09 [ERROR]   FAILED: (20047, b'DB-Lib error message 20047, severity 9:\nDBPROCESS is dead or not enabled\n')
+2026-03-30 21:04:09 [INFO]   Reconnecting to MSSQL...
+2026-03-30 21:04:09 [INFO] Connecting to MSSQL...
+2026-03-30 21:04:24 [ERROR]   MSSQL reconnect failed: (20009, b'DB-Lib error message 20009, severity 9:\nUnable to connect: Adaptive Server is unavailable or does not exist (20.203.45.86)\nNet-Lib error during Unknown error (10060)\nDB-Lib error message 20009, severity 9:\nUnable to connect: Adaptive Server is unavailable or does not exist (20.203.45.86)\nNet-Lib error during Unknown error (10060)\n')
+2026-03-30 21:04:24 [INFO] 
+════════════════════════════════════════════════════════════
+2026-03-30 21:04:24 [INFO]   ETL COMPLETE
+2026-03-30 21:04:24 [INFO]   Total time:  4.4 minutes
+2026-03-30 21:04:24 [INFO]   Total rows:  0
+2026-03-30 21:04:24 [INFO]   Steps:       1/1
+2026-03-30 21:04:24 [INFO]   Log file:    D:\vishwa\nfpc_winit\etl\logs\etl_20260330_205958.log
+2026-03-30 21:04:24 [INFO] ════════════════════════════════════════════════════════════
+2026-03-30 21:04:24 [INFO] 
+  Step                                        Rows     Time         Rate Status
+2026-03-30 21:04:24 [INFO]   ─────────────────────────────────── ──────────── ──────── ──────────── ────────
+2026-03-30 21:04:24 [INFO]   rpt_route_sales_by_item_customer               0   248.4s          0/s  FAILED
+2026-03-30 21:04:24 [INFO] 
+  FAILED STEPS: ['route_sales_by_item_customer']
+2026-03-30 21:04:24 [INFO]   Re-run with: python etl/extract.py --table <name>

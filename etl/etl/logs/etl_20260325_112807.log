@@ -1,0 +1,77 @@
+2026-03-25 11:28:07 [INFO] ════════════════════════════════════════════════════════════
+2026-03-25 11:28:07 [INFO]   NFPC Reports ETL
+2026-03-25 11:28:07 [INFO]   Date range: 2025-10-01 to 2026-03-31
+2026-03-25 11:28:07 [INFO]   Mode: sequential
+2026-03-25 11:28:07 [INFO]   Log file:   D:\vishwa\nfpc_winit\etl\logs\etl_20260325_112807.log
+2026-03-25 11:28:07 [INFO] ════════════════════════════════════════════════════════════
+2026-03-25 11:28:07 [INFO] Connecting to MSSQL...
+2026-03-25 11:28:07 [INFO]   MSSQL connected
+2026-03-25 11:28:07 [INFO] Connecting to PostgreSQL...
+2026-03-25 11:28:09 [INFO]   PostgreSQL connected
+2026-03-25 11:28:09 [INFO] 
+──────────────────────────────────────────────────
+2026-03-25 11:28:09 [INFO]   [1/1] rpt_outstanding [░░░░░░░░░░░░░░░░░░░░] 0%
+2026-03-25 11:28:09 [INFO]        Expected: ~5,000,000 rows
+2026-03-25 11:28:09 [DEBUG]   SQL: 
+        SELECT mpi.MiddleWarePendingInvoiceId, mpi.TrxCode,
+            mpi.OrgCode, so.Description, mpi.ClientCode, c.Description, ch.Description,
+            mpi.TrxDate, mpi.DueDate,
+            m...
+2026-03-25 11:28:09 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-25 11:28:10 [INFO]   MSSQL query returned - starting load with Python date conversion...
+2026-03-25 11:28:22 [INFO]              50,000 rows | 3,663 rows/sec | 14s elapsed | ETA 1351s
+2026-03-25 11:28:33 [INFO]             100,000 rows | 4,032 rows/sec | 25s elapsed | ETA 1215s
+2026-03-25 11:28:44 [INFO]             150,000 rows | 4,187 rows/sec | 36s elapsed | ETA 1158s
+2026-03-25 11:28:55 [INFO]             200,000 rows | 4,317 rows/sec | 46s elapsed | ETA 1112s
+2026-03-25 11:29:06 [INFO]             250,000 rows | 4,366 rows/sec | 57s elapsed | ETA 1088s
+2026-03-25 11:29:15 [INFO]             300,000 rows | 4,497 rows/sec | 67s elapsed | ETA 1045s
+2026-03-25 11:29:24 [INFO]             350,000 rows | 4,674 rows/sec | 75s elapsed | ETA 995s
+2026-03-25 11:29:32 [INFO]             400,000 rows | 4,809 rows/sec | 83s elapsed | ETA 957s
+2026-03-25 11:29:41 [INFO]             450,000 rows | 4,888 rows/sec | 92s elapsed | ETA 931s
+2026-03-25 11:29:49 [INFO]             500,000 rows | 4,991 rows/sec | 100s elapsed | ETA 902s
+2026-03-25 11:29:57 [INFO]             550,000 rows | 5,070 rows/sec | 108s elapsed | ETA 878s
+2026-03-25 11:30:05 [INFO]             600,000 rows | 5,146 rows/sec | 117s elapsed | ETA 855s
+2026-03-25 11:30:14 [INFO]             650,000 rows | 5,172 rows/sec | 126s elapsed | ETA 841s
+2026-03-25 11:30:23 [INFO]             700,000 rows | 5,227 rows/sec | 134s elapsed | ETA 823s
+2026-03-25 11:30:32 [INFO]             750,000 rows | 5,239 rows/sec | 143s elapsed | ETA 811s
+2026-03-25 11:30:41 [INFO]             800,000 rows | 5,236 rows/sec | 153s elapsed | ETA 802s
+2026-03-25 11:30:50 [INFO]             850,000 rows | 5,268 rows/sec | 161s elapsed | ETA 788s
+2026-03-25 11:31:03 [INFO]             900,000 rows | 5,167 rows/sec | 174s elapsed | ETA 793s
+2026-03-25 11:31:16 [INFO]             950,000 rows | 5,063 rows/sec | 188s elapsed | ETA 800s
+2026-03-25 11:31:26 [INFO]           1,000,000 rows | 5,072 rows/sec | 197s elapsed | ETA 789s
+2026-03-25 11:31:35 [INFO]           1,050,000 rows | 5,100 rows/sec | 206s elapsed | ETA 775s
+2026-03-25 11:31:45 [INFO]           1,100,000 rows | 5,084 rows/sec | 216s elapsed | ETA 767s
+2026-03-25 11:32:04 [INFO]           1,150,000 rows | 4,882 rows/sec | 236s elapsed | ETA 789s
+2026-03-25 11:32:20 [INFO]           1,200,000 rows | 4,775 rows/sec | 251s elapsed | ETA 796s
+2026-03-25 11:32:35 [INFO]           1,250,000 rows | 4,688 rows/sec | 267s elapsed | ETA 800s
+2026-03-25 11:32:50 [INFO]           1,300,000 rows | 4,625 rows/sec | 281s elapsed | ETA 800s
+2026-03-25 11:33:04 [INFO]           1,350,000 rows | 4,579 rows/sec | 295s elapsed | ETA 797s
+2026-03-25 11:33:17 [INFO]           1,400,000 rows | 4,543 rows/sec | 308s elapsed | ETA 792s
+2026-03-25 11:33:30 [INFO]           1,450,000 rows | 4,512 rows/sec | 321s elapsed | ETA 787s
+2026-03-25 11:33:43 [INFO]           1,500,000 rows | 4,487 rows/sec | 334s elapsed | ETA 780s
+2026-03-25 11:33:56 [INFO]           1,550,000 rows | 4,465 rows/sec | 347s elapsed | ETA 773s
+2026-03-25 11:34:09 [INFO]           1,600,000 rows | 4,435 rows/sec | 361s elapsed | ETA 767s
+2026-03-25 11:34:22 [INFO]           1,650,000 rows | 4,419 rows/sec | 373s elapsed | ETA 758s
+2026-03-25 11:34:35 [INFO]           1,700,000 rows | 4,401 rows/sec | 386s elapsed | ETA 750s
+2026-03-25 11:34:49 [INFO]           1,750,000 rows | 4,375 rows/sec | 400s elapsed | ETA 743s
+2026-03-25 11:35:03 [INFO]           1,800,000 rows | 4,342 rows/sec | 415s elapsed | ETA 737s
+2026-03-25 11:35:18 [INFO]           1,850,000 rows | 4,310 rows/sec | 429s elapsed | ETA 731s
+2026-03-25 11:35:32 [INFO]           1,900,000 rows | 4,281 rows/sec | 444s elapsed | ETA 724s
+2026-03-25 11:35:48 [INFO]           1,950,000 rows | 4,250 rows/sec | 459s elapsed | ETA 718s
+2026-03-25 11:36:03 [INFO]           2,000,000 rows | 4,215 rows/sec | 474s elapsed | ETA 712s
+2026-03-25 11:36:19 [INFO]           2,050,000 rows | 4,184 rows/sec | 490s elapsed | ETA 705s
+2026-03-25 11:36:33 [INFO]           2,100,000 rows | 4,161 rows/sec | 505s elapsed | ETA 697s
+2026-03-25 11:36:48 [INFO]           2,150,000 rows | 4,141 rows/sec | 519s elapsed | ETA 688s
+2026-03-25 11:36:51 [INFO]   [OK] 2,157,988 rows in 521.8s (4,135 rows/sec)
+2026-03-25 11:36:51 [INFO] 
+════════════════════════════════════════════════════════════
+2026-03-25 11:36:51 [INFO]   ETL COMPLETE
+2026-03-25 11:36:51 [INFO]   Total time:  8.7 minutes
+2026-03-25 11:36:51 [INFO]   Total rows:  2,157,988
+2026-03-25 11:36:51 [INFO]   Steps:       1/1
+2026-03-25 11:36:51 [INFO]   Log file:    D:\vishwa\nfpc_winit\etl\logs\etl_20260325_112807.log
+2026-03-25 11:36:51 [INFO] ════════════════════════════════════════════════════════════
+2026-03-25 11:36:51 [INFO] 
+  Step                                        Rows     Time         Rate Status
+2026-03-25 11:36:51 [INFO]   ─────────────────────────────────── ──────────── ──────── ──────────── ────────
+2026-03-25 11:36:51 [INFO]   rpt_outstanding                        2,157,988   521.8s      4,135/s  done

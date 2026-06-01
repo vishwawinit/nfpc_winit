@@ -1,0 +1,49 @@
+2026-03-25 11:18:01 [INFO] ════════════════════════════════════════════════════════════
+2026-03-25 11:18:01 [INFO]   NFPC Reports ETL
+2026-03-25 11:18:01 [INFO]   Date range: 2025-10-01 to 2026-03-31
+2026-03-25 11:18:01 [INFO]   Mode: sequential
+2026-03-25 11:18:01 [INFO]   Log file:   D:\vishwa\nfpc_winit\etl\logs\etl_20260325_111801.log
+2026-03-25 11:18:01 [INFO] ════════════════════════════════════════════════════════════
+2026-03-25 11:18:01 [INFO] Connecting to MSSQL...
+2026-03-25 11:18:02 [INFO]   MSSQL connected
+2026-03-25 11:18:02 [INFO] Connecting to PostgreSQL...
+2026-03-25 11:18:03 [INFO]   PostgreSQL connected
+2026-03-25 11:18:03 [INFO] 
+──────────────────────────────────────────────────
+2026-03-25 11:18:03 [INFO]   [1/1] rpt_outstanding [░░░░░░░░░░░░░░░░░░░░] 0%
+2026-03-25 11:18:03 [INFO]        Expected: ~5,000,000 rows
+2026-03-25 11:18:04 [DEBUG]   SQL: 
+        SELECT mpi.MiddleWarePendingInvoiceId, mpi.TrxCode,
+            mpi.OrgCode, so.Description, mpi.ClientCode, c.Description, ch.Description,
+            mpi.TrxDate, mpi.DueDate,
+            m...
+2026-03-25 11:18:04 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-25 11:18:05 [INFO]   MSSQL query returned - starting load with Python date conversion...
+2026-03-25 11:18:17 [INFO]              50,000 rows | 3,584 rows/sec | 14s elapsed | ETA 1381s
+2026-03-25 11:18:31 [INFO]             100,000 rows | 3,577 rows/sec | 28s elapsed | ETA 1370s
+2026-03-25 11:18:49 [INFO]             150,000 rows | 3,284 rows/sec | 46s elapsed | ETA 1477s
+2026-03-25 11:19:08 [INFO]             200,000 rows | 3,086 rows/sec | 65s elapsed | ETA 1555s
+2026-03-25 11:19:26 [INFO]             250,000 rows | 3,020 rows/sec | 83s elapsed | ETA 1573s
+2026-03-25 11:19:47 [INFO]             300,000 rows | 2,892 rows/sec | 104s elapsed | ETA 1625s
+2026-03-25 11:20:05 [INFO]             350,000 rows | 2,873 rows/sec | 122s elapsed | ETA 1619s
+2026-03-25 11:20:24 [INFO]             400,000 rows | 2,856 rows/sec | 140s elapsed | ETA 1611s
+2026-03-25 11:20:42 [INFO]             450,000 rows | 2,848 rows/sec | 158s elapsed | ETA 1598s
+2026-03-25 11:20:59 [INFO]             500,000 rows | 2,851 rows/sec | 175s elapsed | ETA 1578s
+2026-03-25 11:21:15 [INFO]             550,000 rows | 2,878 rows/sec | 191s elapsed | ETA 1546s
+2026-03-25 11:21:32 [INFO]             600,000 rows | 2,884 rows/sec | 208s elapsed | ETA 1526s
+2026-03-25 11:21:53 [INFO]             650,000 rows | 2,828 rows/sec | 230s elapsed | ETA 1538s
+2026-03-25 11:22:15 [INFO]             700,000 rows | 2,785 rows/sec | 251s elapsed | ETA 1544s
+2026-03-25 11:22:34 [INFO]             750,000 rows | 2,768 rows/sec | 271s elapsed | ETA 1535s
+2026-03-25 11:22:52 [INFO]             800,000 rows | 2,769 rows/sec | 289s elapsed | ETA 1517s
+2026-03-25 11:23:09 [INFO]             850,000 rows | 2,780 rows/sec | 306s elapsed | ETA 1493s
+2026-03-25 11:23:27 [INFO]             900,000 rows | 2,779 rows/sec | 324s elapsed | ETA 1475s
+2026-03-25 11:23:46 [INFO]             950,000 rows | 2,776 rows/sec | 342s elapsed | ETA 1459s
+2026-03-25 11:24:06 [INFO]           1,000,000 rows | 2,760 rows/sec | 362s elapsed | ETA 1449s
+2026-03-25 11:24:22 [INFO]           1,050,000 rows | 2,777 rows/sec | 378s elapsed | ETA 1423s
+2026-03-25 11:24:37 [INFO]           1,100,000 rows | 2,797 rows/sec | 393s elapsed | ETA 1394s
+2026-03-25 11:24:53 [INFO]           1,150,000 rows | 2,810 rows/sec | 409s elapsed | ETA 1370s
+2026-03-25 11:25:09 [INFO]           1,200,000 rows | 2,822 rows/sec | 425s elapsed | ETA 1347s
+2026-03-25 11:25:25 [INFO]           1,250,000 rows | 2,833 rows/sec | 441s elapsed | ETA 1324s
+2026-03-25 11:25:42 [INFO]           1,300,000 rows | 2,832 rows/sec | 459s elapsed | ETA 1306s
+2026-03-25 11:26:01 [INFO]           1,350,000 rows | 2,830 rows/sec | 477s elapsed | ETA 1290s
+2026-03-25 11:26:18 [INFO]           1,400,000 rows | 2,833 rows/sec | 494s elapsed | ETA 1271s

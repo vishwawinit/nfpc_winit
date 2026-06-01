@@ -32,7 +32,8 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 # Date range: Jan 01 to today
 from datetime import date as _date
 DATE_FROM = '2026-01-01'
-DATE_TO = _date.today().strftime('%Y-%m-%d')
+DATE_TO = (_date.today() + timedelta(days=1)).strftime('%Y-%m-%d')  # exclusive upper bound — includes today
+UPSERT_MODE = False
 
 # ============================================================
 # LOGGING SETUP
@@ -233,11 +234,309 @@ def get_pg_conn():
     return conn
 
 # ============================================================
+# SCHEMA BOOTSTRAP
+# ============================================================
+
+def ensure_schema(pg_conn):
+    """Create all ETL-managed tables and patch missing columns. Safe to run on existing DB."""
+    cur = pg_conn.cursor()
+    log("  Verifying schema...")
+
+    tables = [
+        # ── Dimensions ──────────────────────────────────────────
+        """CREATE TABLE IF NOT EXISTS dim_sales_org (
+            code VARCHAR(50) PRIMARY KEY, name VARCHAR(200),
+            country_code VARCHAR(50), currency_code VARCHAR(50), is_active BOOLEAN
+        )""",
+        """CREATE TABLE IF NOT EXISTS dim_route (
+            code VARCHAR(50) PRIMARY KEY, name VARCHAR(100),
+            sales_org_code VARCHAR(50), route_type VARCHAR(100),
+            area_code VARCHAR(50), sub_area_code VARCHAR(50),
+            route_cat_code VARCHAR(50), salesman_code VARCHAR(50),
+            wh_code VARCHAR(50), is_active BOOLEAN,
+            has_active_assignment BOOLEAN DEFAULT false
+        )""",
+        """CREATE TABLE IF NOT EXISTS dim_channel (
+            code VARCHAR(50) PRIMARY KEY, name VARCHAR(200)
+        )""",
+        """CREATE TABLE IF NOT EXISTS dim_user (
+            code VARCHAR(50) PRIMARY KEY, name VARCHAR(200), email VARCHAR(150),
+            username VARCHAR(100), mobile_no VARCHAR(50), sales_org_code VARCHAR(50),
+            route_code VARCHAR(100), depot_code VARCHAR(50), depot_name VARCHAR(255),
+            reports_to VARCHAR(50), reports_to_name VARCHAR(200),
+            user_type VARCHAR(50), user_sub_type VARCHAR(50), department VARCHAR(50),
+            sales_group VARCHAR(50), emp_code VARCHAR(50), emp_file_no VARCHAR(100),
+            role_code VARCHAR(50), role_name VARCHAR(200), location_code VARCHAR(50),
+            van_code VARCHAR(100), country_code VARCHAR(50), region_code VARCHAR(50),
+            ud_sales_org_code VARCHAR(50), ud_reports_to VARCHAR(50), is_active BOOLEAN
+        )""",
+        """CREATE TABLE IF NOT EXISTS dim_item (
+            code VARCHAR(50) PRIMARY KEY, name VARCHAR(200),
+            alt_name VARCHAR(200), arabic_name VARCHAR(200),
+            sales_org_code VARCHAR(50), base_uom VARCHAR(50), is_active BOOLEAN,
+            agency_code VARCHAR(50), agency_name VARCHAR(200),
+            brand_code VARCHAR(50), brand_name VARCHAR(200),
+            sub_brand_code VARCHAR(50), sub_brand_name VARCHAR(200),
+            category_code VARCHAR(50), category_name VARCHAR(200),
+            pack_type_code VARCHAR(50), pack_type_name VARCHAR(200),
+            pack_size_code VARCHAR(50),
+            flavor_code VARCHAR(50), flavor_name VARCHAR(200),
+            segment_code VARCHAR(50), segment_name VARCHAR(200),
+            item_type VARCHAR(50), classification VARCHAR(50), size VARCHAR(50),
+            liter FLOAT, liter_per_unit FLOAT, order_category VARCHAR(50),
+            case_conversion FLOAT, pc_conversion FLOAT
+        )""",
+        """CREATE TABLE IF NOT EXISTS dim_customer (
+            code VARCHAR(50), sales_org_code VARCHAR(50), name VARCHAR(200),
+            channel_code VARCHAR(50), channel_name VARCHAR(200),
+            sub_channel_code VARCHAR(50), sub_channel_name VARCHAR(200),
+            customer_group VARCHAR(50), customer_type VARCHAR(50), payment_type VARCHAR(50),
+            city_code VARCHAR(200), city_name VARCHAR(200),
+            region_code VARCHAR(50), region_name VARCHAR(200),
+            country_code VARCHAR(50), country_name VARCHAR(200),
+            latitude FLOAT, longitude FLOAT, is_active BOOLEAN,
+            PRIMARY KEY (code, sales_org_code)
+        )""",
+        # ── Fact / Report tables ────────────────────────────────
+        """CREATE TABLE IF NOT EXISTS rpt_sales_detail (
+            trx_code VARCHAR(50), line_no INT, trx_date DATE, trip_date DATE,
+            trx_type INT, payment_type INT, trx_status INT,
+            user_code VARCHAR(50), user_name VARCHAR(200),
+            sales_org_code VARCHAR(50), sales_org_name VARCHAR(200), depot_code VARCHAR(50),
+            route_code VARCHAR(50), route_name VARCHAR(100), route_type VARCHAR(100),
+            area_code VARCHAR(50), sub_area_code VARCHAR(50),
+            customer_code VARCHAR(50), customer_name VARCHAR(200),
+            channel_code VARCHAR(50), channel_name VARCHAR(200),
+            sub_channel_code VARCHAR(50), sub_channel_name VARCHAR(200),
+            customer_group VARCHAR(50), customer_type VARCHAR(50),
+            country_code VARCHAR(50), country_name VARCHAR(200),
+            region_code VARCHAR(50), region_name VARCHAR(200),
+            city_code VARCHAR(200), city_name VARCHAR(200),
+            item_code VARCHAR(50), item_name VARCHAR(200),
+            brand_code VARCHAR(50), brand_name VARCHAR(200),
+            category_code VARCHAR(50), category_name VARCHAR(200),
+            sub_brand_code VARCHAR(50), sub_brand_name VARCHAR(200),
+            pack_type_code VARCHAR(50), pack_type_name VARCHAR(200),
+            segment_code VARCHAR(50), segment_name VARCHAR(200), base_uom VARCHAR(50),
+            qty_cases FLOAT, qty_pieces FLOAT, qty_volume FLOAT,
+            base_price FLOAT, net_amount FLOAT, discount_amount FLOAT,
+            tax_amount FLOAT, gross_amount FLOAT,
+            invoice_number VARCHAR(50), visit_code VARCHAR(50), created_on TIMESTAMP,
+            PRIMARY KEY (trx_code, line_no)
+        )""",
+        """CREATE TABLE IF NOT EXISTS rpt_collections (
+            receipt_id BIGINT PRIMARY KEY, receipt_number VARCHAR(50),
+            receipt_date DATE, trip_date DATE,
+            user_code VARCHAR(50), user_name VARCHAR(200),
+            route_code VARCHAR(50), route_name VARCHAR(100),
+            sales_org_code VARCHAR(50), sales_org_name VARCHAR(200),
+            customer_code VARCHAR(50), customer_name VARCHAR(200),
+            amount FLOAT, settled_amount FLOAT,
+            payment_type VARCHAR(20), payment_status INT, currency_code VARCHAR(50)
+        )""",
+        """CREATE TABLE IF NOT EXISTS rpt_customer_visits (
+            visit_id VARCHAR(50) PRIMARY KEY, date DATE, trip_date DATE,
+            user_code VARCHAR(50), user_name VARCHAR(200),
+            route_code VARCHAR(50), route_name VARCHAR(100),
+            sales_org_code VARCHAR(50), sales_org_name VARCHAR(200),
+            customer_code VARCHAR(50), customer_name VARCHAR(200),
+            channel_name VARCHAR(200), city_name VARCHAR(200), region_name VARCHAR(200),
+            arrival_time TIMESTAMP, out_time TIMESTAMP, total_time_mins INT,
+            is_productive BOOLEAN, is_planned BOOLEAN,
+            latitude FLOAT, longitude FLOAT,
+            journey_code VARCHAR(50), visit_code VARCHAR(100)
+        )""",
+        """CREATE TABLE IF NOT EXISTS rpt_journeys (
+            journey_id INT PRIMARY KEY, journey_code VARCHAR(50), date DATE,
+            user_code VARCHAR(50), user_name VARCHAR(200),
+            route_code VARCHAR(50), route_name VARCHAR(100),
+            sales_org_code VARCHAR(50), start_time VARCHAR(50),
+            end_time VARCHAR(50), vehicle_code VARCHAR(50)
+        )""",
+        """CREATE TABLE IF NOT EXISTS rpt_coverage_summary (
+            id INT PRIMARY KEY, visit_date DATE,
+            route_code VARCHAR(50), route_name VARCHAR(100),
+            user_code VARCHAR(50), user_name VARCHAR(200), sales_org_code VARCHAR(50),
+            scheduled_calls INT, total_actual_calls INT,
+            planned_calls INT, unplanned_calls INT,
+            selling_calls INT, planned_selling_calls INT
+        )""",
+        """CREATE TABLE IF NOT EXISTS rpt_route_sales_collection (
+            id INT PRIMARY KEY, date DATE,
+            route_code VARCHAR(50), route_name VARCHAR(100),
+            user_code VARCHAR(50), user_name VARCHAR(200), sales_org_code VARCHAR(50),
+            total_sales FLOAT, total_collection FLOAT,
+            total_sales_with_tax FLOAT, total_wastage FLOAT, target_amount FLOAT
+        )""",
+        """CREATE TABLE IF NOT EXISTS rpt_route_sales_summary_by_item (
+            id SERIAL PRIMARY KEY, date DATE,
+            route_code VARCHAR(50), route_name VARCHAR(100),
+            user_code VARCHAR(50), user_name VARCHAR(200), sales_org_code VARCHAR(50),
+            item_code VARCHAR(50), item_name VARCHAR(200),
+            category_code VARCHAR(50), brand_code VARCHAR(50),
+            total_sales FLOAT, total_collection FLOAT,
+            total_sales_with_tax FLOAT, total_wastage FLOAT, target_amount FLOAT
+        )""",
+        """CREATE TABLE IF NOT EXISTS rpt_route_sales_by_item_customer (
+            id SERIAL PRIMARY KEY,
+            route_code VARCHAR(50), user_code VARCHAR(50),
+            customer_code VARCHAR(50), item_code VARCHAR(50), date DATE,
+            total_qty FLOAT, total_gr_qty FLOAT,
+            total_damage_qty FLOAT, total_expiry_qty FLOAT,
+            total_sales FLOAT, total_gr_sales FLOAT,
+            total_damage_sales FLOAT, total_expiry_sales FLOAT
+        )""",
+        """CREATE TABLE IF NOT EXISTS rpt_targets (
+            target_id BIGINT PRIMARY KEY, time_frame VARCHAR(1),
+            start_date DATE, end_date DATE, year INT, month INT,
+            salesman_code VARCHAR(50), salesman_name VARCHAR(200),
+            route_code VARCHAR(50), route_name VARCHAR(100), sales_org_code VARCHAR(50),
+            item_key VARCHAR(50), item_name VARCHAR(200), customer_key VARCHAR(50),
+            amount NUMERIC, quantity FLOAT, is_active BOOLEAN
+        )""",
+        """CREATE TABLE IF NOT EXISTS rpt_outstanding (
+            id INT PRIMARY KEY, trx_code VARCHAR(50),
+            org_code VARCHAR(50), sales_org_name VARCHAR(200),
+            customer_code VARCHAR(50), customer_name VARCHAR(200), channel_name VARCHAR(200),
+            trx_date DATE, due_date DATE,
+            original_amount NUMERIC, balance_amount NUMERIC,
+            pending_amount NUMERIC, collected_amount NUMERIC,
+            days_overdue INT, aging_bucket VARCHAR(20),
+            user_code VARCHAR(50), user_name VARCHAR(200),
+            route_code VARCHAR(50), route_name VARCHAR(100), currency_code VARCHAR(50)
+        )""",
+        """CREATE TABLE IF NOT EXISTS rpt_eot (
+            eot_id INT PRIMARY KEY,
+            user_code VARCHAR(50), user_name VARCHAR(200),
+            route_code VARCHAR(50), route_name VARCHAR(100), sales_org_code VARCHAR(50),
+            eot_type VARCHAR(20), eot_time TIMESTAMP, trip_date DATE,
+            route_start_datetime TIMESTAMP, unload_datetime TIMESTAMP,
+            eot_status VARCHAR(50)
+        )""",
+        """CREATE TABLE IF NOT EXISTS rpt_journey_plan (
+            id BIGINT PRIMARY KEY, date DATE,
+            user_code VARCHAR(50), user_name VARCHAR(200),
+            customer_code VARCHAR(50), customer_name VARCHAR(200),
+            route_code VARCHAR(50), sequence INT, visit_status INT, sales_org_code VARCHAR(50)
+        )""",
+        """CREATE TABLE IF NOT EXISTS rpt_invoice_totals (
+            id SERIAL PRIMARY KEY, trx_date DATE,
+            route_code VARCHAR(50), route_name VARCHAR(100),
+            user_code VARCHAR(50), user_name VARCHAR(200), sales_org_code VARCHAR(50),
+            customer_code VARCHAR(50), customer_name VARCHAR(200),
+            total_sales NUMERIC(18,4) DEFAULT 0, total_returns NUMERIC(18,4) DEFAULT 0
+        )""",
+        """CREATE TABLE IF NOT EXISTS rpt_holidays (
+            holiday_id INT PRIMARY KEY, holiday_date DATE,
+            name VARCHAR(200), year INT, sales_org_code VARCHAR(50)
+        )""",
+    ]
+
+    indexes = [
+        "CREATE INDEX IF NOT EXISTS idx_sd_date_org      ON rpt_sales_detail(trx_date, sales_org_code)",
+        "CREATE INDEX IF NOT EXISTS idx_sd_route_date    ON rpt_sales_detail(route_code, trx_date)",
+        "CREATE INDEX IF NOT EXISTS idx_sd_user_date     ON rpt_sales_detail(user_code, trx_date)",
+        "CREATE INDEX IF NOT EXISTS idx_sd_item_date     ON rpt_sales_detail(item_code, trx_date)",
+        "CREATE INDEX IF NOT EXISTS idx_sd_customer_date ON rpt_sales_detail(customer_code, trx_date)",
+        "CREATE INDEX IF NOT EXISTS idx_sd_trxtype       ON rpt_sales_detail(trx_type)",
+        "CREATE INDEX IF NOT EXISTS idx_sd_brand         ON rpt_sales_detail(brand_code, trx_date)",        "CREATE INDEX IF NOT EXISTS idx_coll_date        ON rpt_collections(receipt_date)",
+        "CREATE INDEX IF NOT EXISTS idx_coll_user        ON rpt_collections(user_code, receipt_date)",
+        "CREATE INDEX IF NOT EXISTS idx_coll_route       ON rpt_collections(route_code, receipt_date)",
+        "CREATE INDEX IF NOT EXISTS idx_coll_org         ON rpt_collections(sales_org_code, receipt_date)",
+        "CREATE INDEX IF NOT EXISTS idx_cv_date          ON rpt_customer_visits(date)",
+        "CREATE INDEX IF NOT EXISTS idx_cv_user_date     ON rpt_customer_visits(user_code, date)",
+        "CREATE INDEX IF NOT EXISTS idx_cv_route_date    ON rpt_customer_visits(route_code, date)",
+        "CREATE INDEX IF NOT EXISTS idx_cv_customer      ON rpt_customer_visits(customer_code, date)",
+        "CREATE INDEX IF NOT EXISTS idx_j_date           ON rpt_journeys(date)",
+        "CREATE INDEX IF NOT EXISTS idx_j_user           ON rpt_journeys(user_code, date)",
+        "CREATE INDEX IF NOT EXISTS idx_cs_date          ON rpt_coverage_summary(visit_date)",
+        "CREATE INDEX IF NOT EXISTS idx_cs_route         ON rpt_coverage_summary(route_code, visit_date)",
+        "CREATE INDEX IF NOT EXISTS idx_cs_user          ON rpt_coverage_summary(user_code, visit_date)",
+        "CREATE INDEX IF NOT EXISTS idx_rsc_date         ON rpt_route_sales_collection(date)",
+        "CREATE INDEX IF NOT EXISTS idx_rsc_route        ON rpt_route_sales_collection(route_code, date)",
+        "CREATE INDEX IF NOT EXISTS idx_rssi_date        ON rpt_route_sales_summary_by_item(date)",
+        "CREATE INDEX IF NOT EXISTS idx_rssi_route_date  ON rpt_route_sales_summary_by_item(route_code, date)",
+        "CREATE INDEX IF NOT EXISTS idx_rssi_item_date   ON rpt_route_sales_summary_by_item(item_code, date)",
+        "CREATE INDEX IF NOT EXISTS idx_rssi_user_date   ON rpt_route_sales_summary_by_item(user_code, date)",
+        "CREATE INDEX IF NOT EXISTS idx_rssi_org_date    ON rpt_route_sales_summary_by_item(sales_org_code, date)",
+        "CREATE INDEX IF NOT EXISTS idx_rsic_date        ON rpt_route_sales_by_item_customer(date)",
+        "CREATE INDEX IF NOT EXISTS idx_rsic_route_date  ON rpt_route_sales_by_item_customer(route_code, date)",
+        "CREATE INDEX IF NOT EXISTS idx_rsic_user_date   ON rpt_route_sales_by_item_customer(user_code, date)",
+        "CREATE INDEX IF NOT EXISTS idx_rsic_item_date   ON rpt_route_sales_by_item_customer(item_code, date)",
+        "CREATE INDEX IF NOT EXISTS idx_it_date          ON rpt_invoice_totals(trx_date)",
+        "CREATE INDEX IF NOT EXISTS idx_it_user_date     ON rpt_invoice_totals(user_code, trx_date)",
+        "CREATE INDEX IF NOT EXISTS idx_it_route_date    ON rpt_invoice_totals(route_code, trx_date)",
+        "CREATE INDEX IF NOT EXISTS idx_it_org_date      ON rpt_invoice_totals(sales_org_code, trx_date)",
+        "CREATE INDEX IF NOT EXISTS idx_out_customer     ON rpt_outstanding(customer_code)",
+        "CREATE INDEX IF NOT EXISTS idx_out_aging        ON rpt_outstanding(aging_bucket)",
+        "CREATE INDEX IF NOT EXISTS idx_out_org          ON rpt_outstanding(org_code)",
+        "CREATE INDEX IF NOT EXISTS idx_out_user         ON rpt_outstanding(user_code)",
+        "CREATE INDEX IF NOT EXISTS idx_eot_date         ON rpt_eot(trip_date)",
+        "CREATE INDEX IF NOT EXISTS idx_eot_user         ON rpt_eot(user_code, trip_date)",
+        "CREATE INDEX IF NOT EXISTS idx_jp_date          ON rpt_journey_plan(date)",
+        "CREATE INDEX IF NOT EXISTS idx_jp_user          ON rpt_journey_plan(user_code, date)",
+        "CREATE INDEX IF NOT EXISTS idx_tgt_salesman     ON rpt_targets(salesman_code)",
+        "CREATE INDEX IF NOT EXISTS idx_tgt_route        ON rpt_targets(route_code)",
+        "CREATE INDEX IF NOT EXISTS idx_tgt_dates        ON rpt_targets(start_date, end_date)",    ]
+
+    # Patch columns that were added after initial schema creation
+    patches = [
+        "ALTER TABLE dim_route        ADD COLUMN IF NOT EXISTS has_active_assignment BOOLEAN DEFAULT false",
+        "ALTER TABLE dim_item         ADD COLUMN IF NOT EXISTS alt_name        VARCHAR(200)",
+        "ALTER TABLE dim_item         ADD COLUMN IF NOT EXISTS arabic_name     VARCHAR(200)",
+        "ALTER TABLE dim_item         ADD COLUMN IF NOT EXISTS sales_org_code  VARCHAR(50)",
+        "ALTER TABLE dim_item         ADD COLUMN IF NOT EXISTS agency_code     VARCHAR(50)",
+        "ALTER TABLE dim_item         ADD COLUMN IF NOT EXISTS agency_name     VARCHAR(200)",
+        "ALTER TABLE dim_item         ADD COLUMN IF NOT EXISTS pack_size_code  VARCHAR(50)",
+        "ALTER TABLE dim_item         ADD COLUMN IF NOT EXISTS flavor_code     VARCHAR(50)",
+        "ALTER TABLE dim_item         ADD COLUMN IF NOT EXISTS flavor_name     VARCHAR(200)",
+        "ALTER TABLE dim_item         ADD COLUMN IF NOT EXISTS item_type       VARCHAR(50)",
+        "ALTER TABLE dim_item         ADD COLUMN IF NOT EXISTS classification  VARCHAR(50)",
+        "ALTER TABLE dim_item         ADD COLUMN IF NOT EXISTS size            VARCHAR(50)",
+        "ALTER TABLE dim_item         ADD COLUMN IF NOT EXISTS order_category  VARCHAR(50)",
+        "ALTER TABLE dim_item         ADD COLUMN IF NOT EXISTS case_conversion FLOAT",
+        "ALTER TABLE dim_item         ADD COLUMN IF NOT EXISTS pc_conversion   FLOAT",
+        "ALTER TABLE rpt_sales_detail ADD COLUMN IF NOT EXISTS trx_status      INT",
+        "ALTER TABLE rpt_eot          ADD COLUMN IF NOT EXISTS route_start_datetime TIMESTAMP",
+        "ALTER TABLE rpt_eot          ADD COLUMN IF NOT EXISTS unload_datetime      TIMESTAMP",
+        "ALTER TABLE rpt_eot          ADD COLUMN IF NOT EXISTS eot_status           VARCHAR(50)",
+    ]
+
+    created = 0
+    for stmt in tables:
+        cur.execute(stmt)
+        created += 1
+
+    for stmt in indexes:
+        cur.execute(stmt)
+
+    for stmt in patches:
+        cur.execute(stmt)
+
+    pg_conn.commit()
+    cur.close()
+    log(f"  Schema OK — {created} tables verified, patches applied.")
+
+
+# ============================================================
 # BATCH LOADER
 # ============================================================
 
-def extract_batch(ms_cursor, query, params, pg_conn, table, columns, batch_size=10000):
-    """Execute MSSQL query and batch-insert into Postgres with progress reporting."""
+def build_upsert(columns, pk_cols):
+    """Build ON CONFLICT (...) DO UPDATE SET clause for upsert mode."""
+    non_pk = [c for c in columns if c not in pk_cols]
+    set_clause = ', '.join(f'{c}=EXCLUDED.{c}' for c in non_pk)
+    return f'({", ".join(pk_cols)}) DO UPDATE SET {set_clause}'
+
+
+def extract_batch(ms_cursor, query, params, pg_conn, table, columns, batch_size=10000, on_conflict='DO NOTHING', dedup_keys=None):
+    """Execute MSSQL query and batch-insert into Postgres with progress reporting.
+
+    dedup_keys: list of column names forming the PK. When set and on_conflict is not
+    DO NOTHING, duplicate rows within each batch are removed before insert — prevents
+    'ON CONFLICT DO UPDATE cannot affect row a second time' errors caused by upstream
+    JOIN duplicates in MSSQL.
+    """
     log_debug(f"  SQL: {query[:200]}...")
     log(f"  Querying MSSQL (this may take a while for large tables)...")
     query_start = time.time()
@@ -250,17 +549,30 @@ def extract_batch(ms_cursor, query, params, pg_conn, table, columns, batch_size=
     query_elapsed = time.time() - query_start
     log(f"  MSSQL query returned in {query_elapsed:.1f}s - starting load...")
 
+    # Pre-compute PK column indices for deduplication
+    dedup_indices = None
+    if dedup_keys and on_conflict != 'DO NOTHING':
+        dedup_indices = [columns.index(k) for k in dedup_keys]
+
     pg_cur = pg_conn.cursor()
     total = 0
     cols_str = ', '.join(columns)
     placeholders = ', '.join(['%s'] * len(columns))
     template = f"({placeholders})"
-    insert_sql = f"INSERT INTO {table} ({cols_str}) VALUES %s ON CONFLICT DO NOTHING"
+    insert_sql = f"INSERT INTO {table} ({cols_str}) VALUES %s ON CONFLICT {on_conflict}"
 
     while True:
         rows = ms_cursor.fetchmany(batch_size)
         if not rows:
             break
+
+        # Deduplicate within batch by PK — last occurrence wins (most recent MSSQL data)
+        if dedup_indices:
+            seen = {}
+            for row in rows:
+                key = tuple(row[i] for i in dedup_indices)
+                seen[key] = row
+            rows = list(seen.values())
 
         execute_values(pg_cur, insert_sql, rows, template=template, page_size=batch_size)
         total += len(rows)
@@ -298,17 +610,6 @@ def load_dimensions(ms_conn, pg_conn):
          "SELECT Code, Description FROM tblChannel",
          "INSERT INTO dim_channel (code, name) VALUES %s"),
 
-        ('dim_country', "DELETE FROM dim_country",
-         "SELECT Code, Description FROM tblCountry",
-         "INSERT INTO dim_country (code, name) VALUES %s"),
-
-        ('dim_region', "DELETE FROM dim_region",
-         "SELECT Code, Description, CountryCode FROM tblRegion",
-         "INSERT INTO dim_region (code, name, country_code) VALUES %s"),
-
-        ('dim_city', "DELETE FROM dim_city",
-         "SELECT Code, Description, RegionCode FROM tblCity",
-         "INSERT INTO dim_city (code, name, region_code) VALUES %s"),
     ]
 
     progress.start_step('Dimensions (6 simple tables)', expected_rows=2000)
@@ -506,8 +807,9 @@ def load_sales_detail(ms_conn, pg_conn):
     """Load rpt_sales_detail - denormalized transaction lines. LARGEST TABLE."""
     progress.start_step('rpt_sales_detail', expected_rows=12_000_000)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("DELETE FROM rpt_sales_detail WHERE trx_date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
-    pg_conn.commit()
+    if not UPSERT_MODE:
+        pg_cur.execute("DELETE FROM rpt_sales_detail WHERE trx_date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
+        pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
     query = """
@@ -537,13 +839,24 @@ def load_sales_detail(ms_conn, pg_conn):
         LEFT JOIN tblSalesOrganization so ON h.OrgCode = so.Code
         LEFT JOIN tblRoute rt ON h.RouteCode = rt.Code
         LEFT JOIN tblCustomer c ON h.ClientCode = c.Code
-        LEFT JOIN tblCustomerDetail cd ON c.Code = cd.CustomerCode AND h.OrgCode = cd.SalesOrgCode
+        LEFT JOIN (
+            SELECT CustomerCode, SalesOrgCode, ChannelCode, SubChannelCode,
+                   CustomerGroupCode, CustomerType,
+                   ROW_NUMBER() OVER (PARTITION BY CustomerCode, SalesOrgCode
+                                      ORDER BY CustomerDetailId DESC) AS rn
+            FROM tblCustomerDetail
+        ) cd ON c.Code = cd.CustomerCode AND h.OrgCode = cd.SalesOrgCode AND cd.rn = 1
         LEFT JOIN tblChannel ch ON cd.ChannelCode = ch.Code
         LEFT JOIN tblSubChannel sc ON cd.SubChannelCode = sc.Code
         LEFT JOIN tblCountry co ON c.CountryCode = co.Code
         LEFT JOIN tblRegion rg ON c.RegionCode = rg.Code
         LEFT JOIN tblCity ci ON c.CityCode = ci.Code
-        LEFT JOIN tblItem i ON d.ItemCode = i.Code
+        LEFT JOIN (
+            SELECT Code, Description, GroupLevel1, GroupLevel2, GroupLevel3,
+                   GroupLevel5, GroupLevel8, BaseUOM, LiterPerUnit,
+                   ROW_NUMBER() OVER (PARTITION BY Code ORDER BY ItemId DESC) AS rn
+            FROM tblItem
+        ) i ON d.ItemCode = i.Code AND i.rn = 1
         LEFT JOIN tblItemGroup g1 ON i.GroupLevel1 = g1.Code AND g1.ItemGroupLevelId = 1
         LEFT JOIN tblItemGroup g2 ON i.GroupLevel2 = g2.Code AND g2.ItemGroupLevelId = 2
         LEFT JOIN tblItemGroup g3 ON i.GroupLevel3 = g3.Code AND g3.ItemGroupLevelId = 3
@@ -578,8 +891,10 @@ def load_sales_detail(ms_conn, pg_conn):
         chunk_end = min(chunk_start + timedelta(days=chunk_days), end)
         log(f"    Processing {chunk_start} to {chunk_end}...")
         ms_cur = ms_conn.cursor()
+        conflict = build_upsert(columns, ['trx_code', 'line_no']) if UPSERT_MODE else 'DO NOTHING'
         total = extract_batch(ms_cur, query, (str(chunk_start), str(chunk_end)),
-                              pg_conn, 'rpt_sales_detail', columns)
+                              pg_conn, 'rpt_sales_detail', columns,
+                              on_conflict=conflict, dedup_keys=['trx_code', 'line_no'])
         grand_total += total
         log(f"    {chunk_start} to {chunk_end}: {total:,} rows")
         chunk_start = chunk_end
@@ -588,87 +903,12 @@ def load_sales_detail(ms_conn, pg_conn):
     progress.finish_step(grand_total)
 
 
-def load_daily_sales_summary(ms_conn, pg_conn):
-    """Aggregated from tblTrxHeader/Detail - processes month by month to avoid tempdb overflow."""
-    progress.start_step('rpt_daily_sales_summary', expected_rows=5_000_000)
-    pg_cur = pg_conn.cursor()
-    pg_cur.execute("DELETE FROM rpt_daily_sales_summary WHERE date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
-    pg_conn.commit()
-
-    query = """
-        SELECT
-            CAST(h.TrxDate AS DATE), h.RouteCode, rt.Name,
-            h.UserCode, u.Description, h.OrgCode, so.Description,
-            h.ClientCode, c.Description, cd.ChannelCode, ch.Description,
-            d.ItemCode, i.Description,
-            i.GroupLevel1, g1.Description, i.GroupLevel3, g3.Description,
-            SUM(CASE WHEN h.TrxType = 1 THEN d.QuantityBU ELSE 0 END),
-            SUM(CASE WHEN h.TrxType = 1 THEN d.BasePrice * d.QuantityBU ELSE 0 END),
-            SUM(CASE WHEN h.TrxType = 4 THEN d.QuantityBU ELSE 0 END),
-            SUM(CASE WHEN h.TrxType = 4 THEN d.BasePrice * d.QuantityBU ELSE 0 END),
-            0, 0, 0, 0
-        FROM tblTrxHeader h
-        JOIN tblTrxDetail d ON h.TrxCode = d.TrxCode
-        LEFT JOIN tblRoute rt ON h.RouteCode = rt.Code
-        LEFT JOIN tblUser u ON h.UserCode = u.Code
-        LEFT JOIN tblSalesOrganization so ON h.OrgCode = so.Code
-        LEFT JOIN tblCustomer c ON h.ClientCode = c.Code
-        LEFT JOIN tblCustomerDetail cd ON c.Code = cd.CustomerCode AND h.OrgCode = cd.SalesOrgCode
-        LEFT JOIN tblChannel ch ON cd.ChannelCode = ch.Code
-        LEFT JOIN tblItem i ON d.ItemCode = i.Code
-        LEFT JOIN tblItemGroup g1 ON i.GroupLevel1 = g1.Code AND g1.ItemGroupLevelId = 1
-        LEFT JOIN tblItemGroup g3 ON i.GroupLevel3 = g3.Code AND g3.ItemGroupLevelId = 3
-        WHERE h.TrxDate >= %s AND h.TrxDate < %s AND h.TrxType IN (1, 4)
-        GROUP BY CAST(h.TrxDate AS DATE), h.RouteCode, rt.Name,
-            h.UserCode, u.Description, h.OrgCode, so.Description,
-            h.ClientCode, c.Description, cd.ChannelCode, ch.Description,
-            d.ItemCode, i.Description, i.GroupLevel1, g1.Description,
-            i.GroupLevel3, g3.Description
-    """
-    columns = [
-        'date', 'route_code', 'route_name', 'user_code', 'user_name',
-        'sales_org_code', 'sales_org_name',
-        'customer_code', 'customer_name', 'channel_code', 'channel_name',
-        'item_code', 'item_name', 'brand_code', 'brand_name',
-        'category_code', 'category_name',
-        'total_qty', 'total_sales', 'total_gr_qty', 'total_gr_sales',
-        'total_damage_qty', 'total_damage_sales', 'total_expiry_qty', 'total_expiry_sales'
-    ]
-
-    # Process month by month to avoid MSSQL tempdb overflow
-    from datetime import datetime, timedelta
-    def relativedelta_months(d, n):
-        """Add n months to date d."""
-        m = d.month + n
-        y = d.year + (m - 1) // 12
-        m = (m - 1) % 12 + 1
-        import calendar
-        day = min(d.day, calendar.monthrange(y, m)[1])
-        return d.replace(year=y, month=m, day=day)
-    start = datetime.strptime(DATE_FROM, '%Y-%m-%d').date()
-    end = datetime.strptime(DATE_TO, '%Y-%m-%d').date()
-
-    grand_total = 0
-    month_start = start
-    while month_start < end:
-        month_end = min(relativedelta_months(month_start, 1), end)
-        log(f"    Processing {month_start} to {month_end}...")
-        ms_cur = ms_conn.cursor()
-        total = extract_batch(ms_cur, query, (str(month_start), str(month_end)),
-                              pg_conn, 'rpt_daily_sales_summary', columns)
-        grand_total += total
-        log(f"    {month_start.strftime('%Y-%m')}: {total:,} rows")
-        month_start = month_end
-
-    pg_cur.close()
-    progress.finish_step(grand_total)
-
-
 def load_collections(ms_conn, pg_conn):
     progress.start_step('rpt_collections', expected_rows=1_500_000)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("DELETE FROM rpt_collections WHERE receipt_date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
-    pg_conn.commit()
+    if not UPSERT_MODE:
+        pg_cur.execute("DELETE FROM rpt_collections WHERE receipt_date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
+        pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
     query = """
@@ -691,7 +931,8 @@ def load_collections(ms_conn, pg_conn):
         'sales_org_code', 'sales_org_name', 'customer_code', 'customer_name',
         'amount', 'settled_amount', 'payment_type', 'payment_status', 'currency_code'
     ]
-    total = extract_batch(ms_cur, query, (DATE_FROM, DATE_TO), pg_conn, 'rpt_collections', columns)
+    conflict = build_upsert(columns, ['receipt_id']) if UPSERT_MODE else 'DO NOTHING'
+    total = extract_batch(ms_cur, query, (DATE_FROM, DATE_TO), pg_conn, 'rpt_collections', columns, on_conflict=conflict)
     pg_cur.close()
     progress.finish_step(total)
 
@@ -699,8 +940,9 @@ def load_collections(ms_conn, pg_conn):
 def load_customer_visits(ms_conn, pg_conn):
     progress.start_step('rpt_customer_visits', expected_rows=3_000_000)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("DELETE FROM rpt_customer_visits WHERE date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
-    pg_conn.commit()
+    if not UPSERT_MODE:
+        pg_cur.execute("DELETE FROM rpt_customer_visits WHERE date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
+        pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
     query = """
@@ -734,7 +976,8 @@ def load_customer_visits(ms_conn, pg_conn):
         'is_productive', 'is_planned', 'latitude', 'longitude', 'journey_code',
         'visit_code'
     ]
-    total = extract_batch(ms_cur, query, (DATE_FROM, DATE_TO), pg_conn, 'rpt_customer_visits', columns)
+    conflict = build_upsert(columns, ['visit_id']) if UPSERT_MODE else 'DO NOTHING'
+    total = extract_batch(ms_cur, query, (DATE_FROM, DATE_TO), pg_conn, 'rpt_customer_visits', columns, on_conflict=conflict)
     pg_cur.close()
     progress.finish_step(total)
 
@@ -742,8 +985,9 @@ def load_customer_visits(ms_conn, pg_conn):
 def load_journeys(ms_conn, pg_conn):
     progress.start_step('rpt_journeys', expected_rows=80_000)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("DELETE FROM rpt_journeys WHERE date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
-    pg_conn.commit()
+    if not UPSERT_MODE:
+        pg_cur.execute("DELETE FROM rpt_journeys WHERE date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
+        pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
     query = """
@@ -760,7 +1004,8 @@ def load_journeys(ms_conn, pg_conn):
         'route_code', 'route_name', 'sales_org_code',
         'start_time', 'end_time', 'vehicle_code'
     ]
-    total = extract_batch(ms_cur, query, (DATE_FROM, DATE_TO), pg_conn, 'rpt_journeys', columns)
+    conflict = build_upsert(columns, ['journey_id']) if UPSERT_MODE else 'DO NOTHING'
+    total = extract_batch(ms_cur, query, (DATE_FROM, DATE_TO), pg_conn, 'rpt_journeys', columns, on_conflict=conflict)
     pg_cur.close()
     progress.finish_step(total)
 
@@ -768,8 +1013,9 @@ def load_journeys(ms_conn, pg_conn):
 def load_coverage_summary(ms_conn, pg_conn):
     progress.start_step('rpt_coverage_summary', expected_rows=25_000)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("DELETE FROM rpt_coverage_summary WHERE visit_date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
-    pg_conn.commit()
+    if not UPSERT_MODE:
+        pg_cur.execute("DELETE FROM rpt_coverage_summary WHERE visit_date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
+        pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
     query = """
@@ -788,7 +1034,8 @@ def load_coverage_summary(ms_conn, pg_conn):
         'sales_org_code', 'scheduled_calls', 'total_actual_calls', 'planned_calls',
         'unplanned_calls', 'selling_calls', 'planned_selling_calls'
     ]
-    total = extract_batch(ms_cur, query, (DATE_FROM, DATE_TO), pg_conn, 'rpt_coverage_summary', columns)
+    conflict = build_upsert(columns, ['id']) if UPSERT_MODE else 'DO NOTHING'
+    total = extract_batch(ms_cur, query, (DATE_FROM, DATE_TO), pg_conn, 'rpt_coverage_summary', columns, on_conflict=conflict)
     pg_cur.close()
     progress.finish_step(total)
 
@@ -796,8 +1043,9 @@ def load_coverage_summary(ms_conn, pg_conn):
 def load_route_sales_collection(ms_conn, pg_conn):
     progress.start_step('rpt_route_sales_collection', expected_rows=25_000)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("DELETE FROM rpt_route_sales_collection WHERE date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
-    pg_conn.commit()
+    if not UPSERT_MODE:
+        pg_cur.execute("DELETE FROM rpt_route_sales_collection WHERE date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
+        pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
     query = """
@@ -814,7 +1062,8 @@ def load_route_sales_collection(ms_conn, pg_conn):
         'sales_org_code', 'total_sales', 'total_collection', 'total_sales_with_tax',
         'total_wastage', 'target_amount'
     ]
-    total = extract_batch(ms_cur, query, (DATE_FROM, DATE_TO), pg_conn, 'rpt_route_sales_collection', columns)
+    conflict = build_upsert(columns, ['id']) if UPSERT_MODE else 'DO NOTHING'
+    total = extract_batch(ms_cur, query, (DATE_FROM, DATE_TO), pg_conn, 'rpt_route_sales_collection', columns, on_conflict=conflict)
     pg_cur.close()
     progress.finish_step(total)
 
@@ -833,10 +1082,19 @@ def load_targets(ms_conn, pg_conn):
         FROM tblCommonTarget t
         LEFT JOIN tblUser u ON t.SalesmanCode = u.Code
         LEFT JOIN tblRoute rt ON t.RouteCode = rt.Code
-        LEFT JOIN tblItem i ON t.ItemKey = i.Code
+        LEFT JOIN (
+            SELECT Code, MIN(Description) AS Description
+            FROM tblItem GROUP BY Code
+        ) i ON t.ItemKey = i.Code
     """
     ms_cur.execute(query)
     rows = ms_cur.fetchall()
+    # Deduplicate by target_id — tblCommonTarget can have duplicates via joins
+    if rows:
+        seen = {}
+        for row in rows:
+            seen[row[0]] = row  # row[0] = TargetId, last wins
+        rows = list(seen.values())
     if rows:
         execute_values(pg_cur,
             """INSERT INTO rpt_targets (target_id, time_frame, start_date, end_date, year, month,
@@ -874,8 +1132,9 @@ def jde_to_date(jde_int):
 def load_outstanding(ms_conn, pg_conn):
     progress.start_step('rpt_outstanding', expected_rows=5_000_000)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("DELETE FROM rpt_outstanding WHERE trx_date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
-    pg_conn.commit()
+    if not UPSERT_MODE:
+        pg_cur.execute("DELETE FROM rpt_outstanding WHERE trx_date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
+        pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
     # Filter by TrxDateTime to keep within the ETL date range (table has 22M+ rows total)
@@ -884,7 +1143,7 @@ def load_outstanding(ms_conn, pg_conn):
     if DATE_FROM:
         date_filter += f" AND mpi.TrxDateTime >= '{DATE_FROM}'"
     if DATE_TO:
-        date_filter += f" AND mpi.TrxDateTime < DATEADD(day, 1, '{DATE_TO}')"
+        date_filter += f" AND mpi.TrxDateTime < '{DATE_TO}'"
     query = f"""
         SELECT mpi.MiddleWarePendingInvoiceId, mpi.TrxCode,
             mpi.OrgCode, so.Description, mpi.ClientCode, c.Description, ch.Description,
@@ -917,7 +1176,8 @@ def load_outstanding(ms_conn, pg_conn):
     ]
     cols_str = ', '.join(columns)
     placeholders = ', '.join(['%s'] * len(columns))
-    insert_sql = f"INSERT INTO rpt_outstanding ({cols_str}) VALUES %s ON CONFLICT DO NOTHING"
+    _out_conflict = build_upsert(columns, ['id']) if UPSERT_MODE else 'DO NOTHING'
+    insert_sql = f"INSERT INTO rpt_outstanding ({cols_str}) VALUES %s ON CONFLICT {_out_conflict}"
     template = f"({placeholders})"
 
     total = 0
@@ -975,7 +1235,8 @@ def load_outstanding(ms_conn, pg_conn):
 def load_eot(ms_conn, pg_conn):
     progress.start_step('rpt_eot', expected_rows=80_000)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("DELETE FROM rpt_eot WHERE trip_date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
+    if not UPSERT_MODE:
+        pg_cur.execute("DELETE FROM rpt_eot WHERE trip_date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
     pg_cur.execute("""
         ALTER TABLE rpt_eot
             ADD COLUMN IF NOT EXISTS route_start_datetime TIMESTAMP,
@@ -1006,7 +1267,9 @@ def load_eot(ms_conn, pg_conn):
         'sales_org_code', 'eot_type', 'eot_time', 'trip_date',
         'route_start_datetime', 'unload_datetime', 'eot_status'
     ]
-    total = extract_batch(ms_cur, query, (DATE_FROM, DATE_TO), pg_conn, 'rpt_eot', columns)
+    conflict = build_upsert(columns, ['eot_id']) if UPSERT_MODE else 'DO NOTHING'
+    total = extract_batch(ms_cur, query, (DATE_FROM, DATE_TO), pg_conn, 'rpt_eot', columns,
+                          on_conflict=conflict, dedup_keys=['eot_id'])
     pg_cur.close()
     progress.finish_step(total)
 
@@ -1014,8 +1277,9 @@ def load_eot(ms_conn, pg_conn):
 def load_journey_plan(ms_conn, pg_conn):
     progress.start_step('rpt_journey_plan', expected_rows=2_000_000)
     pg_cur = pg_conn.cursor()
-    pg_cur.execute("DELETE FROM rpt_journey_plan WHERE date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
-    pg_conn.commit()
+    if not UPSERT_MODE:
+        pg_cur.execute("DELETE FROM rpt_journey_plan WHERE date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
+        pg_conn.commit()
 
     ms_cur = ms_conn.cursor()
     # NOTE: In tblDailyJourneyPlan, UserCode = route code, SalesmanCode = actual user
@@ -1043,7 +1307,8 @@ def load_journey_plan(ms_conn, pg_conn):
         'sequence', 'visit_status',
         'sales_org_code'   # from tblRoute via jp.UserCode
     ]
-    total = extract_batch(ms_cur, query, (DATE_FROM, DATE_TO), pg_conn, 'rpt_journey_plan', columns)
+    conflict = build_upsert(columns, ['id']) if UPSERT_MODE else 'DO NOTHING'
+    total = extract_batch(ms_cur, query, (DATE_FROM, DATE_TO), pg_conn, 'rpt_journey_plan', columns, on_conflict=conflict)
     pg_cur.close()
     progress.finish_step(total)
 
@@ -1056,6 +1321,7 @@ def load_invoice_totals(ms_conn, pg_conn):
     """
     progress.start_step('rpt_invoice_totals', expected_rows=500_000)
     pg_cur = pg_conn.cursor()
+    # Aggregate table — atomic delete+insert (no stable source PK for true upsert)
     pg_cur.execute("DELETE FROM rpt_invoice_totals WHERE trx_date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
     pg_conn.commit()
 
@@ -1114,6 +1380,7 @@ def load_route_sales_summary_by_item(ms_conn, pg_conn):
     """Load rpt_route_sales_summary_by_item - primary dashboard source for sales/targets."""
     progress.start_step('rpt_route_sales_summary_by_item', expected_rows=500_000)
     pg_cur = pg_conn.cursor()
+    # Aggregate table — atomic delete+insert (no stable source PK for true upsert)
     pg_cur.execute("DELETE FROM rpt_route_sales_summary_by_item WHERE date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
     pg_conn.commit()
 
@@ -1146,6 +1413,7 @@ def load_route_sales_by_item_customer(ms_conn, pg_conn):
     """Load rpt_route_sales_by_item_customer from tblRouteSalesSummaryByItemCustomer."""
     progress.start_step('rpt_route_sales_by_item_customer', expected_rows=2_500_000)
     pg_cur = pg_conn.cursor()
+    # Aggregate table — atomic delete+insert (no stable source PK for true upsert)
     pg_cur.execute("DELETE FROM rpt_route_sales_by_item_customer WHERE date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
     pg_conn.commit()
 
@@ -1188,52 +1456,71 @@ def load_holidays(ms_conn, pg_conn):
 
 
 # ============================================================
+# conversations & messages are app-generated tables — NOT sourced from MSSQL, skipped.
+# ============================================================
+
+# ============================================================
 # MAIN
 # ============================================================
 
 ALL_STEPS = [
-    ('dimensions', load_dimensions),
-    ('dim_item', None),  # handled inside load_dimensions
-    ('dim_customer', None),  # handled inside load_dimensions
-    ('holidays', load_holidays),
-    ('targets', load_targets),
-    ('coverage_summary', load_coverage_summary),
-    ('route_sales_collection', load_route_sales_collection),
-    ('route_sales_summary_by_item', load_route_sales_summary_by_item),
+    ('dimensions',                   load_dimensions),
+    ('dim_item',                     None),  # handled inside load_dimensions
+    ('dim_customer',                 None),  # handled inside load_dimensions
+    ('holidays',                     load_holidays),
+    ('targets',                      load_targets),
+    ('coverage_summary',             load_coverage_summary),
+    ('route_sales_collection',       load_route_sales_collection),
+    ('route_sales_summary_by_item',  load_route_sales_summary_by_item),
     ('route_sales_by_item_customer', load_route_sales_by_item_customer),
-    ('invoice_totals', load_invoice_totals),
-    ('eot', load_eot),
-    ('journeys', load_journeys),
-    ('collections', load_collections),
-    ('customer_visits', load_customer_visits),
-    ('journey_plan', load_journey_plan),
-    ('outstanding', load_outstanding),
-    ('daily_sales_summary', load_daily_sales_summary),
-    ('sales_detail', load_sales_detail),
+    ('invoice_totals',               load_invoice_totals),
+    ('eot',                          load_eot),
+    ('journeys',                     load_journeys),
+    ('collections',                  load_collections),
+    ('customer_visits',              load_customer_visits),
+    ('journey_plan',                 load_journey_plan),
+    ('outstanding',                  load_outstanding),
+    ('sales_detail',                 load_sales_detail),
 ]
 
 # Only steps with actual loader functions
 LOADABLE_STEPS = [(name, fn) for name, fn in ALL_STEPS if fn is not None]
 
 def main():
-    global DATE_FROM, DATE_TO
+    global DATE_FROM, DATE_TO, UPSERT_MODE
 
     parser = argparse.ArgumentParser(description='NFPC Reports ETL')
     parser.add_argument('--table', help='Load a single table only (e.g., sales_detail)')
     parser.add_argument('--dry-run', action='store_true', help='Show plan without executing')
     parser.add_argument('--from-date', default=DATE_FROM, help=f'Start date (default: {DATE_FROM})')
     parser.add_argument('--to-date', default=DATE_TO, help=f'End date (default: {DATE_TO})')
+    parser.add_argument('--days', type=int, help='Sync last N days ending today (e.g. --days 7 = last 6 days + today). Enables upsert mode automatically.')
+    parser.add_argument('--upsert', action='store_true', help='Upsert mode: update existing rows, insert new ones — never delete')
     parser.add_argument('--parallel', action='store_true', help='Run fact tables in parallel')
     parser.add_argument('--workers', type=int, default=4, help='Number of parallel workers (default: 4)')
     args = parser.parse_args()
 
-    DATE_FROM = args.from_date
-    DATE_TO = args.to_date
+    # --days N: dynamically compute date range (last N-1 days + today)
+    if args.days:
+        if args.days < 1:
+            log_error("--days must be >= 1")
+            sys.exit(1)
+        DATE_FROM = (_date.today() - timedelta(days=args.days - 1)).strftime('%Y-%m-%d')
+        DATE_TO = (_date.today() + timedelta(days=1)).strftime('%Y-%m-%d')  # exclusive — includes today
+        UPSERT_MODE = True  # --days always uses upsert (no delete)
+    else:
+        DATE_FROM = args.from_date
+        DATE_TO = args.to_date
+
+    if args.upsert:
+        UPSERT_MODE = True
 
     log(f"{'═' * 60}")
     log(f"  NFPC Reports ETL")
-    log(f"  Date range: {DATE_FROM} to {DATE_TO}")
-    log(f"  Mode: {'parallel (workers=' + str(args.workers) + ')' if args.parallel else 'sequential'}")
+    display_to = (_date.fromisoformat(DATE_TO) - timedelta(days=1)).strftime('%Y-%m-%d')
+    log(f"  Date range: {DATE_FROM} to {display_to} (inclusive)")
+    log(f"  Sync mode:  {'UPSERT (no delete)' if UPSERT_MODE else 'DELETE + INSERT'}")
+    log(f"  Exec mode:  {'parallel (workers=' + str(args.workers) + ')' if args.parallel else 'sequential (one table at a time)'}")
     log(f"  Log file:   {log_file}")
     log(f"{'═' * 60}")
 
@@ -1251,6 +1538,12 @@ def main():
         for i, (name, _) in enumerate(steps, 1):
             log(f"    {i}. {name}")
         return
+
+    # Auto-create tables / patch missing columns before loading
+    log("\nInitializing schema...")
+    _pg = get_pg_conn()
+    ensure_schema(_pg)
+    _pg.close()
 
     progress.start_etl(len(steps))
 

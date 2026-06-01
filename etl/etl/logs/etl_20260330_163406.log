@@ -1,0 +1,159 @@
+2026-03-30 16:34:06 [INFO] ════════════════════════════════════════════════════════════
+2026-03-30 16:34:06 [INFO]   NFPC Reports ETL
+2026-03-30 16:34:06 [INFO]   Date range: 2026-01-01 to 2026-02-28
+2026-03-30 16:34:06 [INFO]   Mode: sequential
+2026-03-30 16:34:06 [INFO]   Log file:   D:\vishwa\nfpc_winit\etl\logs\etl_20260330_163406.log
+2026-03-30 16:34:06 [INFO] ════════════════════════════════════════════════════════════
+2026-03-30 16:34:06 [INFO] Connecting to MSSQL...
+2026-03-30 16:34:06 [INFO]   MSSQL connected
+2026-03-30 16:34:06 [INFO] Connecting to PostgreSQL...
+2026-03-30 16:34:08 [INFO]   PostgreSQL connected
+2026-03-30 16:34:08 [INFO] 
+──────────────────────────────────────────────────
+2026-03-30 16:34:08 [INFO]   [1/1] rpt_sales_detail [░░░░░░░░░░░░░░░░░░░░] 0%
+2026-03-30 16:34:08 [INFO]        Expected: ~12,000,000 rows
+2026-03-30 16:34:10 [INFO]     Processing 2026-01-01 to 2026-01-15...
+2026-03-30 16:34:10 [DEBUG]   SQL: 
+        SELECT
+            h.TrxCode, d.[LineNo], CAST(h.TrxDate AS DATE), CAST(h.TripDate AS DATE),
+            h.TrxType, h.PaymentType, h.TRXStatus,
+            h.UserCode, u.Description,
+        ...
+2026-03-30 16:34:10 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-30 16:34:19 [INFO]   MSSQL query returned in 9.0s - starting load...
+2026-03-30 16:34:39 [INFO]              50,000 rows | 1,596 rows/sec | 31s elapsed | ETA 7486s
+2026-03-30 16:35:00 [INFO]             100,000 rows | 1,912 rows/sec | 52s elapsed | ETA 6224s
+2026-03-30 16:35:25 [INFO]             150,000 rows | 1,945 rows/sec | 77s elapsed | ETA 6092s
+2026-03-30 16:35:48 [INFO]             200,000 rows | 1,996 rows/sec | 100s elapsed | ETA 5913s
+2026-03-30 16:36:10 [INFO]             250,000 rows | 2,042 rows/sec | 122s elapsed | ETA 5754s
+2026-03-30 16:36:32 [INFO]             300,000 rows | 2,086 rows/sec | 144s elapsed | ETA 5609s
+2026-03-30 16:36:55 [INFO]             350,000 rows | 2,092 rows/sec | 167s elapsed | ETA 5569s
+2026-03-30 16:37:19 [INFO]             400,000 rows | 2,091 rows/sec | 191s elapsed | ETA 5546s
+2026-03-30 16:37:41 [INFO]             450,000 rows | 2,114 rows/sec | 213s elapsed | ETA 5463s
+2026-03-30 16:38:01 [INFO]             500,000 rows | 2,145 rows/sec | 233s elapsed | ETA 5362s
+2026-03-30 16:38:18 [INFO]             550,000 rows | 2,200 rows/sec | 250s elapsed | ETA 5205s
+2026-03-30 16:38:34 [INFO]             600,000 rows | 2,253 rows/sec | 266s elapsed | ETA 5059s
+2026-03-30 16:38:56 [INFO]             650,000 rows | 2,254 rows/sec | 288s elapsed | ETA 5037s
+2026-03-30 16:39:26 [INFO]             700,000 rows | 2,201 rows/sec | 318s elapsed | ETA 5135s
+2026-03-30 16:39:48 [INFO]             750,000 rows | 2,203 rows/sec | 340s elapsed | ETA 5107s
+2026-03-30 16:40:15 [INFO]             800,000 rows | 2,182 rows/sec | 367s elapsed | ETA 5134s
+2026-03-30 16:40:35 [INFO]             850,000 rows | 2,194 rows/sec | 387s elapsed | ETA 5081s
+2026-03-30 16:40:54 [INFO]             900,000 rows | 2,215 rows/sec | 406s elapsed | ETA 5011s
+2026-03-30 16:41:11 [INFO]             950,000 rows | 2,245 rows/sec | 423s elapsed | ETA 4923s
+2026-03-30 16:41:28 [INFO]           1,000,000 rows | 2,272 rows/sec | 440s elapsed | ETA 4841s
+2026-03-30 16:41:46 [INFO]           1,050,000 rows | 2,292 rows/sec | 458s elapsed | ETA 4777s
+2026-03-30 16:42:02 [INFO]           1,100,000 rows | 2,319 rows/sec | 474s elapsed | ETA 4701s
+2026-03-30 16:42:20 [INFO]           1,150,000 rows | 2,339 rows/sec | 492s elapsed | ETA 4639s
+2026-03-30 16:42:36 [INFO]           1,200,000 rows | 2,360 rows/sec | 508s elapsed | ETA 4575s
+2026-03-30 16:42:53 [INFO]           1,250,000 rows | 2,381 rows/sec | 525s elapsed | ETA 4515s
+2026-03-30 16:43:10 [INFO]           1,300,000 rows | 2,399 rows/sec | 542s elapsed | ETA 4460s
+2026-03-30 16:43:26 [INFO]           1,350,000 rows | 2,417 rows/sec | 559s elapsed | ETA 4406s
+2026-03-30 16:43:43 [INFO]           1,400,000 rows | 2,433 rows/sec | 575s elapsed | ETA 4356s
+2026-03-30 16:44:00 [INFO]           1,450,000 rows | 2,450 rows/sec | 592s elapsed | ETA 4305s
+2026-03-30 16:44:16 [INFO]           1,500,000 rows | 2,467 rows/sec | 608s elapsed | ETA 4255s
+2026-03-30 16:44:32 [INFO]           1,550,000 rows | 2,484 rows/sec | 624s elapsed | ETA 4207s
+2026-03-30 16:44:50 [INFO]           1,600,000 rows | 2,493 rows/sec | 642s elapsed | ETA 4171s
+2026-03-30 16:45:08 [INFO]           1,650,000 rows | 2,498 rows/sec | 660s elapsed | ETA 4143s
+2026-03-30 16:45:25 [INFO]           1,700,000 rows | 2,511 rows/sec | 677s elapsed | ETA 4102s
+2026-03-30 16:45:43 [INFO]           1,750,000 rows | 2,517 rows/sec | 695s elapsed | ETA 4072s
+2026-03-30 16:46:01 [INFO]           1,800,000 rows | 2,525 rows/sec | 713s elapsed | ETA 4040s
+2026-03-30 16:46:17 [INFO]           1,850,000 rows | 2,536 rows/sec | 730s elapsed | ETA 4003s
+2026-03-30 16:46:34 [INFO]           1,900,000 rows | 2,545 rows/sec | 747s elapsed | ETA 3969s
+2026-03-30 16:46:52 [INFO]           1,950,000 rows | 2,553 rows/sec | 764s elapsed | ETA 3937s
+2026-03-30 16:47:10 [INFO]           2,000,000 rows | 2,557 rows/sec | 782s elapsed | ETA 3911s
+2026-03-30 16:47:30 [INFO]           2,050,000 rows | 2,556 rows/sec | 802s elapsed | ETA 3893s
+2026-03-30 16:47:50 [INFO]           2,100,000 rows | 2,554 rows/sec | 822s elapsed | ETA 3876s
+2026-03-30 16:48:09 [INFO]           2,150,000 rows | 2,556 rows/sec | 841s elapsed | ETA 3854s
+2026-03-30 16:48:30 [INFO]           2,200,000 rows | 2,551 rows/sec | 862s elapsed | ETA 3842s
+2026-03-30 16:48:50 [INFO]           2,250,000 rows | 2,549 rows/sec | 883s elapsed | ETA 3825s
+2026-03-30 16:49:07 [INFO]           2,300,000 rows | 2,558 rows/sec | 899s elapsed | ETA 3792s
+2026-03-30 16:49:23 [INFO]           2,350,000 rows | 2,567 rows/sec | 916s elapsed | ETA 3760s
+2026-03-30 16:49:40 [INFO]           2,400,000 rows | 2,574 rows/sec | 932s elapsed | ETA 3730s
+2026-03-30 16:49:44 [INFO]     2026-01-01 to 2026-01-15: 2,410,756 rows
+2026-03-30 16:49:44 [INFO]     Processing 2026-01-15 to 2026-01-29...
+2026-03-30 16:49:44 [DEBUG]   SQL: 
+        SELECT
+            h.TrxCode, d.[LineNo], CAST(h.TrxDate AS DATE), CAST(h.TripDate AS DATE),
+            h.TrxType, h.PaymentType, h.TRXStatus,
+            h.UserCode, u.Description,
+        ...
+2026-03-30 16:49:44 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-30 16:49:46 [INFO]   MSSQL query returned in 1.9s - starting load...
+2026-03-30 16:50:04 [INFO]              50,000 rows | 52 rows/sec | 957s elapsed | ETA 228620s
+2026-03-30 16:50:21 [INFO]             100,000 rows | 103 rows/sec | 973s elapsed | ETA 115779s
+2026-03-30 16:50:38 [INFO]             150,000 rows | 152 rows/sec | 990s elapsed | ETA 78204s
+2026-03-30 16:50:55 [INFO]             200,000 rows | 199 rows/sec | 1007s elapsed | ETA 59414s
+2026-03-30 16:51:11 [INFO]             250,000 rows | 244 rows/sec | 1023s elapsed | ETA 48074s
+2026-03-30 16:51:27 [INFO]             300,000 rows | 289 rows/sec | 1040s elapsed | ETA 40542s
+2026-03-30 16:51:44 [INFO]             350,000 rows | 331 rows/sec | 1056s elapsed | ETA 35147s
+2026-03-30 16:52:00 [INFO]             400,000 rows | 373 rows/sec | 1072s elapsed | ETA 31084s
+2026-03-30 16:52:16 [INFO]             450,000 rows | 414 rows/sec | 1088s elapsed | ETA 27926s
+2026-03-30 16:52:31 [INFO]             500,000 rows | 453 rows/sec | 1103s elapsed | ETA 25379s
+2026-03-30 16:52:48 [INFO]             550,000 rows | 491 rows/sec | 1120s elapsed | ETA 23318s
+2026-03-30 16:53:05 [INFO]             600,000 rows | 528 rows/sec | 1137s elapsed | ETA 21611s
+2026-03-30 16:53:22 [INFO]             650,000 rows | 563 rows/sec | 1154s elapsed | ETA 20152s
+2026-03-30 16:53:39 [INFO]             700,000 rows | 598 rows/sec | 1171s elapsed | ETA 18899s
+2026-03-30 16:53:56 [INFO]             750,000 rows | 631 rows/sec | 1188s elapsed | ETA 17817s
+2026-03-30 16:54:11 [INFO]             800,000 rows | 665 rows/sec | 1204s elapsed | ETA 16851s
+2026-03-30 16:54:28 [INFO]             850,000 rows | 696 rows/sec | 1220s elapsed | ETA 16009s
+2026-03-30 16:54:47 [INFO]             900,000 rows | 726 rows/sec | 1239s elapsed | ETA 15279s
+2026-03-30 16:55:03 [INFO]             950,000 rows | 757 rows/sec | 1255s elapsed | ETA 14599s
+2026-03-30 16:55:20 [INFO]           1,000,000 rows | 786 rows/sec | 1272s elapsed | ETA 13997s
+2026-03-30 16:55:37 [INFO]           1,050,000 rows | 814 rows/sec | 1289s elapsed | ETA 13445s
+2026-03-30 16:55:54 [INFO]           1,100,000 rows | 842 rows/sec | 1306s elapsed | ETA 12939s
+2026-03-30 16:56:10 [INFO]           1,150,000 rows | 870 rows/sec | 1323s elapsed | ETA 12478s
+2026-03-30 16:56:27 [INFO]           1,200,000 rows | 896 rows/sec | 1339s elapsed | ETA 12050s
+2026-03-30 16:56:43 [INFO]           1,250,000 rows | 922 rows/sec | 1355s elapsed | ETA 11655s
+2026-03-30 16:57:00 [INFO]           1,300,000 rows | 947 rows/sec | 1372s elapsed | ETA 11295s
+2026-03-30 16:57:17 [INFO]           1,350,000 rows | 972 rows/sec | 1389s elapsed | ETA 10960s
+2026-03-30 16:57:35 [INFO]           1,400,000 rows | 995 rows/sec | 1407s elapsed | ETA 10652s
+2026-03-30 16:57:52 [INFO]           1,450,000 rows | 1,018 rows/sec | 1425s elapsed | ETA 10365s
+2026-03-30 16:58:09 [INFO]           1,500,000 rows | 1,041 rows/sec | 1441s elapsed | ETA 10087s
+2026-03-30 16:58:25 [INFO]           1,550,000 rows | 1,064 rows/sec | 1457s elapsed | ETA 9825s
+2026-03-30 16:58:42 [INFO]           1,600,000 rows | 1,085 rows/sec | 1474s elapsed | ETA 9584s
+2026-03-30 16:58:59 [INFO]           1,650,000 rows | 1,106 rows/sec | 1491s elapsed | ETA 9355s
+2026-03-30 16:59:16 [INFO]           1,700,000 rows | 1,127 rows/sec | 1508s elapsed | ETA 9138s
+2026-03-30 16:59:33 [INFO]           1,750,000 rows | 1,148 rows/sec | 1525s elapsed | ETA 8931s
+2026-03-30 16:59:50 [INFO]           1,800,000 rows | 1,167 rows/sec | 1542s elapsed | ETA 8737s
+2026-03-30 17:00:10 [INFO]           1,850,000 rows | 1,184 rows/sec | 1562s elapsed | ETA 8570s
+2026-03-30 17:00:26 [INFO]           1,900,000 rows | 1,204 rows/sec | 1578s elapsed | ETA 8388s
+2026-03-30 17:00:42 [INFO]           1,950,000 rows | 1,223 rows/sec | 1594s elapsed | ETA 8216s
+2026-03-30 17:00:58 [INFO]           2,000,000 rows | 1,242 rows/sec | 1610s elapsed | ETA 8052s
+2026-03-30 17:01:14 [INFO]           2,050,000 rows | 1,260 rows/sec | 1626s elapsed | ETA 7894s
+2026-03-30 17:01:31 [INFO]           2,100,000 rows | 1,278 rows/sec | 1643s elapsed | ETA 7745s
+2026-03-30 17:01:47 [INFO]           2,150,000 rows | 1,296 rows/sec | 1659s elapsed | ETA 7601s
+2026-03-30 17:02:03 [INFO]           2,200,000 rows | 1,314 rows/sec | 1675s elapsed | ETA 7460s
+2026-03-30 17:02:18 [INFO]           2,250,000 rows | 1,331 rows/sec | 1690s elapsed | ETA 7325s
+2026-03-30 17:02:35 [INFO]           2,300,000 rows | 1,347 rows/sec | 1708s elapsed | ETA 7202s
+2026-03-30 17:02:53 [INFO]           2,350,000 rows | 1,362 rows/sec | 1725s elapsed | ETA 7085s
+2026-03-30 17:03:10 [INFO]           2,400,000 rows | 1,377 rows/sec | 1743s elapsed | ETA 6971s
+2026-03-30 17:03:28 [INFO]           2,450,000 rows | 1,392 rows/sec | 1761s elapsed | ETA 6862s
+2026-03-30 17:03:43 [INFO]     2026-01-15 to 2026-01-29: 2,489,742 rows
+2026-03-30 17:03:43 [INFO]     Processing 2026-01-29 to 2026-02-12...
+2026-03-30 17:03:43 [DEBUG]   SQL: 
+        SELECT
+            h.TrxCode, d.[LineNo], CAST(h.TrxDate AS DATE), CAST(h.TripDate AS DATE),
+            h.TrxType, h.PaymentType, h.TRXStatus,
+            h.UserCode, u.Description,
+        ...
+2026-03-30 17:03:43 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-30 17:03:44 [INFO]   MSSQL query returned in 1.8s - starting load...
+2026-03-30 17:04:03 [INFO]              50,000 rows | 28 rows/sec | 1795s elapsed | ETA 428964s
+2026-03-30 17:05:02 [INFO]             100,000 rows | 54 rows/sec | 1854s elapsed | ETA 220653s
+2026-03-30 17:05:19 [INFO]             150,000 rows | 80 rows/sec | 1871s elapsed | ETA 147846s
+2026-03-30 17:05:38 [INFO]             200,000 rows | 106 rows/sec | 1890s elapsed | ETA 111492s
+2026-03-30 17:05:56 [INFO]             250,000 rows | 131 rows/sec | 1908s elapsed | ETA 89690s
+2026-03-30 17:06:15 [INFO]             300,000 rows | 156 rows/sec | 1927s elapsed | ETA 75151s
+2026-03-30 17:06:33 [INFO]             350,000 rows | 180 rows/sec | 1945s elapsed | ETA 64737s
+2026-03-30 17:06:51 [INFO]             400,000 rows | 204 rows/sec | 1963s elapsed | ETA 56923s
+2026-03-30 17:07:08 [INFO]             450,000 rows | 227 rows/sec | 1981s elapsed | ETA 50836s
+2026-03-30 17:07:26 [INFO]             500,000 rows | 250 rows/sec | 1998s elapsed | ETA 45949s
+2026-03-30 17:07:43 [INFO]             550,000 rows | 273 rows/sec | 2015s elapsed | ETA 41954s
+2026-03-30 17:08:01 [INFO]             600,000 rows | 295 rows/sec | 2033s elapsed | ETA 38633s
+2026-03-30 17:08:19 [INFO]             650,000 rows | 317 rows/sec | 2051s elapsed | ETA 35811s
+2026-03-30 17:08:37 [INFO]             700,000 rows | 338 rows/sec | 2069s elapsed | ETA 33404s
+2026-03-30 17:08:55 [INFO]             750,000 rows | 359 rows/sec | 2087s elapsed | ETA 31309s
+2026-03-30 17:09:18 [INFO]             800,000 rows | 379 rows/sec | 2110s elapsed | ETA 29540s
+2026-03-30 17:09:36 [INFO]             850,000 rows | 399 rows/sec | 2128s elapsed | ETA 27912s
+2026-03-30 17:09:54 [INFO]             900,000 rows | 419 rows/sec | 2146s elapsed | ETA 26469s
+2026-03-30 17:10:13 [INFO]             950,000 rows | 439 rows/sec | 2165s elapsed | ETA 25187s

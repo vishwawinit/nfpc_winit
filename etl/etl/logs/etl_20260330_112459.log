@@ -1,0 +1,41 @@
+2026-03-30 11:24:59 [INFO] ════════════════════════════════════════════════════════════
+2026-03-30 11:24:59 [INFO]   NFPC Reports ETL
+2026-03-30 11:24:59 [INFO]   Date range: 2026-01-01 to 2026-02-28
+2026-03-30 11:24:59 [INFO]   Mode: sequential
+2026-03-30 11:24:59 [INFO]   Log file:   D:\vishwa\nfpc_winit\etl\logs\etl_20260330_112459.log
+2026-03-30 11:24:59 [INFO] ════════════════════════════════════════════════════════════
+2026-03-30 11:24:59 [INFO] Connecting to MSSQL...
+2026-03-30 11:24:59 [INFO]   MSSQL connected
+2026-03-30 11:24:59 [INFO] Connecting to PostgreSQL...
+2026-03-30 11:25:01 [INFO]   PostgreSQL connected
+2026-03-30 11:25:01 [INFO] 
+──────────────────────────────────────────────────
+2026-03-30 11:25:01 [INFO]   [1/16] Dimensions (6 simple tables) [░░░░░░░░░░░░░░░░░░░░] 0%
+2026-03-30 11:25:01 [INFO]        Expected: ~2,000 rows
+2026-03-30 11:25:02 [INFO]     dim_sales_org: 28 rows
+2026-03-30 11:25:04 [INFO]     dim_route: 470 rows
+2026-03-30 11:25:05 [INFO]     dim_channel: 15 rows
+2026-03-30 11:25:06 [INFO]     dim_country: 2 rows
+2026-03-30 11:25:07 [INFO]     dim_region: 3 rows
+2026-03-30 11:25:08 [INFO]     dim_city: 10 rows
+2026-03-30 11:25:09 [INFO]     dim_route.has_active_assignment: 179 active routes
+2026-03-30 11:25:09 [INFO]   [OK] 528 rows in 7.9s (67 rows/sec)
+2026-03-30 11:25:09 [INFO]        Progress: 1/16 steps | Est. remaining: 2.5 min
+2026-03-30 11:25:09 [INFO] 
+──────────────────────────────────────────────────
+2026-03-30 11:25:09 [INFO]   [2/16] dim_user (flat with roles/details/depot/location) [█░░░░░░░░░░░░░░░░░░░] 6%
+2026-03-30 11:25:09 [INFO]        Expected: ~1,200 rows
+2026-03-30 11:25:13 [INFO]     dim_user: 1133 rows
+2026-03-30 11:25:13 [INFO]   [OK] 1,133 rows in 4.2s (272 rows/sec)
+2026-03-30 11:25:13 [INFO]        Progress: 2/16 steps | Est. remaining: 1.7 min
+2026-03-30 11:25:13 [INFO] 
+──────────────────────────────────────────────────
+2026-03-30 11:25:13 [INFO]   [3/16] dim_item (flat with groups + UOM) [██░░░░░░░░░░░░░░░░░░] 12%
+2026-03-30 11:25:13 [INFO]        Expected: ~10,000 rows
+2026-03-30 11:25:27 [INFO]     Deduped 9924 -> 4962 items
+2026-03-30 11:25:27 [INFO]   [OK] 4,962 rows in 14.0s (354 rows/sec)
+2026-03-30 11:25:27 [INFO]        Progress: 3/16 steps | Est. remaining: 2.0 min
+2026-03-30 11:25:27 [INFO] 
+──────────────────────────────────────────────────
+2026-03-30 11:25:27 [INFO]   [4/16] dim_customer [███░░░░░░░░░░░░░░░░░] 19%
+2026-03-30 11:25:27 [INFO]        Expected: ~120,000 rows

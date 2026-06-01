@@ -1,0 +1,52 @@
+2026-03-30 12:09:00 [INFO] ════════════════════════════════════════════════════════════
+2026-03-30 12:09:01 [INFO]   NFPC Reports ETL
+2026-03-30 12:09:01 [INFO]   Date range: 2026-01-01 to 2026-03-10
+2026-03-30 12:09:01 [INFO]   Mode: sequential
+2026-03-30 12:09:01 [INFO]   Log file:   D:\vishwa\nfpc_winit\etl\logs\etl_20260330_120900.log
+2026-03-30 12:09:01 [INFO] ════════════════════════════════════════════════════════════
+2026-03-30 12:09:01 [INFO] Connecting to MSSQL...
+2026-03-30 12:09:01 [INFO]   MSSQL connected
+2026-03-30 12:09:01 [INFO] Connecting to PostgreSQL...
+2026-03-30 12:09:03 [INFO]   PostgreSQL connected
+2026-03-30 12:09:03 [INFO] 
+──────────────────────────────────────────────────
+2026-03-30 12:09:03 [INFO]   [1/1] rpt_outstanding [░░░░░░░░░░░░░░░░░░░░] 0%
+2026-03-30 12:09:03 [INFO]        Expected: ~5,000,000 rows
+2026-03-30 12:09:14 [DEBUG]   SQL: 
+        SELECT mpi.MiddleWarePendingInvoiceId, mpi.TrxCode,
+            mpi.OrgCode, so.Description, mpi.ClientCode, c.Description, ch.Description,
+            mpi.TrxDate, mpi.DueDate,
+            m...
+2026-03-30 12:09:14 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-30 12:09:15 [INFO]   MSSQL query returned - starting load with Python date conversion...
+2026-03-30 12:09:26 [INFO]              50,000 rows | 2,134 rows/sec | 23s elapsed | ETA 2319s
+2026-03-30 12:09:34 [INFO]             100,000 rows | 3,139 rows/sec | 32s elapsed | ETA 1561s
+2026-03-30 12:09:50 [INFO]             150,000 rows | 3,155 rows/sec | 48s elapsed | ETA 1537s
+2026-03-30 12:10:11 [INFO]             200,000 rows | 2,903 rows/sec | 69s elapsed | ETA 1653s
+2026-03-30 12:10:27 [INFO]             250,000 rows | 2,945 rows/sec | 85s elapsed | ETA 1613s
+2026-03-30 12:10:45 [INFO]             300,000 rows | 2,924 rows/sec | 103s elapsed | ETA 1608s
+2026-03-30 12:10:59 [INFO]             350,000 rows | 3,003 rows/sec | 117s elapsed | ETA 1548s
+2026-03-30 12:11:15 [INFO]             400,000 rows | 3,009 rows/sec | 133s elapsed | ETA 1529s
+2026-03-30 12:11:29 [INFO]             450,000 rows | 3,076 rows/sec | 146s elapsed | ETA 1479s
+2026-03-30 12:11:45 [INFO]             500,000 rows | 3,086 rows/sec | 162s elapsed | ETA 1458s
+2026-03-30 12:12:02 [INFO]             550,000 rows | 3,062 rows/sec | 180s elapsed | ETA 1453s
+2026-03-30 12:12:17 [INFO]             600,000 rows | 3,081 rows/sec | 195s elapsed | ETA 1428s
+2026-03-30 12:12:34 [INFO]             650,000 rows | 3,075 rows/sec | 211s elapsed | ETA 1414s
+2026-03-30 12:12:50 [INFO]             700,000 rows | 3,078 rows/sec | 227s elapsed | ETA 1397s
+2026-03-30 12:13:05 [INFO]             750,000 rows | 3,098 rows/sec | 242s elapsed | ETA 1372s
+2026-03-30 12:13:20 [INFO]             800,000 rows | 3,107 rows/sec | 257s elapsed | ETA 1352s
+2026-03-30 12:13:35 [INFO]             850,000 rows | 3,121 rows/sec | 272s elapsed | ETA 1330s
+2026-03-30 12:13:51 [INFO]             900,000 rows | 3,120 rows/sec | 288s elapsed | ETA 1314s
+2026-03-30 12:13:52 [INFO]   [OK] 902,577 rows in 289.8s (3,114 rows/sec)
+2026-03-30 12:13:52 [INFO] 
+════════════════════════════════════════════════════════════
+2026-03-30 12:13:52 [INFO]   ETL COMPLETE
+2026-03-30 12:13:52 [INFO]   Total time:  4.9 minutes
+2026-03-30 12:13:52 [INFO]   Total rows:  902,577
+2026-03-30 12:13:52 [INFO]   Steps:       1/1
+2026-03-30 12:13:52 [INFO]   Log file:    D:\vishwa\nfpc_winit\etl\logs\etl_20260330_120900.log
+2026-03-30 12:13:52 [INFO] ════════════════════════════════════════════════════════════
+2026-03-30 12:13:52 [INFO] 
+  Step                                        Rows     Time         Rate Status
+2026-03-30 12:13:52 [INFO]   ─────────────────────────────────── ──────────── ──────── ──────────── ────────
+2026-03-30 12:13:52 [INFO]   rpt_outstanding                          902,577   289.8s      3,114/s  done

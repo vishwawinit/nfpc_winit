@@ -1,0 +1,77 @@
+2026-03-31 12:20:04 [INFO] ════════════════════════════════════════════════════════════
+2026-03-31 12:20:04 [INFO]   NFPC Reports ETL
+2026-03-31 12:20:04 [INFO]   Date range: 2026-02-01 to 2026-02-28
+2026-03-31 12:20:04 [INFO]   Mode: sequential
+2026-03-31 12:20:04 [INFO]   Log file:   D:\vishwa\nfpc_winit\etl\logs\etl_20260331_122004.log
+2026-03-31 12:20:04 [INFO] ════════════════════════════════════════════════════════════
+2026-03-31 12:20:04 [INFO] Connecting to MSSQL...
+2026-03-31 12:20:05 [INFO]   MSSQL connected
+2026-03-31 12:20:05 [INFO] Connecting to PostgreSQL...
+2026-03-31 12:20:07 [INFO]   PostgreSQL connected
+2026-03-31 12:20:07 [INFO] 
+──────────────────────────────────────────────────
+2026-03-31 12:20:07 [INFO]   [1/1] rpt_route_sales_by_item_customer [░░░░░░░░░░░░░░░░░░░░] 0%
+2026-03-31 12:20:07 [INFO]        Expected: ~2,500,000 rows
+2026-03-31 12:20:09 [DEBUG]   SQL: 
+        SELECT RouteCode, UserCode, CustomerCode, ItemCode,
+            CAST(Date AS DATE), TotalQty, TotalGRQty, TotalDamageQty, TotalExpiryQty,
+            TotalSales, TotalGRSales, TotalDamageSale...
+2026-03-31 12:20:09 [INFO]   Querying MSSQL (this may take a while for large tables)...
+2026-03-31 12:20:10 [INFO]   MSSQL query returned in 0.8s - starting load...
+2026-03-31 12:20:25 [INFO]              50,000 rows | 2,642 rows/sec | 19s elapsed | ETA 927s
+2026-03-31 12:20:47 [ERROR] FAILED on route_sales_by_item_customer: server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+
+2026-03-31 12:20:47 [DEBUG] Traceback:
+Traceback (most recent call last):
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1308, in main
+    loader_fn(ms_conn, pg_conn)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 1165, in load_route_sales_by_item_customer
+    total = extract_batch(ms_cur, query, (DATE_FROM, DATE_TO), pg_conn,
+                          'rpt_route_sales_by_item_customer', columns)
+  File "D:\vishwa\nfpc_winit\etl\extract.py", line 265, in extract_batch
+    execute_values(pg_cur, insert_sql, rows, template=template, page_size=batch_size)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vishwa\AppData\Local\Programs\Python\Python314\Lib\site-packages\psycopg2\extras.py", line 1299, in execute_values
+    cur.execute(b''.join(parts))
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+psycopg2.OperationalError: server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+
+2026-03-31 12:20:47 [ERROR]   FAILED: server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+
+2026-03-31 12:20:47 [INFO] Connecting to PostgreSQL...
+2026-03-31 12:20:49 [INFO]   PostgreSQL connected
+2026-03-31 12:20:49 [INFO]   Reconnecting to MSSQL...
+2026-03-31 12:20:49 [INFO] Connecting to MSSQL...
+2026-03-31 12:20:49 [INFO]   MSSQL connected
+2026-03-31 12:20:49 [INFO]   MSSQL reconnected
+2026-03-31 12:20:49 [INFO] 
+════════════════════════════════════════════════════════════
+2026-03-31 12:20:49 [INFO]   ETL COMPLETE
+2026-03-31 12:20:49 [INFO]   Total time:  0.7 minutes
+2026-03-31 12:20:49 [INFO]   Total rows:  0
+2026-03-31 12:20:49 [INFO]   Steps:       1/1
+2026-03-31 12:20:49 [INFO]   Log file:    D:\vishwa\nfpc_winit\etl\logs\etl_20260331_122004.log
+2026-03-31 12:20:49 [INFO] ════════════════════════════════════════════════════════════
+2026-03-31 12:20:49 [INFO] 
+  Step                                        Rows     Time         Rate Status
+2026-03-31 12:20:49 [INFO]   ─────────────────────────────────── ──────────── ──────── ──────────── ────────
+2026-03-31 12:20:49 [INFO]   rpt_route_sales_by_item_customer               0    40.7s          0/s  FAILED
+2026-03-31 12:20:49 [INFO] 
+  FAILED STEPS: ['route_sales_by_item_customer']
+2026-03-31 12:20:49 [INFO]   Re-run with: python etl/extract.py --table <name>
