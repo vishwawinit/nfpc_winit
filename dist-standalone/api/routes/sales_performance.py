@@ -40,32 +40,30 @@ def get_sales_performance(
 ):
     today = date.today()
 
-    # Get latest available data date
-    latest_row = query_one("SELECT MAX(date) AS latest FROM rpt_route_sales_by_item_customer")
-    latest_data = latest_row["latest"] if latest_row and latest_row["latest"] else today
-
-    # Determine period
-    # display_end = intended end date shown in label (not capped to latest data)
+    # Determine period — never cap to latest_data (returns go to 0 if data lags)
     if date_from and date_to:
         cur_start = date_from
         cur_end = date_to
         display_end = date_to
     elif day and month and year:
         requested = date(year, month, day)
-        cur_start = date(year, month, 1)  # MTD always starts from month start
-        display_end = requested           # label always shows the requested day
-        cur_end = min(requested, latest_data)
+        cur_start = date(year, month, 1)
+        display_end = requested
+        cur_end = requested
     elif month and year:
         cur_start = date(year, month, 1)
         _, month_last = _month_range(year, month)
-        # Use today's day-of-month applied to the selected month (not full month auto-expand)
         implied_day = min(today.day, month_last.day)
         display_end = date(year, month, implied_day)
-        cur_end = min(display_end, latest_data)
+        cur_end = display_end
     else:
         cur_start = date(today.year, today.month, 1)
         display_end = today
-        cur_end = min(today, latest_data)
+        cur_end = today
+
+    # latest_data: used only for current-week calculation in SKU table (not for capping date range)
+    latest_row = query_one("SELECT MAX(date) AS latest FROM rpt_route_sales_by_item_customer")
+    latest_data = latest_row["latest"] if latest_row and latest_row["latest"] else today
 
     # LMTD: same day range in previous month (Feb 1 → Feb <same day>)
     # (used for filtered ROS/SKU queries only)
@@ -99,7 +97,7 @@ def get_sales_performance(
         _, month_last   = _month_range(eff_year, eff_month)
         implied_day     = min(today.day, month_last.day)
         mtd_kpi_display = date(eff_year, eff_month, implied_day)
-        mtd_kpi_end     = min(mtd_kpi_display, latest_data)
+        mtd_kpi_end     = mtd_kpi_display
 
     if mtd_kpi_start.month == 1:
         lmtd_kpi_start = date(mtd_kpi_start.year - 1, 12, 1)
@@ -311,7 +309,7 @@ def get_sales_performance(
 
     # --- SKU counts from rpt_route_sales_by_item_customer ---
     rsic_base = {k: v for k, v in base_filters.items() if k in RSIC_KEYS}
-    full_month_end = min(_month_range(cur_start.year, cur_start.month)[1], latest_data)
+    full_month_end = _month_range(cur_start.year, cur_start.month)[1]
 
     # Find latest date with data (used for current-week calculation)
     latest_f = {**rsic_base, 'date_from': cur_start, 'date_to': cur_end}
