@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'; // useRef kept for prevDailySales
+import { useState, useEffect } from 'react';
 import { fetchDailySalesOverview } from '../api';
 import FilterPanel from '../components/FilterPanel';
 import Loading from '../components/Loading';
@@ -11,7 +11,6 @@ const aed = (v) => v != null ? `AED ${Number(v).toLocaleString('en-US', { maximu
 export default function DailySalesOverview() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const prevDailySales = useRef(null);
   const [filters, setFilters] = useState(() => {
     const now = new Date();
     const y = now.getFullYear();
@@ -34,14 +33,7 @@ export default function DailySalesOverview() {
   const sales = data?.sales_details || {};
   const items = data?.item_table || [];
 
-  const cashCredit = (sales.cash_sales ?? 0) + (sales.credit_sales ?? 0);
-  // Use backend daily_sales (matches dashboard) on first load or when it changes with filters.
-  // If daily_sales didn't change after a filter update, the source table didn't reflect the filter
-  // (e.g. channel/brand not supported by RSSI) — fall back to cash + credit.
-  const isFirstLoad = prevDailySales.current === null;
-  const dailySalesChanged = sales.daily_sales !== prevDailySales.current;
-  const displayDailySales = (isFirstLoad || dailySalesChanged) ? (sales.daily_sales ?? cashCredit) : cashCredit;
-  if (data) prevDailySales.current = sales.daily_sales ?? null;
+  const displayDailySales = (sales.cash_sales ?? 0) + (sales.credit_sales ?? 0);
 
   return (
     <div className="space-y-6 animate-fade-in">

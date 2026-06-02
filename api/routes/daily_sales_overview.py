@@ -170,7 +170,7 @@ def get_daily_sales_overview(
         cc_join = _rsic_org_join.replace("{alias}", "r") if _rsic_org_join else ""
         cash_credit_row = query_one(
             f"SELECT "
-            f"  COALESCE(SUM(CASE WHEN dc.customer_type = 'Cash' THEN r.total_sales ELSE 0 END), 0) AS cash_sales, "
+            f"  COALESCE(SUM(CASE WHEN COALESCE(dc.customer_type,'Cash') != 'Credit' THEN r.total_sales ELSE 0 END), 0) AS cash_sales, "
             f"  COALESCE(SUM(CASE WHEN dc.customer_type = 'Credit' THEN r.total_sales ELSE 0 END), 0) AS credit_sales "
             f"FROM rpt_route_sales_by_item_customer r "
             f"LEFT JOIN (SELECT DISTINCT ON (code) code, customer_type FROM dim_customer ORDER BY code) dc ON dc.code = r.customer_code "

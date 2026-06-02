@@ -171,11 +171,15 @@ def get_brand_wise_sales(
     f_rsic = {k: v for k, v in filters.items() if k in RSIC_KEYS}
     rw, rp = build_where(f_rsic, date_col='date', prefix='r')
 
-    # ── Total Sales KPI — summary table (matches dashboard) when no channel/brand/category ──
-    # Summary table has brand_code='NFPC' only, so can't break down by brand.
-    # Use it only for the KPI total; use RSIC for per-brand breakdown below.
+    # ── Brand Breakdown + KPI — same source table so table sum always matches KPI ──
+    # No channel/brand/category filter: use RSSI (DISTINCT ON, matches dashboard)
+    # Filter active: use RSIC (has customer-level detail for channel/brand/category)
     _use_rsic_total = bool(channel or brand or category)
+
     if not _use_rsic_total:
+        # RSSI path — DISTINCT ON inside subquery first, then JOIN dim_item for brand name
+        # DISTINCT ON (route_code, item_code, date) removes RSSI duplicates before aggregation
+        # LEFT JOIN dim_item maps item_code → brand (one row per item_code, no multiplication)
         f_rssi = {k: v for k, v in {
             'route': route, 'user_code': base.get('user_code'),
             'date_from': date_from, 'date_to': date_to,
@@ -188,37 +192,47 @@ def get_brand_wise_sales(
             org_ph_t = ','.join(['%s'] * len(orgs_t))
             org_cond_t = f" AND sales_org_code IN ({org_ph_t})"
             org_params_t = orgs_t
-        kpi_row = query_one(
-            f"SELECT COALESCE(SUM(total_sales), 0) AS total_sales "
-            f"FROM (SELECT DISTINCT ON (route_code, item_code, date) total_sales "
-            f"  FROM rpt_route_sales_summary_by_item WHERE {sw_t}{org_cond_t} "
-            f"  ORDER BY route_code, item_code, date) t",
+        brand_rows = query(
+            f"SELECT "
+            f"  COALESCE(NULLIF(TRIM(di.brand_code),''), 'No Brand') AS brand_code, "
+            f"  COALESCE(NULLIF(TRIM(di.brand_name),''), "
+            f"    NULLIF(TRIM(di.brand_code),''), 'No Brand') AS brand_name, "
+            f"  ROUND(SUM(t.total_sales)::numeric, 2) AS sales, "
+            f"  0 AS qty "
+            f"FROM ("
+            f"  SELECT DISTINCT ON (route_code, item_code, date) "
+            f"    item_code, total_sales "
+            f"  FROM rpt_route_sales_summary_by_item "
+            f"  WHERE {sw_t}{org_cond_t} "
+            f"  ORDER BY route_code, item_code, date"
+            f") t "
+            f"LEFT JOIN dim_item di ON di.code = t.item_code "
+            f"GROUP BY "
+            f"  COALESCE(NULLIF(TRIM(di.brand_code),''), 'No Brand'), "
+            f"  COALESCE(NULLIF(TRIM(di.brand_name),''), NULLIF(TRIM(di.brand_code),''), 'No Brand') "
+            f"ORDER BY sales DESC",
             sp_t + org_params_t
         )
-        kpi_total = float(kpi_row["total_sales"]) if kpi_row else 0
     else:
-        kpi_total = None  # will be set after brand_rows query
+        # RSIC path — supports channel/brand/category filters
+        brand_rows = query(
+            f"SELECT TRIM(di.brand_code) AS brand_code, "
+            f"  COALESCE(di.brand_name, TRIM(di.brand_code)) AS brand_name, "
+            f"  ROUND(COALESCE(SUM(r.total_sales), 0)::numeric, 2) AS sales, "
+            f"  ROUND(COALESCE(SUM(r.total_qty), 0)::numeric, 0) AS qty "
+            f"FROM rpt_route_sales_by_item_customer r "
+            f"JOIN dim_item di ON r.item_code = di.code{brand_di_cond} "
+            f"{_org_join}"
+            f"WHERE di.brand_code IS NOT NULL AND TRIM(di.brand_code) != '' "
+            f"  AND {rw}{channel_cond} "
+            f"GROUP BY TRIM(di.brand_code), COALESCE(di.brand_name, TRIM(di.brand_code)) "
+            f"ORDER BY sales DESC",
+            brand_di_params + _org_params + rp + channel_params
+        )
 
-    # ── Brand Breakdown — always RSIC + JOIN dim_item (per-brand detail) ──────
-    brand_rows = query(
-        f"SELECT TRIM(di.brand_code) AS brand_code, "
-        f"  COALESCE(di.brand_name, TRIM(di.brand_code)) AS brand_name, "
-        f"  ROUND(COALESCE(SUM(r.total_sales), 0)::numeric, 2) AS sales, "
-        f"  ROUND(COALESCE(SUM(r.total_qty), 0)::numeric, 0) AS qty "
-        f"FROM rpt_route_sales_by_item_customer r "
-        f"JOIN dim_item di ON r.item_code = di.code{brand_di_cond} "
-        f"{_org_join}"
-        f"WHERE di.brand_code IS NOT NULL AND TRIM(di.brand_code) != '' "
-        f"  AND {rw}{channel_cond} "
-        f"GROUP BY TRIM(di.brand_code), COALESCE(di.brand_name, TRIM(di.brand_code)) "
-        f"ORDER BY sales DESC",
-        brand_di_params + _org_params + rp + channel_params
-    )
-
-    rsic_total = sum(float(r["sales"]) for r in brand_rows)
-    if kpi_total is None:
-        kpi_total = rsic_total
-    total_sales = rsic_total  # used for pct_of_total so percentages add up to 100%
+    # KPI = sum of brand rows (always matches table and export)
+    kpi_total = sum(float(r["sales"]) for r in brand_rows)
+    total_sales = kpi_total  # used for pct_of_total so percentages add up to 100%
     brand_targets = _get_brand_targets(date_from, date_to, sales_org=sales_org,
                                        user_code=base.get('user_code'), route=route)
 

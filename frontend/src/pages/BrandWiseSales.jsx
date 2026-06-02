@@ -90,9 +90,9 @@ export default function BrandWiseSales() {
 
   const brandColumns = [
     { key: 'brand_name', label: 'Brand Name' },
-    { key: 'target', label: 'Target' },
-    { key: 'sales', label: 'Sales' },
-    { key: 'qty', label: 'Qty' },
+    { key: 'target', label: 'Target', format: 'currency2' },
+    { key: 'sales', label: 'Sales', format: 'currency2' },
+    { key: 'qty', label: 'Qty', format: 'number' },
     { key: 'achieved_pct', label: 'Achieved %' },
     { key: 'pct_of_total', label: '% of Total' },
   ];
