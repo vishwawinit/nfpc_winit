@@ -1410,30 +1410,108 @@ def load_route_sales_summary_by_item(ms_conn, pg_conn):
 
 
 def load_route_sales_by_item_customer(ms_conn, pg_conn):
-    """Load rpt_route_sales_by_item_customer from tblRouteSalesSummaryByItemCustomer."""
+    """Load rpt_route_sales_by_item_customer from raw transactions (tblTrxHeader + tblTrxDetail).
+    Source changed from tblRouteSalesSummaryByItemCustomer — that table has incorrect/missing
+    returns data. Raw transactions give correct returns breakdown by TD.Reason field.
+    Chunked in 14-day windows to avoid MSSQL tempdb overflow on large date ranges.
+    """
     progress.start_step('rpt_route_sales_by_item_customer', expected_rows=2_500_000)
-    pg_cur = pg_conn.cursor()
-    # Aggregate table — atomic delete+insert (no stable source PK for true upsert)
-    pg_cur.execute("DELETE FROM rpt_route_sales_by_item_customer WHERE date BETWEEN %s AND %s", (DATE_FROM, DATE_TO))
-    pg_conn.commit()
 
-    ms_cur = ms_conn.cursor()
     query = """
-        SELECT RouteCode, UserCode, CustomerCode, ItemCode,
-            CAST(Date AS DATE), TotalQty, TotalGRQty, TotalDamageQty, TotalExpiryQty,
-            TotalSales, TotalGRSales, TotalDamageSales, TotalExpirySales
-        FROM tblRouteSalesSummaryByItemCustomer WITH(NOLOCK)
-        WHERE Date >= %s AND Date < %s
+        SELECT
+            TH.RouteCode,
+            TH.UserCode,
+            TH.ClientCode AS CustomerCode,
+            TD.ItemCode,
+            CAST(TH.TrxDate AS DATE) AS TrxDate,
+
+            SUM(CASE WHEN TH.TrxType = 4 THEN -1 ELSE 1 END
+                * ABS(TD.QuantityBU)) AS TotalQty,
+
+            SUM(CASE WHEN TH.TrxType = 4 AND TD.Reason = 'Good return'
+                     THEN ABS(TD.QuantityBU) ELSE 0 END) AS TotalGRQty,
+
+            SUM(CASE WHEN TH.TrxType = 4 AND TD.Reason = 'Damaged'
+                     THEN ABS(TD.QuantityBU) ELSE 0 END) AS TotalDamageQty,
+
+            SUM(CASE WHEN TH.TrxType = 4 AND TD.Reason = 'Expiry'
+                     THEN ABS(TD.QuantityBU) ELSE 0 END) AS TotalExpiryQty,
+
+            SUM(CASE WHEN TH.TrxType = 4 THEN -1 ELSE 1 END *
+                ABS((TD.QuantityLevel1 * TD.PriceUsedLevel1)
+                    - ISNULL(TD.TotalDiscountAmount, 0)
+                    + ISNULL(TD.ExciseDutyTaxAmount, 0)
+                    + ISNULL(TD.Attribute17, 0))) AS TotalSales,
+
+            SUM(CASE WHEN TH.TrxType = 4 AND TD.Reason = 'Good return'
+                THEN ABS((TD.QuantityLevel1 * TD.PriceUsedLevel1)
+                    - ISNULL(TD.TotalDiscountAmount, 0)
+                    + ISNULL(TD.ExciseDutyTaxAmount, 0)
+                    + ISNULL(TD.Attribute17, 0))
+                ELSE 0 END) AS TotalGRSales,
+
+            SUM(CASE WHEN TH.TrxType = 4 AND TD.Reason = 'Damaged'
+                THEN ABS((TD.QuantityLevel1 * TD.PriceUsedLevel1)
+                    - ISNULL(TD.TotalDiscountAmount, 0)
+                    + ISNULL(TD.ExciseDutyTaxAmount, 0)
+                    + ISNULL(TD.Attribute17, 0))
+                ELSE 0 END) AS TotalDamageSales,
+
+            SUM(CASE WHEN TH.TrxType = 4 AND TD.Reason = 'Expiry'
+                THEN ABS((TD.QuantityLevel1 * TD.PriceUsedLevel1)
+                    - ISNULL(TD.TotalDiscountAmount, 0)
+                    + ISNULL(TD.ExciseDutyTaxAmount, 0)
+                    + ISNULL(TD.Attribute17, 0))
+                ELSE 0 END) AS TotalExpirySales
+
+        FROM tblTrxHeader TH WITH(NOLOCK)
+        INNER JOIN tblTrxDetail TD WITH(NOLOCK) ON TD.TrxCode = TH.TrxCode
+        WHERE TH.TRXStatus = 200
+          AND CAST(TH.TrxDate AS DATE) >= %s
+          AND CAST(TH.TrxDate AS DATE) < %s
+        GROUP BY
+            TH.ClientCode,
+            CAST(TH.TrxDate AS DATE),
+            TH.RouteCode,
+            TD.ItemCode,
+            TH.UserCode
     """
     columns = [
         'route_code', 'user_code', 'customer_code', 'item_code',
         'date', 'total_qty', 'total_gr_qty', 'total_damage_qty', 'total_expiry_qty',
         'total_sales', 'total_gr_sales', 'total_damage_sales', 'total_expiry_sales'
     ]
-    total = extract_batch(ms_cur, query, (DATE_FROM, DATE_TO), pg_conn,
-                          'rpt_route_sales_by_item_customer', columns)
-    pg_cur.close()
-    progress.finish_step(total)
+
+    # Process in 14-day chunks — raw TH+TD JOIN is large; chunking avoids MSSQL tempdb overflow
+    from datetime import datetime as _dt
+    start = _dt.strptime(DATE_FROM, '%Y-%m-%d').date()
+    end   = _dt.strptime(DATE_TO,   '%Y-%m-%d').date()
+    chunk_days = 14
+    grand_total = 0
+    chunk_start = start
+    while chunk_start < end:
+        chunk_end = min(chunk_start + timedelta(days=chunk_days), end)
+        log(f"    RSIC chunk {chunk_start} → {chunk_end}...")
+        # DELETE the chunk window then INSERT fresh (safe for aggregate table — no stable PK)
+        pg_cur = pg_conn.cursor()
+        pg_cur.execute(
+            "DELETE FROM rpt_route_sales_by_item_customer WHERE date >= %s AND date < %s",
+            (str(chunk_start), str(chunk_end))
+        )
+        pg_conn.commit()
+        pg_cur.close()
+
+        ms_cur = ms_conn.cursor()
+        chunk_total = extract_batch(
+            ms_cur, query, (str(chunk_start), str(chunk_end)),
+            pg_conn, 'rpt_route_sales_by_item_customer', columns
+        )
+        ms_cur.close()
+        grand_total += chunk_total
+        log(f"    {chunk_start} → {chunk_end}: {chunk_total:,} rows")
+        chunk_start = chunk_end
+
+    progress.finish_step(grand_total)
 
 
 def load_holidays(ms_conn, pg_conn):

@@ -197,8 +197,7 @@ def get_brand_wise_sales(
             f"  COALESCE(NULLIF(TRIM(di.brand_code),''), 'No Brand') AS brand_code, "
             f"  COALESCE(NULLIF(TRIM(di.brand_name),''), "
             f"    NULLIF(TRIM(di.brand_code),''), 'No Brand') AS brand_name, "
-            f"  ROUND(SUM(t.total_sales)::numeric, 2) AS sales, "
-            f"  0 AS qty "
+            f"  ROUND(SUM(t.total_sales)::numeric, 2) AS sales "
             f"FROM ("
             f"  SELECT DISTINCT ON (route_code, item_code, date) "
             f"    item_code, total_sales "
@@ -213,6 +212,20 @@ def get_brand_wise_sales(
             f"ORDER BY sales DESC",
             sp_t + org_params_t
         )
+
+        # Qty from RSIC (RSSI has no qty column) — separate query, brand-level aggregation
+        qty_rows = query(
+            f"SELECT "
+            f"  COALESCE(NULLIF(TRIM(di.brand_code),''), 'No Brand') AS brand_code, "
+            f"  ROUND(COALESCE(SUM(r.total_qty), 0)::numeric, 0) AS qty "
+            f"FROM rpt_route_sales_by_item_customer r "
+            f"LEFT JOIN dim_item di ON di.code = r.item_code "
+            f"{_org_join}"
+            f"WHERE {rw} "
+            f"GROUP BY COALESCE(NULLIF(TRIM(di.brand_code),''), 'No Brand')",
+            _org_params + rp
+        )
+        qty_map = {r['brand_code']: float(r['qty']) for r in qty_rows}
     else:
         # RSIC path — supports channel/brand/category filters
         brand_rows = query(
@@ -229,6 +242,7 @@ def get_brand_wise_sales(
             f"ORDER BY sales DESC",
             brand_di_params + _org_params + rp + channel_params
         )
+        qty_map = {r['brand_code']: float(r.get('qty') or 0) for r in brand_rows}
 
     # KPI = sum of brand rows (always matches table and export)
     kpi_total = sum(float(r["sales"]) for r in brand_rows)
@@ -241,12 +255,14 @@ def get_brand_wise_sales(
         sales = float(row["sales"])
         bcode = row["brand_code"]
         target = brand_targets.get(bcode, 0)
+        # RSSI path: qty from qty_map; RSIC path: qty inline in row
+        qty = qty_map.get(bcode, 0) if "qty" not in row else float(row.get("qty") or 0)
         brands.append({
             "brand_code": bcode,
             "brand_name": (row["brand_name"] or bcode).strip(),
             "target": round(target, 2),
             "sales": sales,
-            "qty": float(row.get("qty") or 0),
+            "qty": qty,
             "achieved_pct": round(sales / target * 100, 2) if target else 0,
             "pct_of_total": round(sales / total_sales * 100, 2) if total_sales else 0,
         })
@@ -282,34 +298,76 @@ def get_brand_items(
         return {"items": []}
     base, _org_join, _org_params = res
 
-    channel_cond, channel_params = _build_channel_cond(channel)
+    # Build RSSI filters (same as brand breakdown — so item sales sum = brand row sales)
+    f_rssi = {k: v for k, v in {
+        'route': route, 'user_code': base.get('user_code'),
+        'date_from': date_from, 'date_to': date_to,
+    }.items() if v is not None}
+    sw_t, sp_t = build_where(f_rssi, date_col='date')
+    org_cond_t = ""
+    org_params_t = []
+    if sales_org:
+        orgs_t = [v.strip() for v in sales_org.split(',') if v.strip()]
+        org_ph_t = ','.join(['%s'] * len(orgs_t))
+        org_cond_t = f" AND sales_org_code IN ({org_ph_t})"
+        org_params_t = orgs_t
 
-    # Category filter on dim_item ON clause
-    cat_di_cond = ""
-    cat_di_params = []
+    # Brand filter for RSSI — filter by item_code IN (SELECT from dim_item WHERE brand_code=...)
+    # because RSSI.brand_code stores org-level code, not item-level brand
+    if brand == 'No Brand':
+        brand_item_subq = "(SELECT code FROM dim_item WHERE brand_code IS NULL OR TRIM(brand_code) = '')"
+        brand_params_rssi = []
+    else:
+        brand_item_subq = "(SELECT code FROM dim_item WHERE TRIM(brand_code) = %s)"
+        brand_params_rssi = [brand]
+
+    # Category filter via subquery on dim_item
+    cat_cond = ""
+    cat_params = []
     if category:
         c_vals = [v.strip() for v in category.split(',') if v.strip()]
-        cat_di_cond = f" AND di.category_code IN ({','.join(['%s'] * len(c_vals))})"
-        cat_di_params = c_vals
+        cat_cond = f" AND item_code IN (SELECT code FROM dim_item WHERE category_code IN ({','.join(['%s']*len(c_vals))}))"
+        cat_params = c_vals
 
-    filters = {**base, 'date_from': date_from, 'date_to': date_to}
-    filters = {k: v for k, v in filters.items() if v is not None}
-    f_rsic = {k: v for k, v in filters.items() if k in RSIC_KEYS}
-    rw, rp = build_where(f_rsic, date_col='date', prefix='r')
-
-    items = query(
-        f"SELECT r.item_code, COALESCE(di.name, r.item_code) AS item_name, "
-        f"  di.alt_name, "
-        f"  ROUND(COALESCE(SUM(r.total_sales), 0)::numeric, 2) AS sales, "
-        f"  ROUND(COALESCE(SUM(r.total_qty), 0)::numeric, 0) AS qty "
-        f"FROM rpt_route_sales_by_item_customer r "
-        f"JOIN dim_item di ON r.item_code = di.code AND TRIM(di.brand_code) = %s{cat_di_cond} "
-        f"{_org_join}"
-        f"WHERE {rw}{channel_cond} "
-        f"GROUP BY r.item_code, COALESCE(di.name, r.item_code), di.alt_name "
+    # Sales from RSSI (DISTINCT ON — same source as brand breakdown KPI)
+    items_sales = query(
+        f"SELECT t.item_code, "
+        f"  COALESCE(di.name, t.item_code) AS item_name, di.alt_name, "
+        f"  ROUND(SUM(t.total_sales)::numeric, 2) AS sales "
+        f"FROM ("
+        f"  SELECT DISTINCT ON (route_code, item_code, date) item_code, total_sales "
+        f"  FROM rpt_route_sales_summary_by_item "
+        f"  WHERE {sw_t}{org_cond_t} AND item_code IN {brand_item_subq}{cat_cond} "
+        f"  ORDER BY route_code, item_code, date"
+        f") t "
+        f"LEFT JOIN dim_item di ON di.code = t.item_code "
+        f"GROUP BY t.item_code, COALESCE(di.name, t.item_code), di.alt_name "
         f"ORDER BY sales DESC",
-        [brand] + cat_di_params + _org_params + rp + channel_params
+        sp_t + org_params_t + brand_params_rssi + cat_params
     )
+
+    # Qty from RSIC (RSSI has no qty column)
+    f_rsic = {k: v for k, v in {
+        'route': route, 'user_code': base.get('user_code'),
+        'date_from': date_from, 'date_to': date_to,
+    }.items() if v is not None}
+    rw, rp = build_where(f_rsic, date_col='date', prefix='r')
+    if brand == 'No Brand':
+        brand_join_cond = " AND (di2.brand_code IS NULL OR TRIM(di2.brand_code) = '')"
+        brand_qty_params = []
+    else:
+        brand_join_cond = " AND TRIM(di2.brand_code) = %s"
+        brand_qty_params = [brand]
+    qty_rows = query(
+        f"SELECT r.item_code, ROUND(COALESCE(SUM(r.total_qty), 0)::numeric, 0) AS qty "
+        f"FROM rpt_route_sales_by_item_customer r "
+        f"JOIN dim_item di2 ON di2.code = r.item_code{brand_join_cond} "
+        f"{_org_join}"
+        f"WHERE {rw} "
+        f"GROUP BY r.item_code",
+        brand_qty_params + _org_params + rp
+    )
+    qty_map = {r['item_code']: float(r['qty']) for r in qty_rows}
 
     return {
         "items": [
@@ -318,10 +376,10 @@ def get_brand_items(
                 "item_name": row["item_name"],
                 "alt_name": row["alt_name"],
                 "sales": float(row["sales"]),
-                "qty": float(row["qty"]),
+                "qty": qty_map.get(row["item_code"], 0),
                 "target": 0,
                 "achieved_pct": 0,
             }
-            for row in items
+            for row in items_sales
         ]
     }

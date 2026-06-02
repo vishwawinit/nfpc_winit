@@ -88,6 +88,16 @@ export default function BrandWiseSales() {
   const summary = data?.summary || {};
   const brands = data?.brands || [];
 
+  const totalRow = brands.length > 0 ? {
+    brand_name: 'Total',
+    target: brands.reduce((s, b) => s + (b.target || 0), 0),
+    sales: brands.reduce((s, b) => s + (b.sales || 0), 0),
+    qty: brands.reduce((s, b) => s + (b.qty || 0), 0),
+    achieved_pct: summary.brand_achieved_pct ?? 0,
+    pct_of_total: 100,
+    _isTotal: true,
+  } : null;
+
   const brandColumns = [
     { key: 'brand_name', label: 'Brand Name' },
     { key: 'target', label: 'Target', format: 'currency2' },
@@ -136,7 +146,7 @@ export default function BrandWiseSales() {
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Brand Breakdown</h2>
               <button
-                onClick={() => exportToExcel(brands, brandColumns, 'brand-wise-sales')}
+                onClick={() => exportToExcel(totalRow ? [...brands, totalRow] : brands, brandColumns, 'brand-wise-sales')}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
               >
                 <Download className="w-3.5 h-3.5" /> Export Excel
@@ -186,6 +196,25 @@ export default function BrandWiseSales() {
                       </td>
                     </tr>
                   ))}
+                  {totalRow && (
+                    <tr className="border-t-2 border-gray-200 bg-gray-50 font-semibold">
+                      <td className="px-6 py-3.5 text-gray-900">Total</td>
+                      <td className="px-6 py-3.5 text-right text-gray-900 tabular-nums">{aed(totalRow.target)}</td>
+                      <td className="px-6 py-3.5 text-right text-gray-900 tabular-nums">{aed(totalRow.sales)}</td>
+                      <td className="px-6 py-3.5 text-right text-gray-900 tabular-nums">{totalRow.qty?.toLocaleString() ?? '-'}</td>
+                      <td className="px-6 py-3.5 text-right">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                          totalRow.achieved_pct >= 100 ? 'bg-emerald-50 text-emerald-700' :
+                          totalRow.achieved_pct >= 80 ? 'bg-amber-50 text-amber-700' :
+                          'bg-rose-50 text-rose-700'
+                        }`}>
+                          {`${Number(totalRow.achieved_pct).toFixed(1)}%`}
+                        </span>
+                      </td>
+                      <td className="px-6 py-3.5 text-right text-gray-900 tabular-nums">100.0%</td>
+                      <td className="px-6 py-3.5"></td>
+                    </tr>
+                  )}
                   {brands.length === 0 && (
                     <tr><td colSpan={8} className="px-6 py-12 text-center text-gray-400">No brands found</td></tr>
                   )}

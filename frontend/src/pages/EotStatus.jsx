@@ -11,13 +11,13 @@ import {
 const aed = (v) => v != null ? `AED ${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-';
 const fmtDateTime = (dt) => {
   if (!dt) return '-';
-  const [date, time] = dt.split(' ');
-  if (!time) return date;
-  return `${date} ${time.substring(0, 5)}`;
+  const m = String(dt).match(/(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})/);
+  return m ? `${m[1]} ${m[2]}` : String(dt);
 };
 const fmtDateTimeFull = (dt) => {
   if (!dt) return '-';
-  return dt.replace(/\.\d+$/, '');
+  const m = String(dt).match(/(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2})/);
+  return m ? `${m[1]} ${m[2]}` : String(dt);
 };
 
 const PAGE_SIZE = 20;
