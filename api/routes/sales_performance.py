@@ -218,7 +218,8 @@ def get_sales_performance(
                 f"  COALESCE(SUM(total_wastage),0) AS total_wastage "
                 f"FROM (SELECT DISTINCT ON (route_code, item_code, date) "
                 f"  total_sales, total_wastage "
-                f"  FROM rpt_route_sales_summary_by_item WHERE {sw}) t",
+                f"  FROM rpt_route_sales_summary_by_item WHERE {sw} "
+                f"  ORDER BY route_code, item_code, date) t",
                 sp
             )
             sales_val = float(row["sales"]) if row else 0
@@ -414,11 +415,14 @@ def get_sales_performance(
         rssi_cm = query(
             f"SELECT item_code, ROUND(SUM(total_sales)::numeric, 2) AS cm_sales "
             f"FROM (SELECT DISTINCT ON (route_code, item_code, date) item_code, total_sales "
-            f"  FROM rpt_route_sales_summary_by_item WHERE {sw_cm}) t "
+            f"  FROM rpt_route_sales_summary_by_item WHERE {sw_cm} "
+            f"  ORDER BY route_code, item_code, date) t "
             f"GROUP BY item_code",
             sp_cm
         )
         rssi_cm_map = {r['item_code']: float(r['cm_sales'] or 0) for r in rssi_cm}
+        # Convert rows to plain dicts to ensure mutation works regardless of psycopg2 row type
+        sku_table = [dict(row) for row in sku_table]
         for row in sku_table:
             row['current_month_sales'] = rssi_cm_map.get(row['item_code'], 0)
 

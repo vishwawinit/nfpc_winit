@@ -62,8 +62,13 @@ export default function DataTable({ columns, data, onRowClick, exportName, pageS
     const rows = filtered.map(row => columns.filter(c => c.key !== '_view' && c.key !== '_action').map(c => fmtExport(row[c.key], c)).join(','));
     const blob = new Blob(['\uFEFF' + header + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `${exportName || 'export'}.csv`;
-    a.click(); URL.revokeObjectURL(url);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${exportName || 'export'}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 150);
   };
 
   const fmt = (val, col) => {
