@@ -84,14 +84,41 @@ def get_endorsement(
         rsic_p + vp
     )
 
+    # Get RSSI total per (route, date) — authoritative total matching Dashboard
+    RSSI_KEYS = {'date_from', 'date_to', 'route', 'user_code', 'sales_org'}
+    f_rssi = {k: v for k, v in filters.items() if k in RSSI_KEYS}
+    sw, sp = build_where(f_rssi, date_col='date')
+    org_cond, org_params = "", []
+    if filters.get('sales_org') and not filters.get('route'):
+        orgs = [v.strip() for v in filters['sales_org'].split(',') if v.strip()]
+        org_cond = f" AND sales_org_code IN ({','.join(['%s']*len(orgs))})"
+        org_params = orgs
+    rssi_rows = query(
+        f"SELECT date, route_code, ROUND(SUM(total_sales)::numeric, 2) AS total_sales "
+        f"FROM (SELECT DISTINCT ON (route_code, item_code, date) "
+        f"  date, route_code, total_sales "
+        f"  FROM rpt_route_sales_summary_by_item WHERE {sw}{org_cond} "
+        f"  ORDER BY route_code, item_code, date) t "
+        f"GROUP BY date, route_code",
+        sp + org_params
+    )
+    rssi_map = {(str(r['date']), r['route_code']): float(r['total_sales']) for r in rssi_rows}
+
     # Build customer detail list (dedup sales on repeated visits to same customer+date)
     customer_list = []
     seen = set()
+    rsic_totals = {}  # (date, route_code) -> RSIC sum for scaling
+    raw_rows = []
+
     for c in customers:
         cust_key = (c["customer_code"], str(c["date"]))
         first_visit = cust_key not in seen
         seen.add(cust_key)
-        customer_list.append({
+        raw_val = float(c["total_value"]) if first_visit else 0
+        raw_ret = float(c["total_returns"]) if first_visit else 0
+        dk = (str(c["date"]), c["route_code"])
+        rsic_totals[dk] = rsic_totals.get(dk, 0) + raw_val
+        raw_rows.append({
             "date":           str(c["date"]) if c["date"] else None,
             "salesman_code":  c["user_code"],
             "salesman_name":  c["user_name"],
@@ -102,11 +129,29 @@ def get_endorsement(
             "is_planned":     c["is_planned"],
             "check_in":       str(c["arrival_time"])[11:19] if c["arrival_time"] else None,
             "check_out":      str(c["out_time"])[11:19] if c["out_time"] else None,
-            "is_productive":  float(c["total_value"]) > 0,
-            "total_value":    float(c["total_value"]) if first_visit else 0,
-            "total_returns":  float(c["total_returns"]) if first_visit else 0,
+            "raw_value":      raw_val,
+            "raw_returns":    raw_ret,
             "latitude":       float(c["latitude"]) if c["latitude"] else None,
             "longitude":      float(c["longitude"]) if c["longitude"] else None,
+        })
+
+    # Scale each customer's sales proportionally to RSSI total (matches Dashboard)
+    for row in raw_rows:
+        dk = (row["date"], row["route_code"])
+        rsic_sum = rsic_totals.get(dk, 0)
+        rssi_total = rssi_map.get(dk, 0)
+        if rsic_sum > 0 and rssi_total > 0:
+            scale = rssi_total / rsic_sum
+            scaled_val = round(row["raw_value"] * scale, 2)
+            scaled_ret = round(row["raw_returns"] * scale, 2)
+        else:
+            scaled_val = row["raw_value"]
+            scaled_ret = row["raw_returns"]
+        customer_list.append({
+            **{k: v for k, v in row.items() if k not in ("raw_value", "raw_returns")},
+            "is_productive":  scaled_val > 0,
+            "total_value":    scaled_val,
+            "total_returns":  scaled_ret,
         })
 
     # --- KPI totals from rpt_coverage_summary ---
