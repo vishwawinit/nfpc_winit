@@ -27,7 +27,8 @@ def _empty_response():
         "call_summary": {"total_calls": 0, "total_invoices": 0},
         "sales_details": {
             "prod_minutes": 0, "cash_sales": 0, "credit_sales": 0,
-            "daily_sales": 0, "discount": 0, "invoice_short": 0, "total_cash_due": 0,
+            "daily_sales": 0, "total_returns": 0, "discount": 0,
+            "invoice_short": 0, "total_cash_due": 0,
         },
         "item_table": [],
     }
@@ -145,12 +146,6 @@ def get_daily_sales_overview(
     rw, rp = build_where(f_rsic, date_col='date', prefix='r')
     org_join = _rsic_org_join.replace("{alias}", "r") if _rsic_org_join else ""
 
-    # --- Cash/Credit/Discount from rpt_sales_detail ---
-    # Deduplicate by trx_code (net_amount is header-level, repeated per detail line)
-    # Only count invoices that have matching entries in rpt_route_sales_by_item_customer (TRXStatus=200)
-    f_sd = {k: v for k, v in filters.items() if k in SALES_DETAIL_KEYS}
-    sw, sp = build_where(f_sd, date_col='trx_date')
-
     # Additional area/route_type filters
     extra_conds = []
     extra_params = []
@@ -162,29 +157,32 @@ def get_daily_sales_overview(
         extra_params.append(route_type)
     extra_where = (" AND " + " AND ".join(extra_conds)) if extra_conds else ""
 
-    # Cash/Credit split: from rpt_route_sales_by_item_customer + dim_customer.customer_type
-    # Matches MSSQL SP: SUM(CASE WHEN CD.CustomerType='Cash' THEN TotalSales ELSE 0 END)
+    f_sd = {k: v for k, v in filters.items() if k in SALES_DETAIL_KEYS}
+    sw, sp = build_where(f_sd, date_col='trx_date')
+
+    # --- Step 1: RSIC cash/credit proportion (dim_customer.customer_type) ---
+    # Used only to derive the cash vs credit split ratio — NOT the totals.
     try:
         f_rsic_cc = {k: v for k, v in filters.items() if k in RSIC_KEYS}
         ccw, ccp = build_where(f_rsic_cc, date_col='date', prefix='r')
         cc_join = _rsic_org_join.replace("{alias}", "r") if _rsic_org_join else ""
-        cash_credit_row = query_one(
+        cc_row = query_one(
             f"SELECT "
-            f"  COALESCE(SUM(CASE WHEN COALESCE(dc.customer_type,'Cash') != 'Credit' THEN r.total_sales ELSE 0 END), 0) AS cash_sales, "
-            f"  COALESCE(SUM(CASE WHEN dc.customer_type = 'Credit' THEN r.total_sales ELSE 0 END), 0) AS credit_sales "
+            f"  COALESCE(SUM(CASE WHEN COALESCE(dc.customer_type,'Cash') != 'Credit' THEN r.total_sales ELSE 0 END), 0) AS rsic_cash, "
+            f"  COALESCE(SUM(CASE WHEN dc.customer_type = 'Credit' THEN r.total_sales ELSE 0 END), 0) AS rsic_credit "
             f"FROM rpt_route_sales_by_item_customer r "
             f"LEFT JOIN (SELECT DISTINCT ON (code) code, customer_type FROM dim_customer ORDER BY code) dc ON dc.code = r.customer_code "
             f"{cc_join}{_brand_dim_join}"
             f"WHERE {ccw}{channel_cond}",
             _rsic_org_params + _brand_dim_join_params + ccp + channel_params
         )
-        cash_sales = float(cash_credit_row["cash_sales"]) if cash_credit_row else 0
-        credit_sales = float(cash_credit_row["credit_sales"]) if cash_credit_row else 0
+        rsic_cash = float(cc_row["rsic_cash"]) if cc_row else 0
+        rsic_credit = float(cc_row["rsic_credit"]) if cc_row else 0
     except Exception:
-        cash_sales = 0
-        credit_sales = 0
+        rsic_cash = 0
+        rsic_credit = 0
 
-    # Total Returns: GR + Damage + Expiry from RSIC (separate query to avoid cache collision)
+    # --- Step 2: Total Returns from RSIC (RSSI has no returns columns) ---
     try:
         f_rsic_ret = {k: v for k, v in filters.items() if k in RSIC_KEYS}
         retw, retp = build_where(f_rsic_ret, date_col='date', prefix='r')
@@ -196,14 +194,12 @@ def get_daily_sales_overview(
             f"WHERE {retw}{channel_cond}",
             _rsic_org_params + _brand_dim_join_params + retp + channel_params
         )
-        rsic_total_returns = float(ret_row["total_returns"]) if ret_row else 0
+        total_returns = float(ret_row["total_returns"]) if ret_row else 0
     except Exception:
-        rsic_total_returns = 0
+        total_returns = 0
 
-    # Daily Sales: exact same logic as dashboard total_sales KPI
-    # Primary: rpt_route_sales_summary_by_item DISTINCT ON (route_code, item_code, date)
-    # Fallback: rpt_invoice_totals when RSSI has no data (e.g. Feb — data gap in RSSI)
-    # With channel/brand/category filter: use RSIC (cash+credit) since RSSI lacks those columns
+    # --- Step 3: Daily Sales total from RSSI (same source as Dashboard & Sales Performance KPI) ---
+    # When channel/brand/category active: RSSI lacks those columns → fall back to RSIC sum.
     _use_rsic_total = bool(channel or sub_channel or brand or category)
     if not _use_rsic_total:
         try:
@@ -227,7 +223,6 @@ def get_daily_sales_overview(
                 sp_s + org_params_s
             )
             total_sales = float(rssi_row["total_sales"]) if rssi_row else 0
-            # Fallback to invoice_totals when RSSI has no data (matches dashboard)
             if total_sales == 0:
                 f_it = {k: v for k, v in {
                     'route': route, 'user_code': user_code, 'sales_org': sales_org,
@@ -242,11 +237,22 @@ def get_daily_sales_overview(
                 if it_row:
                     total_sales = max(0.0, float(it_row["total_sales"]) - float(it_row["total_returns"]))
         except Exception:
-            total_sales = cash_sales + credit_sales
+            total_sales = rsic_cash + rsic_credit
     else:
-        total_sales = cash_sales + credit_sales
-    # Always use RSIC for returns — RSSI.total_wastage is not populated
-    total_returns = rsic_total_returns
+        total_sales = rsic_cash + rsic_credit
+
+    # --- Step 4: Derive cash/credit from RSSI total using RSIC proportion ---
+    # All three KPIs now share the same RSSI base: cash + credit = daily_sales always.
+    rsic_sum = rsic_cash + rsic_credit
+    if rsic_sum > 0 and total_sales > 0:
+        cash_sales = round(total_sales * rsic_cash / rsic_sum, 2)
+        credit_sales = round(total_sales - cash_sales, 2)
+    elif total_sales > 0:
+        cash_sales = round(total_sales, 2)
+        credit_sales = 0.0
+    else:
+        cash_sales = 0.0
+        credit_sales = 0.0
 
     # Discount: SUM of line-level discounts (dedup by trx_code+line_no to avoid ETL duplicates)
     # SUM of all detail discounts per trx = header TotalDiscountAmount
@@ -363,11 +369,12 @@ def get_daily_sales_overview(
         "total_cash_due": round(total_cash_due, 2),
     }
 
-    # --- Item Table from rpt_route_sales_by_item_customer + dim_item ---
-    # Matches: SP_SalesOverVieweReport_V1
-    # Returns item-level: ItemCode, ItemName, GrossSales (selected period),
-    #   MTD_GrossSales, MTD_Wastage (GR+Damage+Expiry)
-    # MTD = full month (matches MSSQL SP: MONTH(Date)=M AND YEAR(Date)=Y)
+    # --- Item Table ---
+    # gross_sales / mtd_gross_sales: RSSI DISTINCT ON — same source as Daily Sales KPI
+    #   so summing item gross_sales == Daily Sales KPI total.
+    # mtd_wastage: RSIC only (RSSI has no returns/damage/expiry columns).
+    # When channel/brand/category filter active: RSSI can't filter those columns,
+    #   so fall back to RSIC for all sales columns (mirrors daily_sales fallback).
     ref_date = date_from or date_to or date.today()
     mtd_start = date(ref_date.year, ref_date.month, 1)
     if ref_date.month == 12:
@@ -375,38 +382,131 @@ def get_daily_sales_overview(
     else:
         mtd_end = date(ref_date.year, ref_date.month + 1, 1) - timedelta(days=1)
 
-    f_rsic2 = {k: v for k, v in filters.items() if k in RSIC_KEYS}
-    rw2, rp2 = build_where(f_rsic2, date_col='date', prefix='r')
-    f_mtd = {k: v for k, v in {**{k2: v2 for k2, v2 in filters.items() if k2 not in ('date_from', 'date_to')},
-              'date_from': mtd_start, 'date_to': mtd_end}.items() if k in RSIC_KEYS}
-    mw, mp = build_where(f_mtd, date_col='date', prefix='r')
-
     try:
-        _item_join_type = "JOIN" if _brand_on_di_cond else "LEFT JOIN"
-        item_table = query(
-            f"SELECT "
-            f"  r.item_code, "
-            f"  COALESCE(di.name, r.item_code) AS item_name, "
-            f"  TRIM(COALESCE(di.brand_code, '')) AS brand_code, "
-            f"  COALESCE(di.brand_name, di.brand_code, '') AS brand_name, "
-            f"  ROUND(SUM(CASE WHEN r.date BETWEEN %s AND %s THEN r.total_sales ELSE 0 END)::numeric, 2) AS gross_sales, "
-            f"  0 AS target_sales, "
-            f"  0 AS variance, "
-            f"  ROUND(SUM(CASE WHEN r.date BETWEEN %s AND %s THEN r.total_sales ELSE 0 END)::numeric, 2) AS mtd_gross_sales, "
-            f"  0 AS mtd_target_sales, "
-            f"  ROUND(SUM(CASE WHEN r.date BETWEEN %s AND %s "
-            f"    THEN COALESCE(r.total_gr_sales,0) + COALESCE(r.total_damage_sales,0) + COALESCE(r.total_expiry_sales,0) "
-            f"    ELSE 0 END)::numeric, 2) AS mtd_wastage "
-            f"FROM rpt_route_sales_by_item_customer r "
-            f"{_item_join_type} dim_item di ON r.item_code = di.code{_brand_on_di_cond} "
-            f"{org_join}"
-            f"WHERE ({rw2} OR {mw}){channel_cond} "
-            f"GROUP BY r.item_code, COALESCE(di.name, r.item_code), "
-            f"  TRIM(COALESCE(di.brand_code, '')), COALESCE(di.brand_name, di.brand_code, '') "
-            f"ORDER BY gross_sales DESC",
-            [date_from, date_to, mtd_start, mtd_end, mtd_start, mtd_end]
-            + _brand_di_params + _rsic_org_params + rp2 + mp + channel_params
-        )
+        if not _use_rsic_total:
+            # --- RSSI path: item sales from same source as KPI ---
+            f_rssi_p = {k: v for k, v in {
+                'route': route, 'user_code': user_code,
+                'date_from': date_from, 'date_to': date_to,
+            }.items() if v is not None}
+            sw_p, sp_p = build_where(f_rssi_p, date_col='date')
+
+            f_rssi_m = {k: v for k, v in {
+                'route': route, 'user_code': user_code,
+                'date_from': mtd_start, 'date_to': mtd_end,
+            }.items() if v is not None}
+            sw_m, sp_m = build_where(f_rssi_m, date_col='date')
+
+            org_cond_it = ""
+            org_params_it = []
+            if sales_org:
+                orgs_it = [v.strip() for v in sales_org.split(',') if v.strip()]
+                org_ph_it = ','.join(['%s'] * len(orgs_it))
+                org_cond_it = f" AND sales_org_code IN ({org_ph_it})"
+                org_params_it = orgs_it
+
+            period_rows = query(
+                f"SELECT item_code, ROUND(SUM(total_sales)::numeric, 2) AS gross_sales "
+                f"FROM (SELECT DISTINCT ON (route_code, item_code, date) item_code, total_sales "
+                f"  FROM rpt_route_sales_summary_by_item WHERE {sw_p}{org_cond_it} "
+                f"  ORDER BY route_code, item_code, date) t "
+                f"GROUP BY item_code",
+                sp_p + org_params_it
+            )
+            mtd_rows = query(
+                f"SELECT item_code, ROUND(SUM(total_sales)::numeric, 2) AS mtd_gross_sales "
+                f"FROM (SELECT DISTINCT ON (route_code, item_code, date) item_code, total_sales "
+                f"  FROM rpt_route_sales_summary_by_item WHERE {sw_m}{org_cond_it} "
+                f"  ORDER BY route_code, item_code, date) t "
+                f"GROUP BY item_code",
+                sp_m + org_params_it
+            )
+
+            # MTD wastage from RSIC (RSSI has no returns data)
+            f_rsic_wst = {k: v for k, v in {
+                'route': route, 'user_code': user_code,
+                'date_from': mtd_start, 'date_to': mtd_end,
+            }.items() if v is not None}
+            ww, wp = build_where(f_rsic_wst, date_col='date', prefix='r')
+            wst_org_join = _rsic_org_join.replace("{alias}", "r") if _rsic_org_join else ""
+            wastage_rows = query(
+                f"SELECT r.item_code, "
+                f"  ROUND(SUM(COALESCE(r.total_gr_sales,0) + COALESCE(r.total_damage_sales,0)"
+                f"    + COALESCE(r.total_expiry_sales,0))::numeric, 2) AS mtd_wastage "
+                f"FROM rpt_route_sales_by_item_customer r {wst_org_join}"
+                f"WHERE {ww} GROUP BY r.item_code",
+                _rsic_org_params + wp
+            )
+
+            period_map = {r['item_code']: float(r['gross_sales'] or 0) for r in period_rows}
+            mtd_map = {r['item_code']: float(r['mtd_gross_sales'] or 0) for r in mtd_rows}
+            wastage_map = {r['item_code']: float(r['mtd_wastage'] or 0) for r in wastage_rows}
+
+            all_codes = sorted(
+                set(period_map.keys()) | set(mtd_map.keys()),
+                key=lambda c: -period_map.get(c, 0)
+            )
+
+            if all_codes:
+                dim_rows = query(
+                    f"SELECT code, COALESCE(name, code) AS item_name, "
+                    f"  TRIM(COALESCE(brand_name, brand_code, '')) AS brand_name "
+                    f"FROM dim_item WHERE code IN ({','.join(['%s'] * len(all_codes))})",
+                    all_codes
+                )
+                dim_map = {r['code']: r for r in dim_rows}
+            else:
+                dim_map = {}
+
+            item_table = []
+            for code in all_codes:
+                gross = period_map.get(code, 0)
+                mtd_gross = mtd_map.get(code, 0)
+                wastage = wastage_map.get(code, 0)
+                if gross == 0 and mtd_gross == 0 and wastage == 0:
+                    continue
+                di = dim_map.get(code, {})
+                item_table.append({
+                    'item_code': code,
+                    'item_name': di.get('item_name') or code,
+                    'brand_name': di.get('brand_name', ''),
+                    'gross_sales': round(gross, 2),
+                    'mtd_gross_sales': round(mtd_gross, 2),
+                    'mtd_wastage': round(wastage, 2),
+                })
+
+        else:
+            # --- RSIC path: channel/brand/category filter active ---
+            # RSSI cannot filter on these dimension columns so we use RSIC,
+            # mirroring how daily_sales falls back when these filters are set.
+            f_rsic2 = {k: v for k, v in filters.items() if k in RSIC_KEYS}
+            rw2, rp2 = build_where(f_rsic2, date_col='date', prefix='r')
+            f_rsic_mtd = {k: v for k, v in {
+                **{k2: v2 for k2, v2 in filters.items() if k2 not in ('date_from', 'date_to') and k2 in RSIC_KEYS},
+                'date_from': mtd_start, 'date_to': mtd_end,
+            }.items() if v is not None}
+            mw2, mp2 = build_where(f_rsic_mtd, date_col='date', prefix='r')
+            _item_join_type = "JOIN" if _brand_on_di_cond else "LEFT JOIN"
+            item_table = query(
+                f"SELECT "
+                f"  r.item_code, "
+                f"  COALESCE(di.name, r.item_code) AS item_name, "
+                f"  TRIM(COALESCE(di.brand_name, di.brand_code, '')) AS brand_name, "
+                f"  ROUND(SUM(CASE WHEN r.date BETWEEN %s AND %s THEN r.total_sales ELSE 0 END)::numeric, 2) AS gross_sales, "
+                f"  ROUND(SUM(CASE WHEN r.date BETWEEN %s AND %s THEN r.total_sales ELSE 0 END)::numeric, 2) AS mtd_gross_sales, "
+                f"  ROUND(SUM(CASE WHEN r.date BETWEEN %s AND %s "
+                f"    THEN COALESCE(r.total_gr_sales,0) + COALESCE(r.total_damage_sales,0) + COALESCE(r.total_expiry_sales,0) "
+                f"    ELSE 0 END)::numeric, 2) AS mtd_wastage "
+                f"FROM rpt_route_sales_by_item_customer r "
+                f"{_item_join_type} dim_item di ON r.item_code = di.code{_brand_on_di_cond} "
+                f"{org_join}"
+                f"WHERE ({rw2} OR {mw2}){channel_cond} "
+                f"GROUP BY r.item_code, COALESCE(di.name, r.item_code), "
+                f"  TRIM(COALESCE(di.brand_name, di.brand_code, '')) "
+                f"ORDER BY gross_sales DESC",
+                [date_from, date_to, mtd_start, mtd_end, mtd_start, mtd_end]
+                + _brand_di_params + _rsic_org_params + rp2 + mp2 + channel_params
+            )
     except Exception:
         item_table = []
 

@@ -7,6 +7,16 @@ import DataTable from '../components/DataTable';
 import { Banknote, CreditCard, ShoppingCart, Percent, Phone, Receipt, Clock, RotateCcw } from 'lucide-react';
 
 const aed = (v) => v != null ? `AED ${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-';
+const num = (v) => v != null ? Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 }) : '-';
+
+const ITEM_COLUMNS = [
+  { key: 'item_code',       label: 'Item Code' },
+  { key: 'item_name',       label: 'Item Name' },
+  { key: 'brand_name',      label: 'Brand' },
+  { key: 'gross_sales',     label: 'Period Sales',  format: 'currency2' },
+  { key: 'mtd_gross_sales', label: 'MTD Sales',     format: 'currency2' },
+  { key: 'mtd_wastage',     label: 'MTD Wastage',   format: 'currency2' },
+];
 
 export default function DailySalesOverview() {
   const [data, setData] = useState(null);
@@ -44,7 +54,6 @@ export default function DailySalesOverview() {
         </div>
       </div>
 
-      {/* Filters — always mounted */}
       <FilterPanel filters={filters} onChange={setFilters}
         showFields={['date_from', 'date_to', 'sales_org', 'hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'channel', 'category', 'brand']} />
 
@@ -56,9 +65,9 @@ export default function DailySalesOverview() {
           <div>
             <h2 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Call Summary</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <KpiCard title="Total Calls" value={callSummary.total_calls ?? '-'} color="blue" icon={Phone} variant="light" />
-              <KpiCard title="Prod. Minutes" value={sales.prod_minutes != null ? Number(sales.prod_minutes).toLocaleString('en-US', { maximumFractionDigits: 0 }) : '-'} color="green" icon={Clock} variant="light" />
-              <KpiCard title="Total Inv." value={callSummary.total_invoices ?? '-'} color="purple" icon={Receipt} variant="light" />
+              <KpiCard title="Total Calls"   value={num(callSummary.total_calls)}   color="blue"   icon={Phone}    variant="light" />
+              <KpiCard title="Prod. Minutes" value={num(sales.prod_minutes)}         color="green"  icon={Clock}    variant="light" />
+              <KpiCard title="Total Inv."    value={num(callSummary.total_invoices)} color="purple" icon={Receipt}  variant="light" />
             </div>
           </div>
 
@@ -66,35 +75,34 @@ export default function DailySalesOverview() {
           <div>
             <h2 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Sales Details</h2>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <KpiCard title="Cash Sales" value={aed(sales.cash_sales)} color="green" icon={Banknote} variant="solid" />
-              <KpiCard title="Credit Sales" value={aed(sales.credit_sales)} color="indigo" icon={CreditCard} variant="solid" />
-              <KpiCard title="Daily Sales" value={aed(displayDailySales)} color="purple" icon={ShoppingCart} variant="solid" />
-              <KpiCard title="Total Returns" value={aed(sales.total_returns)} color="red" icon={RotateCcw} variant="solid" />
-              <KpiCard title="Discount" value={aed(sales.discount)} color="yellow" icon={Percent} variant="solid" />
+              <KpiCard title="Cash Sales"    value={aed(sales.cash_sales)}    color="green"  icon={Banknote}    variant="solid" />
+              <KpiCard title="Credit Sales"  value={aed(sales.credit_sales)}  color="indigo" icon={CreditCard}  variant="solid" />
+              <KpiCard title="Daily Sales"   value={aed(displayDailySales)}   color="purple" icon={ShoppingCart} variant="solid" />
+              <KpiCard title="Total Returns" value={aed(sales.total_returns)} color="red"    icon={RotateCcw}   variant="solid" />
+              <KpiCard title="Discount"      value={aed(sales.discount)}      color="yellow" icon={Percent}     variant="solid" />
             </div>
           </div>
 
           {/* Item Performance Table */}
-          {items.length > 0 && (
-            <div>
-              <h2 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Item Performance</h2>
+          <div>
+            <h2 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-3">
+              Item Performance
+              {items.length > 0 && (
+                <span className="ml-2 text-[11px] font-normal text-gray-400 normal-case">({items.length} items)</span>
+              )}
+            </h2>
+            {items.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-100 py-16 text-center text-gray-400 font-medium">
+                No item data for selected period
+              </div>
+            ) : (
               <DataTable
-                columns={[
-                  { key: 'item_code', label: 'Item Code' },
-                  { key: 'item_name', label: 'Item Name' },
-                  { key: 'brand_name', label: 'Brand' },
-                  { key: 'gross_sales', label: 'Gross Sales', format: 'currency2' },
-                  { key: 'target_sales', label: 'Target', format: 'currency2' },
-                  { key: 'variance', label: 'Variance', format: 'currency2' },
-                  { key: 'mtd_gross_sales', label: 'MTD Gross', format: 'currency2' },
-                  { key: 'mtd_target_sales', label: 'MTD Target', format: 'currency2' },
-                  { key: 'mtd_wastage', label: 'MTD Wastage', format: 'currency2' },
-                ]}
+                columns={ITEM_COLUMNS}
                 data={items}
-                exportName="daily-sales-overview"
+                exportName="daily-sales-item-performance"
               />
-            </div>
-          )}
+            )}
+          </div>
         </>
       )}
     </div>
