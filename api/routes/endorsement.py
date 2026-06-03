@@ -114,8 +114,10 @@ def get_endorsement(
         cust_key = (c["customer_code"], str(c["date"]))
         first_visit = cust_key not in seen
         seen.add(cust_key)
-        raw_val = float(c["total_value"]) if first_visit else 0
-        raw_ret = float(c["total_returns"]) if first_visit else 0
+        if not first_visit:
+            continue  # skip repeat visits to same customer on same day
+        raw_val = float(c["total_value"])
+        raw_ret = float(c["total_returns"])
         dk = (str(c["date"]), c["route_code"])
         rsic_totals[dk] = rsic_totals.get(dk, 0) + raw_val
         raw_rows.append({
