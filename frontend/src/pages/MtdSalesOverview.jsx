@@ -30,7 +30,17 @@ export default function MtdSalesOverview() {
   }, [filters]);
 
   const h = data?.header || {};
-  const daily = data?.daily_data || [];
+
+  // Scale cash/credit per row to match total_sales (RSSI) so cash + credit = total_sales always
+  const daily = (data?.daily_data || []).map(row => {
+    const total     = row.total_sales ?? 0;
+    const rawCash   = row.cash_sales  ?? 0;
+    const rawCredit = row.credit_sales ?? 0;
+    const rawTotal  = rawCash + rawCredit;
+    const cash   = rawTotal > 0 && total > 0 ? Math.round(total * rawCash   / rawTotal * 100) / 100 : rawCash;
+    const credit = rawTotal > 0 && total > 0 ? Math.round((total - cash) * 100) / 100 : rawCredit;
+    return { ...row, cash_sales: cash, credit_sales: credit };
+  });
 
   return (
     <div className="space-y-6 animate-fade-in">

@@ -164,17 +164,20 @@ def get_mtd_sales_overview(
         )
     summary_map = {str(r["sale_date"]): round(float(r["total_sales"]), 2) for r in daily_summary}
 
-    # --- Cash/Credit split from RSIC + dim_customer.customer_type ---
-    # Uses DISTINCT ON dim_customer to avoid row multiplication from multi-org customers
+    # --- Cash/Credit split using same DISTINCT ON dedup as RSSI total ---
+    # Applies DISTINCT ON (route_code, item_code, date) ORDER BY same as RSSI query
+    # so cash + credit = total_sales exactly at SQL level — no Python scaling needed.
     daily_cc = query(
-        f"SELECT r.date AS sale_date, "
-        f"  COALESCE(SUM(CASE WHEN COALESCE(dc.customer_type,'Cash') != 'Credit' THEN r.total_sales ELSE 0 END), 0) AS cash_sales, "
-        f"  COALESCE(SUM(CASE WHEN dc.customer_type = 'Credit' THEN r.total_sales ELSE 0 END), 0) AS credit_sales "
-        f"FROM rpt_route_sales_by_item_customer r "
-        f"LEFT JOIN (SELECT DISTINCT ON (code) code, customer_type FROM dim_customer ORDER BY code) dc ON dc.code = r.customer_code "
-        f"{_org_join}{brand_dim_join}"
-        f"WHERE {rsw}{channel_cond} "
-        f"GROUP BY r.date ORDER BY r.date",
+        f"SELECT t.date AS sale_date, "
+        f"  COALESCE(SUM(CASE WHEN COALESCE(dc.customer_type,'Cash') != 'Credit' THEN t.total_sales ELSE 0 END), 0) AS cash_sales, "
+        f"  COALESCE(SUM(CASE WHEN dc.customer_type = 'Credit' THEN t.total_sales ELSE 0 END), 0) AS credit_sales "
+        f"FROM (SELECT DISTINCT ON (r.route_code, r.item_code, r.date) "
+        f"  r.route_code, r.item_code, r.date, r.customer_code, r.total_sales "
+        f"  FROM rpt_route_sales_by_item_customer r {_org_join}{brand_dim_join}"
+        f"  WHERE {rsw}{channel_cond} "
+        f"  ORDER BY r.route_code, r.item_code, r.date) t "
+        f"LEFT JOIN (SELECT DISTINCT ON (code) code, customer_type FROM dim_customer ORDER BY code) dc ON dc.code = t.customer_code "
+        f"GROUP BY t.date ORDER BY t.date",
         _org_params + brand_dim_join_params + rsp + channel_params
     )
     cc_map = {

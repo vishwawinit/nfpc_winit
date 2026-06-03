@@ -45,6 +45,7 @@ def get_productivity_coverage(
     w, p = build_where(filters, date_col='visit_date', prefix='c')
 
     # Summary totals — same columns as dashboard call metrics
+    # JOIN dim_route filters to active-assignment routes only (matches dashboard SP)
     summary_row = query_one(
         f"SELECT "
         f"  COALESCE(SUM(c.scheduled_calls), 0) AS scheduled, "
@@ -53,6 +54,7 @@ def get_productivity_coverage(
         f"  COALESCE(SUM(c.selling_calls), 0) AS selling, "
         f"  COALESCE(SUM(c.planned_selling_calls), 0) AS planned_selling "
         f"FROM rpt_coverage_summary c "
+        f"JOIN dim_route _dr ON c.route_code = _dr.code AND _dr.has_active_assignment = true "
         f"WHERE {w}",
         p
     )
@@ -82,7 +84,7 @@ def get_productivity_coverage(
         "strike_rate":           strike_rate,
     }
 
-    # Per-user breakdown
+    # Per-user breakdown — same active-assignment filter as dashboard
     user_rows = query(
         f"SELECT "
         f"  c.user_code, c.user_name, c.route_code, c.route_name, "
@@ -92,6 +94,7 @@ def get_productivity_coverage(
         f"  COALESCE(SUM(c.selling_calls), 0) AS productive, "
         f"  COALESCE(SUM(c.planned_selling_calls), 0) AS planned_selling "
         f"FROM rpt_coverage_summary c "
+        f"JOIN dim_route _dr ON c.route_code = _dr.code AND _dr.has_active_assignment = true "
         f"WHERE {w} "
         f"GROUP BY c.user_code, c.user_name, c.route_code, c.route_name "
         f"ORDER BY c.user_name, c.route_code",
