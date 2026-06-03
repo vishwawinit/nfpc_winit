@@ -32,8 +32,8 @@ const fieldMeta = {
 const CHILD_MAP = {
   sales_org: ['hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'customer', 'item'],
   hos:       ['asm', 'depot', 'supervisor', 'user_code', 'route', 'customer'],
-  asm:       ['supervisor', 'user_code', 'route', 'customer'],
-  depot:     ['user_code', 'route', 'customer'],
+  asm:       ['depot', 'supervisor', 'user_code', 'route', 'customer'],
+  depot:     ['supervisor', 'user_code', 'route', 'customer'],
   supervisor:['user_code', 'route', 'customer'],
   user_code: ['route', 'customer'],
   route:     ['customer'],
@@ -279,23 +279,30 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
     [showFields]
   );
 
-  // ─── Static filters (no cascade dependency) ───
+  // ─── Sales orgs: reload on any hierarchy change — backend filters to user's own orgs ───
   useEffect(() => {
-    if (show('sales_org')) fetchFilters.salesOrgs().then(setSalesOrgs);
-    if (show('channel'))   fetchFilters.channels().then(setChannels);
-    if (show('brand'))     fetchFilters.brands().then(setBrands);
-    if (show('category'))  fetchFilters.categories().then(setCategories);
+    if (!show('sales_org')) return;
+    fetchFilters.salesOrgs({
+      hos:        filters.hos        || undefined,
+      asm:        filters.asm        || undefined,
+      depot:      filters.depot      || undefined,
+      supervisor: filters.supervisor || undefined,
+      user_code:  filters.user_code  || undefined,
+    }).then(setSalesOrgs);
+  }, [filters.hos, filters.asm, filters.depot, filters.supervisor, filters.user_code]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Static filters (no hierarchy dependency) ───
+  useEffect(() => {
+    if (show('channel'))  fetchFilters.channels().then(setChannels);
+    if (show('brand'))    fetchFilters.brands().then(setBrands);
+    if (show('category')) fetchFilters.categories().then(setCategories);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Items depend on: brand + category + sales_org ───
   useEffect(() => {
     if (!show('item')) return;
     abortAndFetch('item',
-      () => fetchFilters.items({
-        brand: filters.brand,
-        category: filters.category,
-        sales_org: filters.sales_org,
-      }),
+      () => fetchFilters.items({ brand: filters.brand, category: filters.category, sales_org: filters.sales_org }),
       setItems, setLoadingItems
     );
   }, [filters.brand, filters.category, filters.sales_org]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -318,23 +325,23 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
     );
   }, [filters.sales_org, filters.hos]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Supervisors depend on: sales_org + hos + asm ───
-  useEffect(() => {
-    if (!show('supervisor')) return;
-    abortAndFetch('supervisor',
-      () => fetchFilters.supervisors({ sales_org: filters.sales_org, asm: filters.asm, hos: filters.hos }),
-      setSupervisors, setLoadingSupervisors
-    );
-  }, [filters.sales_org, filters.hos, filters.asm]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ─── Depots depend on: sales_org + asm ───
+  // ─── Depots (NSM) depend on: sales_org + hos + asm ───
   useEffect(() => {
     if (!show('depot')) return;
     abortAndFetch('depot',
-      () => fetchFilters.depots({ sales_org: filters.sales_org, asm: filters.asm }),
+      () => fetchFilters.depots({ sales_org: filters.sales_org, hos: filters.hos, asm: filters.asm }),
       setDepots, setLoadingDepots
     );
-  }, [filters.sales_org, filters.asm]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filters.sales_org, filters.hos, filters.asm]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Supervisors depend on: sales_org + hos + asm + depot(NSM) ───
+  useEffect(() => {
+    if (!show('supervisor')) return;
+    abortAndFetch('supervisor',
+      () => fetchFilters.supervisors({ sales_org: filters.sales_org, hos: filters.hos, asm: filters.asm, depot: filters.depot }),
+      setSupervisors, setLoadingSupervisors
+    );
+  }, [filters.sales_org, filters.hos, filters.asm, filters.depot]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Users depend on: sales_org + hos + asm + supervisor + depot ───
   useEffect(() => {
@@ -348,7 +355,7 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
     );
   }, [filters.sales_org, filters.hos, filters.asm, filters.supervisor, filters.depot]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Routes depend on: sales_org + hos + asm + depot + supervisor + user_code ───
+  // ─── Routes depend on: all hierarchy filters ───
   useEffect(() => {
     if (!show('route')) return;
     abortAndFetch('routes',
@@ -382,17 +389,30 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
     }
   }, [filters.sales_org, allCustomers]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Hierarchy: hide filters above the user's locked level ───
+  // ─── Hierarchy: hide filters above/beside the user's locked level ───
+  // Order reflects UI display: HOS → NSM → ASM → Supervisor → Salesman
+  // NSM (depot) and ASM are sibling branches under HOS — each hides the other's branch
   const HIERARCHY = ['hos', 'depot', 'asm', 'supervisor', 'user_code'];
   const lockedKey = Object.keys(lockedFilters)[0] || null;
   const lockedIdx = lockedKey ? HIERARCHY.indexOf(lockedKey) : -1;
 
   const isHidden = (key) => {
-    if (lockedIdx < 0) return false; // GCD sees everything
-    if (key === 'sales_org') return true; // non-GCD users don't switch orgs
+    if (lockedIdx < 0) return false; // GCD — sees all filters
+
+    // Sales org: show for everyone EXCEPT salesman (user_code locked)
+    // HOS, ASM, NSM, Supervisor, DP all manage multiple orgs via tbl_user_details
+    // Backend filters orgs to only those the user manages (via interceptor)
+    if (key === 'sales_org') return lockedKey === 'user_code';
+
+    // NSM login (depot locked): hide HOS and ASM — NSM is a separate branch from ASM
+    if (lockedKey === 'depot' && key === 'asm') return true;
+
+    // ASM login: hide NSM (depot) — ASM branch doesn't use NSM filter
+    if (lockedKey === 'asm' && key === 'depot') return true;
+
     const idx = HIERARCHY.indexOf(key);
-    if (idx < 0) return false; // non-hierarchy field (channel, brand, etc.)
-    return idx < lockedIdx; // hide fields above the user's locked level
+    if (idx < 0) return false; // non-hierarchy field (date, channel, brand, etc.)
+    return idx < lockedIdx;    // hide anything above the user's locked level
   };
 
   const isLocked = (key) => key in lockedFilters;

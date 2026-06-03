@@ -71,6 +71,8 @@ const ROLE_BADGE = {
   C_SALES_SUPERVISOR:  { label: 'Supervisor', color: 'bg-teal-500/20 text-teal-300' },
   FreshSup:            { label: 'Supervisor', color: 'bg-teal-500/20 text-teal-300' },
   AMBIENTSUP:          { label: 'Supervisor', color: 'bg-teal-500/20 text-teal-300' },
+  DP:                  { label: 'Dist. Point', color: 'bg-cyan-500/20 text-cyan-300' },
+  BA:                  { label: 'Brand Mgr',  color: 'bg-purple-500/20 text-purple-300' },
   C_PRESALES_VANSALES: { label: 'Salesman',   color: 'bg-emerald-500/20 text-emerald-300' },
   Vansales:            { label: 'Salesman',   color: 'bg-emerald-500/20 text-emerald-300' },
   Storekeeper:         { label: 'Storekeeper',color: 'bg-amber-500/20 text-amber-300' },

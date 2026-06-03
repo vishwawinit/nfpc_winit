@@ -642,9 +642,21 @@ def load_dimensions(ms_conn, pg_conn):
 
     progress.finish_step(total)
 
-    # dim_user (flat join across tblUser + tblUserRole + tblUserDetails + DepotMaster + tblUserLocations)
-    # NOTE: tblUser.ReportsTo is NULL for all users. The actual hierarchy is in tblUserDetails.ReportsTo.
-    # We use COALESCE(sup.Code, ud.ReportsTo) for reports_to to preserve the exact case of the user code.
+    # dim_user: one row per user, sourced from:
+    #   tblUser          — master (code, name, route, is_active)
+    #   tblUserRole      — role assignment (latest by CreatedOn)
+    #   tblUserDetails   — org + hierarchy chain (latest active row by UserDetailsID)
+    #   tblUser sup      — manager's display name via tblUserDetails.ReportsTo
+    #   tblUserLocations — depot zone (RegionCode = EAD / N.E / S.E)
+    #   tblRegion        — depot name
+    #
+    # Fixes vs previous ETL:
+    #   sales_org_code: use ud.SalesOrgCode (tblUser.SalesOrgCode is wrong for HOS/ASM)
+    #   depot_code:     use ul.RegionCode only (tblRoute.AreaCode was wrong for non-salesmen)
+    #   reports_to:     UPPER(sup.Code) for case-normalised manager code
+    #   role_code:      use tblUserRole only (tblUser.RoleCode may be stale)
+    #   For multi-org users (HOS/ASM): dim_user holds the latest org row only.
+    #   Multi-org filtering uses tbl_user_details (synced from NFPCsfaV3) directly.
     progress.start_step('dim_user (flat with roles/details/depot/location)', expected_rows=1200)
     pg_cur.execute("DELETE FROM dim_user")
     ms_cur.execute("""
@@ -654,11 +666,11 @@ def load_dimensions(ms_conn, pg_conn):
             u.Email,
             u.Username,
             u.MobileNo,
-            COALESCE(u.SalesOrgCode, ud.SalesOrgCode),
+            ud.SalesOrgCode,
             u.RouteCode,
-            COALESCE(rt.AreaCode, ul.RegionCode),
-            COALESCE(rg.Description, ul.RegionCode),
-            COALESCE(sup.Code, ud.ReportsTo),
+            ul.RegionCode,
+            rg.Description,
+            UPPER(COALESCE(sup.Code, ud.ReportsTo)),
             sup.Description,
             u.UserType,
             u.UserSubType,
@@ -666,7 +678,7 @@ def load_dimensions(ms_conn, pg_conn):
             u.SalesGroup,
             u.EmpCode,
             u.EmpFileNo,
-            COALESCE(ur2.RoleCode, u.RoleCode),
+            ur2.RoleCode,
             rl.Name,
             u.LocationCode,
             u.VanCode,
@@ -681,20 +693,20 @@ def load_dimensions(ms_conn, pg_conn):
                    ROW_NUMBER() OVER (PARTITION BY UserCode ORDER BY CreatedOn DESC) AS rn
             FROM tblUserRole
         ) ur2 ON ur2.UserCode = u.Code AND ur2.rn = 1
-        LEFT JOIN tblRole rl ON rl.Code = COALESCE(ur2.RoleCode, u.RoleCode)
-        LEFT JOIN tblRoute rt ON rt.Code = u.RouteCode
-        LEFT JOIN tblRegion rg ON rg.Code = rt.AreaCode
+        LEFT JOIN tblRole rl ON rl.Code = ur2.RoleCode
         LEFT JOIN (
             SELECT UserCode, SalesOrgCode, ReportsTo,
                    ROW_NUMBER() OVER (PARTITION BY UserCode ORDER BY UserDetailsID DESC) AS rn
             FROM tblUserDetails
+            WHERE ValidTo IS NULL OR ValidTo >= GETDATE()
         ) ud ON ud.UserCode = u.Code AND ud.rn = 1
         LEFT JOIN tblUser sup ON sup.Code = ud.ReportsTo COLLATE SQL_Latin1_General_CP1_CI_AS
         LEFT JOIN (
-            SELECT UserCode, CountryCode, RegionCode, Site,
+            SELECT UserCode, CountryCode, RegionCode,
                    ROW_NUMBER() OVER (PARTITION BY UserCode ORDER BY UserLocationId DESC) AS rn
             FROM tblUserLocations
         ) ul ON ul.UserCode = u.Code AND ul.rn = 1
+        LEFT JOIN tblRegion rg ON rg.Code = ul.RegionCode
     """)
     rows = ms_cur.fetchall()
     if rows:
@@ -1534,14 +1546,123 @@ def load_holidays(ms_conn, pg_conn):
 
 
 # ============================================================
-# conversations & messages are app-generated tables — NOT sourced from MSSQL, skipped.
+# USER TABLES SYNC (tblUser, tblUserDetails, tblUserRole)
+# These are the authoritative source for hierarchy and role data.
+# Synced fresh every ETL run — full replace, no date filter.
 # ============================================================
+
+def _mssql_to_pg_type(mssql_type, max_length, precision, scale):
+    t = (mssql_type or '').lower().strip()
+    if t in ('nvarchar', 'varchar', 'nchar', 'char', 'sysname'):
+        if max_length is None or max_length <= 0 or max_length == -1:
+            return 'TEXT'
+        return 'VARCHAR({})'.format(max_length)
+    if t in ('int', 'integer'):        return 'INTEGER'
+    if t == 'bigint':                  return 'BIGINT'
+    if t in ('smallint', 'tinyint'):   return 'SMALLINT'
+    if t == 'bit':                     return 'BOOLEAN'
+    if t in ('decimal', 'numeric'):
+        p = precision if precision and precision > 0 else 18
+        s = scale if scale is not None and scale >= 0 else 4
+        return 'NUMERIC({},{})'.format(p, s)
+    if t == 'money':                   return 'NUMERIC(19,4)'
+    if t == 'smallmoney':              return 'NUMERIC(10,4)'
+    if t in ('float', 'real'):         return 'DOUBLE PRECISION'
+    if t in ('datetime', 'datetime2', 'smalldatetime'): return 'TIMESTAMP'
+    if t == 'date':                    return 'DATE'
+    if t == 'time':                    return 'TIME'
+    if t in ('text', 'ntext', 'xml', 'sql_variant', 'uniqueidentifier'): return 'TEXT'
+    if t in ('image', 'varbinary', 'binary'): return 'BYTEA'
+    return 'TEXT'
+
+
+def _coerce_user_val(val, pg_type):
+    if val is None:
+        return None
+    if 'boolean' in pg_type.lower():
+        return bool(val)
+    if 'bytea' in pg_type.lower():
+        return psycopg2.Binary(val)
+    return val
+
+
+def sync_user_tables(ms_conn, pg_conn):
+    """Sync tblUser, tblUserDetails, tblUserRole from MSSQL → PostgreSQL.
+    Full replace each run — these tables are small (<2K rows) and drive the
+    entire hierarchy / filter / auth system.
+    """
+    TABLES = [
+        ('tblUserRole',    'tbl_user_role'),
+        ('tblUser',        'tbl_user'),
+        ('tblUserDetails', 'tbl_user_details'),
+    ]
+
+    progress.start_step('user_tables (tblUser + tblUserRole + tblUserDetails)', expected_rows=4000)
+    ms_cur = ms_conn.cursor()
+    pg_cur = pg_conn.cursor()
+    total = 0
+
+    for ms_table, pg_table in TABLES:
+        # Get column definitions from MSSQL
+        ms_cur.execute(
+            "SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH,"
+            "       NUMERIC_PRECISION, NUMERIC_SCALE, IS_NULLABLE"
+            " FROM INFORMATION_SCHEMA.COLUMNS"
+            " WHERE TABLE_NAME = %s ORDER BY ORDINAL_POSITION",
+            (ms_table,)
+        )
+        cols = ms_cur.fetchall()
+        if not cols:
+            log_warn(f"    {ms_table}: no columns found — skipping")
+            continue
+
+        col_names_ms = [c[0] for c in cols]
+        col_names_pg = ['"{}"'.format(c.lower()) for c in col_names_ms]
+        pg_types = [_mssql_to_pg_type(c[1], c[2], c[3], c[4]) for c in cols]
+
+        # Build CREATE TABLE DDL
+        col_defs = []
+        for c in cols:
+            name = '"{}"'.format(c[0].lower())
+            typ  = _mssql_to_pg_type(c[1], c[2], c[3], c[4])
+            null = '' if c[5] == 'YES' else ' NOT NULL'
+            col_defs.append('    {} {}{}'.format(name, typ, null))
+
+        # Drop + create
+        pg_cur.execute('DROP TABLE IF EXISTS {} CASCADE'.format(pg_table))
+        pg_cur.execute('CREATE TABLE {} (\n{}\n)'.format(pg_table, ',\n'.join(col_defs)))
+        pg_conn.commit()
+
+        # Read from MSSQL
+        ms_cur.execute('SELECT * FROM [{}]'.format(ms_table))
+        rows = ms_cur.fetchall()
+
+        if rows:
+            data = []
+            for row in rows:
+                data.append(tuple(
+                    _coerce_user_val(row[i], pg_types[i])
+                    for i in range(len(col_names_ms))
+                ))
+            insert_sql = 'INSERT INTO {} ({}) VALUES %s'.format(
+                pg_table, ', '.join(col_names_pg)
+            )
+            execute_values(pg_cur, insert_sql, data, page_size=500)
+            pg_conn.commit()
+
+        total += len(rows)
+        log(f"    {ms_table} → {pg_table}: {len(rows)} rows")
+
+    pg_cur.close()
+    progress.finish_step(total)
+
 
 # ============================================================
 # MAIN
 # ============================================================
 
 ALL_STEPS = [
+    ('user_tables',                  sync_user_tables),
     ('dimensions',                   load_dimensions),
     ('dim_item',                     None),  # handled inside load_dimensions
     ('dim_customer',                 None),  # handled inside load_dimensions
