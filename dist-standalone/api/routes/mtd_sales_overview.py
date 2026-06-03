@@ -227,15 +227,6 @@ def get_mtd_sales_overview(
         total = summary_map.get(d_str, 0)
         cash, credit = cc_map.get(d_str, (0, 0))
 
-        # Scale cash/credit to RSSI total_sales so cash + credit = total_sales (matches KPI)
-        rsic_sum = cash + credit
-        if rsic_sum > 0 and total > 0:
-            cash = round(total * cash / rsic_sum, 2)
-            credit = round(total - cash, 2)
-        elif total > 0 and rsic_sum == 0:
-            cash = round(total, 2)
-            credit = 0.0
-
         daily_var = total - daily_target
         daily_var_pct = round(daily_var / daily_target * 100, 2) if daily_target else 0
 
