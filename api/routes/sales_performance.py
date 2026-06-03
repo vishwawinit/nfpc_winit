@@ -402,6 +402,26 @@ def get_sales_performance(
         + [cur_start, cur_end]
     )
 
+    # Override current_month_sales with RSSI values (same source as MTD KPI)
+    # so SKU detail table matches the KPI. Only needed when no brand/channel
+    # filter is active — those paths already use RSIC for both KPI and table.
+    if not _brand_dim_join and not _channel_cond:
+        f_cm = {k: v for k, v in {**base_filters, 'date_from': cur_start, 'date_to': cur_end}.items()
+                if k in RSSI_KEYS}
+        if sales_org:
+            f_cm['sales_org'] = sales_org
+        sw_cm, sp_cm = build_where(f_cm, date_col='date')
+        rssi_cm = query(
+            f"SELECT item_code, ROUND(SUM(total_sales)::numeric, 2) AS cm_sales "
+            f"FROM (SELECT DISTINCT ON (route_code, item_code, date) item_code, total_sales "
+            f"  FROM rpt_route_sales_summary_by_item WHERE {sw_cm}) t "
+            f"GROUP BY item_code",
+            sp_cm
+        )
+        rssi_cm_map = {r['item_code']: float(r['cm_sales'] or 0) for r in rssi_cm}
+        for row in sku_table:
+            row['current_month_sales'] = rssi_cm_map.get(row['item_code'], 0)
+
     for row in sku_table:
         ly = float(row["last_month_sales"] or 0)
         cm = float(row["current_month_sales"] or 0)
