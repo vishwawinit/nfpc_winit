@@ -156,47 +156,21 @@ def get_endorsement(
             "total_returns":  scaled_ret,
         })
 
-    # --- KPI totals from rpt_coverage_summary ---
-    # When no route/user filter: JOIN dim_route has_active_assignment=true (matches Dashboard first load)
-    # When route/user filter applied: query directly without active-assignment restriction
-    f_cov = {k: v for k, v in filters.items() if k in COVERAGE_KEYS}
-    cw, cp = build_where(f_cov, date_col='visit_date', prefix='c')
-    _has_specific_filter = bool(filters.get('route') or filters.get('user_code'))
-    if _has_specific_filter:
-        cov_row = query_one(
-            f"SELECT "
-            f"  COALESCE(SUM(c.scheduled_calls), 0)    AS scheduled, "
-            f"  COALESCE(SUM(c.total_actual_calls), 0) AS total_actual, "
-            f"  COALESCE(SUM(c.planned_calls), 0)      AS planned, "
-            f"  COALESCE(SUM(c.selling_calls), 0)      AS selling "
-            f"FROM rpt_coverage_summary c "
-            f"WHERE {cw}",
-            cp
-        )
-    else:
-        cov_row = query_one(
-            f"SELECT "
-            f"  COALESCE(SUM(c.scheduled_calls), 0)    AS scheduled, "
-            f"  COALESCE(SUM(c.total_actual_calls), 0) AS total_actual, "
-            f"  COALESCE(SUM(c.planned_calls), 0)      AS planned, "
-            f"  COALESCE(SUM(c.selling_calls), 0)      AS selling "
-            f"FROM rpt_coverage_summary c "
-            f"JOIN dim_route _dr ON c.route_code = _dr.code AND _dr.has_active_assignment = true "
-            f"WHERE {cw}",
-            cp
-        )
+    # --- KPI totals computed from customer_list (same data as the table) ---
+    # This ensures KPI values always match what's shown in the table rows
+    jpw, jpp = build_where(filters, date_col='date')
+    jp_row = query_one(f"SELECT COUNT(*) AS scheduled FROM rpt_journey_plan WHERE {jpw}", jpp)
+    scheduled_calls = int(jp_row['scheduled']) if jp_row else 0
 
-    scheduled_calls = int(cov_row['scheduled'])    if cov_row else 0
-    total_actual    = int(cov_row['total_actual']) if cov_row else 0
-    planned_count   = int(cov_row['planned'])      if cov_row else 0
-    selling_count   = int(cov_row['selling'])      if cov_row else 0
+    total_actual    = len(customer_list)
+    planned_count   = sum(1 for r in customer_list if r['is_planned'])
+    productive_count = sum(1 for r in customer_list if r['is_productive'])
     unplanned_count = max(0, total_actual - planned_count)
-    # Coverage = planned / scheduled * 100 — matches Dashboard formula
     coverage_pct    = min(100.0, round(planned_count / scheduled_calls * 100, 1)) if scheduled_calls else 0
 
-    # Header: identity info from first visit row, KPIs from coverage_summary
+    # Header
     header = {}
-    if customers or cov_row:
+    if customer_list or customers:
         first = customers[0] if customers else None
         header = {
             "route_code":            first["route_code"] if first else "",
@@ -207,8 +181,8 @@ def get_endorsement(
             "scheduled_calls":       scheduled_calls,
             "planned_visits":        planned_count,
             "unplanned_visits":      unplanned_count,
-            "productive_visits":     selling_count,
-            "non_productive_visits": max(0, total_actual - selling_count),
+            "productive_visits":     productive_count,
+            "non_productive_visits": max(0, total_actual - productive_count),
             "coverage_pct":          coverage_pct,
         }
 
