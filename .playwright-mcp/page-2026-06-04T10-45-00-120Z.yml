@@ -1,0 +1,18 @@
+- generic [ref=e4]:
+  - generic [ref=e5]:
+    - generic [ref=e7]: "N"
+    - heading "NFPC Reports" [level=1] [ref=e8]
+    - paragraph [ref=e9]: Enterprise Sales Dashboard
+  - generic [ref=e10]:
+    - heading "Sign in" [level=2] [ref=e11]
+    - paragraph [ref=e12]: Enter your user code to continue
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - generic [ref=e15]: User Code
+        - generic [ref=e16]:
+          - img [ref=e17]
+          - textbox "e.g. 177894" [active] [ref=e20]
+      - button "Sign In" [disabled] [ref=e21]:
+        - img [ref=e22]
+        - text: Sign In
+  - paragraph [ref=e25]: NFPC UAE · Confidential Reporting System
