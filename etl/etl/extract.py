@@ -29,10 +29,12 @@ from dotenv import load_dotenv
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
-# Date range: Jan 01 to today
+# Date range — read from .env so incremental runs don't need code changes.
+# For daily incremental: set SYNC_FROM_DATE to yesterday in .env (or leave blank for full load).
+# For full reload: set SYNC_FROM_DATE=2026-01-01
 from datetime import date as _date
-DATE_FROM = '2026-01-01'
-DATE_TO = (_date.today() + timedelta(days=1)).strftime('%Y-%m-%d')  # exclusive upper bound — includes today
+DATE_FROM = os.environ.get('SYNC_FROM_DATE', '2026-01-01')
+DATE_TO = os.environ.get('SYNC_TO_DATE', (_date.today() + timedelta(days=1)).strftime('%Y-%m-%d'))
 UPSERT_MODE = False
 
 # ============================================================

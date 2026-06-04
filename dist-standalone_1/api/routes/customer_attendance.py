@@ -1,0 +1,93 @@
+"""Customer Attendance report endpoint."""
+from fastapi import APIRouter, Query
+from typing import Optional
+from datetime import date
+from api.database import query
+from api.models import build_where, resolve_user_codes
+
+router = APIRouter()
+
+
+@router.get("/customer-attendance")
+def get_customer_attendance(
+    user_code: Optional[str] = None,
+    customer: Optional[str] = None,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    sales_org: Optional[str] = None,
+    route: Optional[str] = None,
+    channel: Optional[str] = None,
+    hos: Optional[str] = None,
+    asm: Optional[str] = None,
+    depot: Optional[str] = None,
+    supervisor: Optional[str] = None,
+):
+    # Resolve hierarchy filters (hos/asm/supervisor/depot) to user_codes
+    _hier = {k: v for k, v in {'hos': hos, 'depot': depot, 'supervisor': supervisor, 'asm': asm}.items() if v}
+    if _hier:
+        resolved = resolve_user_codes(_hier)
+        if resolved == "__NO_MATCH__":
+            user_code = "__NO_MATCH__"
+        elif resolved:
+            if user_code:
+                existing = set(user_code.split(','))
+                intersected = existing & set(resolved.split(','))
+                user_code = ','.join(intersected) if intersected else "__NO_MATCH__"
+            else:
+                user_code = resolved
+
+    filters = {k: v for k, v in {
+        'user_code': user_code, 'customer': customer,
+        'date_from': date_from, 'date_to': date_to,
+        'sales_org': sales_org, 'route': route,
+    }.items() if v is not None}
+
+    w, p = build_where(filters, date_col='date')
+
+    # channel filter: rpt_customer_visits has channel_name, not channel_code
+    if channel:
+        codes = [c.strip() for c in channel.split(',') if c.strip()]
+        ph = ','.join(['%s'] * len(codes))
+        ch_rows = query(f"SELECT name FROM dim_channel WHERE code IN ({ph})", codes)
+        ch_names = [r['name'] for r in ch_rows]
+        if ch_names:
+            ch_ph = ','.join(['%s'] * len(ch_names))
+            w += f" AND channel_name IN ({ch_ph})"
+            p.extend(ch_names)
+        else:
+            w += " AND 1=0"
+
+    rows = query(
+        f"""
+        SELECT
+            date,
+            route_name AS area,
+            user_code,
+            user_name,
+            customer_code,
+            customer_name,
+            arrival_time AS start_time,
+            out_time AS end_time,
+            total_time_mins AS spent_time
+        FROM rpt_customer_visits
+        WHERE {w}
+        ORDER BY date DESC, arrival_time
+        """,
+        p
+    )
+
+    result = []
+    for r in rows:
+        result.append({
+            "date": str(r["date"]) if r["date"] else None,
+            "area": r["area"],
+            "user_code": r["user_code"],
+            "user_name": r["user_name"],
+            "customer_code": r["customer_code"],
+            "customer_name": r["customer_name"],
+            "start_time": str(r["start_time"]) if r["start_time"] else None,
+            "end_time": str(r["end_time"]) if r["end_time"] else None,
+            "spent_time": float(r["spent_time"]) if r["spent_time"] else 0,
+        })
+
+    return result

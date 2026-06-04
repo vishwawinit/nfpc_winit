@@ -70,15 +70,16 @@ def _users_by_roles_and_subs(roles, sub_codes=None, org_codes=None, extra_condit
         params.extend([c.upper() for c in sub_codes])
 
     if org_codes:
+        # salesorgcode in tbl_user_details can be stored in any case — always compare UPPER
         org_ph = ','.join(['%s'] * len(org_codes))
         active = _active_detail_cond()
         conditions.append(
             f"UPPER(u.code) IN ("
             f"  SELECT UPPER(usercode) FROM tbl_user_details"
-            f"  WHERE salesorgcode IN ({org_ph}) AND {active}"
+            f"  WHERE UPPER(salesorgcode) IN ({org_ph}) AND {active}"
             f")"
         )
-        params.extend(org_codes)
+        params.extend([o.upper() for o in org_codes])
 
     if extra_conditions:
         conditions.extend(extra_conditions)
@@ -136,13 +137,18 @@ def get_sales_orgs(
     """
     active = _active_detail_cond()
 
-    # Resolve hierarchy to a set of user codes whose org memberships we want
     user_codes = None
 
     if hos:
-        user_codes = _split(hos, upper=True)
+        # HOS is registered in ALL orgs in tbl_user_details — use subordinates' orgs instead
+        hos_codes = _split(hos, upper=True)
+        sub_codes = _get_all_subordinates(hos_codes)
+        user_codes = sub_codes if sub_codes else hos_codes
     elif asm:
-        user_codes = _split(asm, upper=True)
+        # ASM may also span multiple orgs — use subordinates' orgs for accuracy
+        asm_codes = _split(asm, upper=True)
+        sub_codes = _get_all_subordinates(asm_codes)
+        user_codes = sub_codes if sub_codes else asm_codes
     elif depot:
         user_codes = _split(depot, upper=True)
     elif supervisor:
@@ -153,9 +159,9 @@ def get_sales_orgs(
     if user_codes:
         ph = ','.join(['%s'] * len(user_codes))
         return query(
-            f"SELECT DISTINCT d.salesorgcode AS code, COALESCE(so.name, d.salesorgcode) AS name"
+            f"SELECT DISTINCT UPPER(d.salesorgcode) AS code, COALESCE(so.name, d.salesorgcode) AS name"
             f" FROM tbl_user_details d"
-            f" LEFT JOIN dim_sales_org so ON so.code = d.salesorgcode"
+            f" LEFT JOIN dim_sales_org so ON UPPER(so.code) = UPPER(d.salesorgcode)"
             f" WHERE UPPER(d.usercode) IN ({ph}) AND {active}"
             f" ORDER BY name",
             user_codes
@@ -252,9 +258,23 @@ def get_users(
     depot: str = None,
     asm: str = None,
     hos: str = None,
+    user_code: str = None,
 ):
     """Salesman users, optionally filtered by hierarchy (HOS/ASM/NSM/Supervisor) and/or sales org.
-    depot = NSM user code — only salesmen under that NSM."""
+    depot = NSM user code — only salesmen under that NSM.
+    user_code = locked filter for salesman/standalone DP — returns just that user."""
+    # Salesman or standalone DP locked to their own code — return just themselves
+    if user_code and not (supervisor or depot or asm or hos):
+        codes = _split(user_code, upper=True)
+        ph = ','.join(['%s'] * len(codes))
+        return query(
+            f"SELECT DISTINCT u.code, u.username AS name"
+            f" FROM tbl_user u"
+            f" WHERE UPPER(u.code) IN ({ph}) AND u.isactive = true"
+            f" ORDER BY u.username",
+            codes
+        )
+
     sub_codes = None
 
     if depot:
