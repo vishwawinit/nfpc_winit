@@ -21,7 +21,7 @@ api.interceptors.request.use(config => {
 export const loginUser = (userCode) => api.get('/auth/login', { params: { userCode } }).then(r => r.data);
 
 export const fetchFilters = {
-  salesOrgs: () => api.get('/filters/sales-orgs').then(r => r.data),
+  salesOrgs: (params) => api.get('/filters/sales-orgs', { params }).then(r => r.data),
   hos: (params) => api.get('/filters/hos', { params }).then(r => r.data),
   asms: (params) => api.get('/filters/asms', { params }).then(r => r.data),
   routes: (params) => api.get('/filters/routes', { params }).then(r => r.data),

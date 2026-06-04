@@ -30,8 +30,8 @@ const fieldMeta = {
                                        depot ──────┘              │
                                                                    route depends on all above */
 const CHILD_MAP = {
-  sales_org: ['hos', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'customer', 'item'],
-  hos:       ['asm', 'depot', 'supervisor', 'user_code', 'route', 'customer'],
+  sales_org: ['asm', 'depot', 'supervisor', 'user_code', 'route', 'customer', 'item'],
+  hos:       ['sales_org', 'asm', 'depot', 'supervisor', 'user_code', 'route', 'customer'],
   asm:       ['depot', 'supervisor', 'user_code', 'route', 'customer'],
   depot:     ['supervisor', 'user_code', 'route', 'customer'],
   supervisor:['user_code', 'route', 'customer'],

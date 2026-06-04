@@ -10,28 +10,33 @@ Run manually:  python etl/etl/sync_user_tables.py
 READ-ONLY on MSSQL -- no writes to source DB.
 """
 
+import os
 import sys
 import pymssql
 import psycopg2
 from psycopg2.extras import execute_values
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 # ── MSSQL connection (READ-ONLY source) ──────────────────────────────────────
+# Uses USER_SYNC_* vars from .env — separate user/DB from main ETL
 MSSQL_CFG = dict(
-    server   = 'winitdb01.NFPC.NET',
+    server   = os.environ['DB_SERVER'],
     port     = 1433,
-    user     = 'nfpcsfa',
-    password = '123456_NfpcNfpc',
-    database = 'NFPCsfaV3',
+    user     = os.environ['USER_SYNC_DB_USER'],
+    password = os.environ['USER_SYNC_DB_PASSWORD'],
+    database = os.environ['USER_SYNC_DB_NAME'],
     timeout  = 30,
 )
 
 # ── Railway PostgreSQL (write target) ────────────────────────────────────────
 PG_CFG = dict(
-    host     = 'switchback.proxy.rlwy.net',
-    port     = 31910,
-    dbname   = 'railway',
-    user     = 'postgres',
-    password = 'glzENZuNPmfnAEYrprneXIfVczZAfExC',
+    host     = os.environ['PG_HOST'],
+    port     = int(os.environ.get('PG_PORT', 5432)),
+    dbname   = os.environ['PG_DATABASE'],
+    user     = os.environ['PG_USER'],
+    password = os.environ['PG_PASSWORD'],
 )
 
 # Tables to sync: (MSSQL source name, PostgreSQL target name)

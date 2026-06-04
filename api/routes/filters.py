@@ -252,9 +252,23 @@ def get_users(
     depot: str = None,
     asm: str = None,
     hos: str = None,
+    user_code: str = None,
 ):
     """Salesman users, optionally filtered by hierarchy (HOS/ASM/NSM/Supervisor) and/or sales org.
-    depot = NSM user code — only salesmen under that NSM."""
+    depot = NSM user code — only salesmen under that NSM.
+    user_code = locked filter for salesman/standalone DP — returns just that user."""
+    # Salesman or standalone DP locked to their own code — return just themselves
+    if user_code and not (supervisor or depot or asm or hos):
+        codes = _split(user_code, upper=True)
+        ph = ','.join(['%s'] * len(codes))
+        return query(
+            f"SELECT DISTINCT u.code, u.username AS name"
+            f" FROM tbl_user u"
+            f" WHERE UPPER(u.code) IN ({ph}) AND u.isactive = true"
+            f" ORDER BY u.username",
+            codes
+        )
+
     sub_codes = None
 
     if depot:
