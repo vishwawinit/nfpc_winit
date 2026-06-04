@@ -53,9 +53,9 @@ def get_weekly_sales_returns(
         'date_from': date_from, 'date_to': date_to,
     }.items() if v is not None}
 
-    # Use RSIC when channel/customer/brand/category filter active — summary table lacks
-    # customer/channel columns and only has brand_code='NFPC' (not real brand codes)
-    _use_rsic = bool(channel or customer or brand or category)
+    # Use RSIC when user_code/channel/customer/brand/category filter active —
+    # rpt_route_sales_summary_by_item has no user_code data; RSIC supports all these columns
+    _use_rsic = bool(user_code or channel or customer or brand or category)
 
     if not _use_rsic:
         # ── Summary table path (matches dashboard exactly) ──────────────────

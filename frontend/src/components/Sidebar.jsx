@@ -88,16 +88,9 @@ export default function Sidebar() {
   return (
     <aside className="w-[244px] bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 text-white min-h-screen flex-shrink-0 flex flex-col border-r border-slate-700/30">
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-slate-700/40">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-            <span className="text-[13px] font-bold text-white">N</span>
-          </div>
-          <div>
-            <div className="text-[15px] font-bold tracking-tight text-white">NFPC Reports</div>
-            <div className="text-[10px] text-slate-400 font-medium tracking-wide">Enterprise Dashboard</div>
-          </div>
-        </div>
+      <div className="px-4 py-4 border-b border-slate-700/40 flex flex-col items-center gap-1.5">
+        <img src="/nfpc-logo.png" alt="NFPC" className="w-[180px] h-auto object-contain rounded-xl" />
+        <span className="w-full text-center text-[12px] font-semibold text-slate-400 tracking-widest uppercase">SFA Analytics</span>
       </div>
 
       {/* Navigation */}
@@ -116,7 +109,7 @@ export default function Sidebar() {
                     to={item.path}
                     end={item.path === '/'}
                     className={({ isActive }) =>
-                      `flex items-center gap-2.5 px-2.5 py-[7px] rounded-lg text-[13px] transition-all duration-150 ${
+                      `flex items-center gap-2.5 px-2.5 py-[7px] rounded-lg text-[14px] transition-all duration-150 ${
                         isActive
                           ? 'bg-indigo-500/15 text-white font-medium border-l-[3px] border-indigo-400 pl-[7px]'
                           : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'

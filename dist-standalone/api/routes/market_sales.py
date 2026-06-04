@@ -38,45 +38,81 @@ def get_market_sales_performance(
             else:
                 user_code = resolved
 
+    if user_code == "__NO_MATCH__":
+        return _empty()
+
     cur_year = year or date.today().year
     last_year = cur_year - 1
 
     base_filters = {k: v for k, v in {'route': route, 'user_code': user_code}.items() if v}
 
-    # sales_org direct condition for summary table (has sales_org_code column)
-    org_cond = ""
-    org_params = []
-    if sales_org:
-        orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
-        org_ph = ','.join(['%s'] * len(orgs))
-        org_cond = f" AND sales_org_code IN ({org_ph})"
-        org_params = orgs
+    # rpt_route_sales_summary_by_item has no user_code data — use RSIC when user_code is active
+    _use_rsic = bool(user_code)
 
-    # Current year: summary table with DISTINCT ON dedup (matches dashboard)
-    cur_f = {k: v for k, v in {**base_filters, 'date_from': date(cur_year, 1, 1), 'date_to': date(cur_year, 12, 31)}.items() if v}
-    cw, cp = build_where(cur_f, date_col='date')
-    monthly_cur = query(
-        f"SELECT EXTRACT(MONTH FROM date)::int AS month, "
-        f"  ROUND(COALESCE(SUM(total_sales),0)::numeric, 0) AS sales "
-        f"FROM (SELECT DISTINCT ON (route_code, item_code, date) date, total_sales "
-        f"  FROM rpt_route_sales_summary_by_item WHERE {cw}{org_cond} "
-        f"  ORDER BY route_code, item_code, date) t "
-        f"GROUP BY EXTRACT(MONTH FROM date) ORDER BY month",
-        cp + org_params
-    )
+    if _use_rsic:
+        # RSIC path: rpt_route_sales_by_item_customer supports user_code filtering
+        org_join = ""
+        org_join_params = []
+        if sales_org and not route:
+            orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
+            org_ph = ','.join(['%s'] * len(orgs))
+            org_join = f"JOIN dim_route _dr ON r.route_code = _dr.code AND _dr.sales_org_code IN ({org_ph}) "
+            org_join_params = orgs
 
-    # Last year
-    last_f = {k: v for k, v in {**base_filters, 'date_from': date(last_year, 1, 1), 'date_to': date(last_year, 12, 31)}.items() if v}
-    lw, lp = build_where(last_f, date_col='date')
-    monthly_last = query(
-        f"SELECT EXTRACT(MONTH FROM date)::int AS month, "
-        f"  ROUND(COALESCE(SUM(total_sales),0)::numeric, 0) AS sales "
-        f"FROM (SELECT DISTINCT ON (route_code, item_code, date) date, total_sales "
-        f"  FROM rpt_route_sales_summary_by_item WHERE {lw}{org_cond} "
-        f"  ORDER BY route_code, item_code, date) t "
-        f"GROUP BY EXTRACT(MONTH FROM date) ORDER BY month",
-        lp + org_params
-    )
+        cur_f = {k: v for k, v in {**base_filters, 'date_from': date(cur_year, 1, 1), 'date_to': date(cur_year, 12, 31)}.items() if v}
+        cw, cp = build_where(cur_f, date_col='date', prefix='r')
+        monthly_cur = query(
+            f"SELECT EXTRACT(MONTH FROM r.date)::int AS month, "
+            f"  ROUND(COALESCE(SUM(r.total_sales),0)::numeric, 0) AS sales "
+            f"FROM rpt_route_sales_by_item_customer r {org_join}"
+            f"WHERE {cw} "
+            f"GROUP BY EXTRACT(MONTH FROM r.date) ORDER BY month",
+            org_join_params + cp
+        )
+
+        last_f = {k: v for k, v in {**base_filters, 'date_from': date(last_year, 1, 1), 'date_to': date(last_year, 12, 31)}.items() if v}
+        lw, lp = build_where(last_f, date_col='date', prefix='r')
+        monthly_last = query(
+            f"SELECT EXTRACT(MONTH FROM r.date)::int AS month, "
+            f"  ROUND(COALESCE(SUM(r.total_sales),0)::numeric, 0) AS sales "
+            f"FROM rpt_route_sales_by_item_customer r {org_join}"
+            f"WHERE {lw} "
+            f"GROUP BY EXTRACT(MONTH FROM r.date) ORDER BY month",
+            org_join_params + lp
+        )
+    else:
+        # RSSI path — no user_code filter; route/sales_org only
+        org_cond = ""
+        org_params = []
+        if sales_org:
+            orgs = [v.strip() for v in sales_org.split(',') if v.strip()]
+            org_ph = ','.join(['%s'] * len(orgs))
+            org_cond = f" AND sales_org_code IN ({org_ph})"
+            org_params = orgs
+
+        cur_f = {k: v for k, v in {**base_filters, 'date_from': date(cur_year, 1, 1), 'date_to': date(cur_year, 12, 31)}.items() if v}
+        cw, cp = build_where(cur_f, date_col='date')
+        monthly_cur = query(
+            f"SELECT EXTRACT(MONTH FROM date)::int AS month, "
+            f"  ROUND(COALESCE(SUM(total_sales),0)::numeric, 0) AS sales "
+            f"FROM (SELECT DISTINCT ON (route_code, item_code, date) date, total_sales "
+            f"  FROM rpt_route_sales_summary_by_item WHERE {cw}{org_cond} "
+            f"  ORDER BY route_code, item_code, date) t "
+            f"GROUP BY EXTRACT(MONTH FROM date) ORDER BY month",
+            cp + org_params
+        )
+
+        last_f = {k: v for k, v in {**base_filters, 'date_from': date(last_year, 1, 1), 'date_to': date(last_year, 12, 31)}.items() if v}
+        lw, lp = build_where(last_f, date_col='date')
+        monthly_last = query(
+            f"SELECT EXTRACT(MONTH FROM date)::int AS month, "
+            f"  ROUND(COALESCE(SUM(total_sales),0)::numeric, 0) AS sales "
+            f"FROM (SELECT DISTINCT ON (route_code, item_code, date) date, total_sales "
+            f"  FROM rpt_route_sales_summary_by_item WHERE {lw}{org_cond} "
+            f"  ORDER BY route_code, item_code, date) t "
+            f"GROUP BY EXTRACT(MONTH FROM date) ORDER BY month",
+            lp + org_params
+        )
 
     cur_map = {int(r["month"]): float(r["sales"]) for r in monthly_cur}
     last_map = {int(r["month"]): float(r["sales"]) for r in monthly_last}

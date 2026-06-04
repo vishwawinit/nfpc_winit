@@ -59,7 +59,9 @@ def _locked_filters(role: str, code: str) -> dict:
         return {'user_code': code}
     if role in SALESMAN_ROLES:
         return {'user_code': code}
-    # GCD and all other management/support roles — no filter lock
+    # GCD and above — restrict to their subordinate tree if they manage people
+    if _has_subordinates(code):
+        return {'gcd': code}
     return {}
 
 

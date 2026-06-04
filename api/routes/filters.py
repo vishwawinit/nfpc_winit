@@ -150,7 +150,7 @@ def _resolve_manager_subs(hos=None, asm=None, supervisor=None):
 @router.get("/filters/sales-orgs")
 def get_sales_orgs(
     hos: str = None, asm: str = None,
-    depot: str = None, supervisor: str = None, user_code: str = None,
+    depot: str = None, supervisor: str = None, user_code: str = None, gcd: str = None,
 ):
     """Return sales orgs filtered to what the logged-in user actually manages.
     Uses tbl_user_details.salesorgcode as the authoritative org membership source.
@@ -165,7 +165,19 @@ def get_sales_orgs(
     # This ensures that selecting a lower-level filter narrows the org options correctly
     # even when a higher-level filter is locked (e.g. HOS locked but supervisor selected)
     if user_code:
-        user_codes = _split(user_code, upper=True)
+        # Use dim_user.sales_org_code — salesman's primary working org
+        # tbl_user_details may register them in multiple orgs; dim_user has the correct single org
+        codes = _split(user_code, upper=True)
+        ph = ','.join(['%s'] * len(codes))
+        return query(
+            f"SELECT DISTINCT du.sales_org_code AS code, COALESCE(so.name, du.sales_org_code) AS name"
+            f" FROM dim_user du"
+            f" LEFT JOIN dim_sales_org so ON so.code = du.sales_org_code"
+            f" WHERE UPPER(du.code) IN ({ph})"
+            f" AND du.is_active = true AND du.sales_org_code IS NOT NULL"
+            f" ORDER BY name",
+            codes
+        )
     elif supervisor:
         user_codes = _split(supervisor, upper=True)
     elif depot:
@@ -180,6 +192,11 @@ def get_sales_orgs(
         hos_codes = _split(hos, upper=True)
         sub_codes = _get_all_subordinates(hos_codes)
         user_codes = sub_codes if sub_codes else hos_codes
+    elif gcd:
+        # GCD/above-HOS — use subordinates' orgs (same logic as HOS)
+        gcd_codes = _split(gcd, upper=True)
+        sub_codes = _get_all_subordinates(gcd_codes)
+        user_codes = sub_codes if sub_codes else gcd_codes
 
     if user_codes:
         ph = ','.join(['%s'] * len(user_codes))
@@ -198,7 +215,7 @@ def get_sales_orgs(
 # ── HOS ──────────────────────────────────────────────────────────────────────
 
 @router.get("/filters/hos")
-def get_hos(sales_org: str = None, asm: str = None, depot: str = None, supervisor: str = None, user_code: str = None):
+def get_hos(sales_org: str = None, asm: str = None, depot: str = None, supervisor: str = None, user_code: str = None, gcd: str = None):
     """HOS users. Supports both directions:
     - Top-down: sales_org filters HOS by org membership
     - Bottom-up: asm/depot/supervisor/user_code narrows HOS to who manages them"""
@@ -224,8 +241,15 @@ def get_hos(sales_org: str = None, asm: str = None, depot: str = None, superviso
                 codes = mid if mid else lower
         return _get_managers_of(codes, ROLE_HOS)
 
+    sub_codes = None
+    if gcd:
+        sub_codes = _get_all_subordinates(_split(gcd, upper=True))
+        if not sub_codes:
+            return []
+
     return _users_by_roles_and_subs(
         roles=ROLE_HOS,
+        sub_codes=sub_codes,
         org_codes=_split(sales_org) if sales_org else None,
     )
 
@@ -233,7 +257,7 @@ def get_hos(sales_org: str = None, asm: str = None, depot: str = None, superviso
 # ── ASM ──────────────────────────────────────────────────────────────────────
 
 @router.get("/filters/asms")
-def get_asms(sales_org: str = None, hos: str = None, supervisor: str = None, user_code: str = None):
+def get_asms(sales_org: str = None, hos: str = None, supervisor: str = None, user_code: str = None, gcd: str = None):
     """ASM users. Supports both directions:
     - Top-down: hos filters ASMs under that HOS
     - Bottom-up: supervisor/user_code narrows ASMs to who manages them"""
@@ -249,8 +273,11 @@ def get_asms(sales_org: str = None, hos: str = None, supervisor: str = None, use
     sub_codes = None
     if hos:
         sub_codes = _get_all_subordinates(_split(hos, upper=True))
-        if not sub_codes:
-            return []
+    elif gcd:
+        sub_codes = _get_all_subordinates(_split(gcd, upper=True))
+
+    if sub_codes is not None and not sub_codes:
+        return []
 
     return _users_by_roles_and_subs(
         roles=ROLE_ASM,
@@ -262,7 +289,7 @@ def get_asms(sales_org: str = None, hos: str = None, supervisor: str = None, use
 # ── Depots ────────────────────────────────────────────────────────────────────
 
 @router.get("/filters/depots")
-def get_depots(sales_org: str = None, asm: str = None, hos: str = None, supervisor: str = None, user_code: str = None):
+def get_depots(sales_org: str = None, asm: str = None, hos: str = None, supervisor: str = None, user_code: str = None, gcd: str = None):
     """Return NSM users (real users with NSM role). Supports both directions:
     - Top-down: hos/asm filters NSMs under that hierarchy
     - Bottom-up: supervisor/user_code narrows NSMs to who manages them"""
@@ -277,8 +304,11 @@ def get_depots(sales_org: str = None, asm: str = None, hos: str = None, supervis
     sub_codes = None
     if hos or asm:
         sub_codes = _resolve_manager_subs(hos=hos, asm=asm)
-        if sub_codes is not None and not sub_codes:
-            return []
+    elif gcd:
+        sub_codes = _get_all_subordinates(_split(gcd, upper=True))
+
+    if sub_codes is not None and not sub_codes:
+        return []
 
     return _users_by_roles_and_subs(
         roles=ROLE_NSM,
@@ -290,7 +320,7 @@ def get_depots(sales_org: str = None, asm: str = None, hos: str = None, supervis
 # ── Supervisors ───────────────────────────────────────────────────────────────
 
 @router.get("/filters/supervisors")
-def get_supervisors(sales_org: str = None, asm: str = None, hos: str = None, depot: str = None, user_code: str = None):
+def get_supervisors(sales_org: str = None, asm: str = None, hos: str = None, depot: str = None, user_code: str = None, gcd: str = None):
     """Supervisor users. Supports both directions:
     - Top-down: hos/asm/depot filters supervisors under that hierarchy
     - Bottom-up: user_code narrows supervisors to who directly manages that user"""
@@ -312,8 +342,11 @@ def get_supervisors(sales_org: str = None, asm: str = None, hos: str = None, dep
             return []
     elif hos or asm:
         sub_codes = _resolve_manager_subs(hos=hos, asm=asm)
-        if sub_codes is not None and not sub_codes:
-            return []
+    elif gcd:
+        sub_codes = _get_all_subordinates(_split(gcd, upper=True))
+
+    if sub_codes is not None and not sub_codes:
+        return []
 
     return _users_by_roles_and_subs(
         roles=ROLE_SUPERVISOR,
@@ -332,6 +365,7 @@ def get_users(
     asm: str = None,
     hos: str = None,
     user_code: str = None,
+    gcd: str = None,
 ):
     """Salesman users, optionally filtered by hierarchy (HOS/ASM/NSM/Supervisor) and/or sales org.
     depot = NSM user code — only salesmen under that NSM.
@@ -362,8 +396,11 @@ def get_users(
             return []
     elif supervisor or asm or hos:
         sub_codes = _resolve_manager_subs(hos=hos, asm=asm, supervisor=supervisor)
-        if sub_codes is not None and not sub_codes:
-            return []
+    elif gcd:
+        sub_codes = _get_all_subordinates(_split(gcd, upper=True))
+
+    if sub_codes is not None and not sub_codes:
+        return []
 
     return _users_by_roles_and_subs(
         roles=ROLE_SALESMAN,

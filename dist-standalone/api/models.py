@@ -93,15 +93,19 @@ def _get_all_subordinates(manager_codes: list) -> list:
 
     # PostgreSQL RECURSIVE CTE must have exactly one non-recursive base and one recursive term.
     # We combine both sources (tbl_user_details + dim_user) in each half using subqueries.
+    # JOIN tbl_user to filter isactive=true — inactive managers are excluded from traversal
+    # so their subtrees don't bleed into unrelated orgs.
     rows = query(
         f"WITH RECURSIVE subs(code) AS ("
         # ── Non-recursive base: seed from both sources ──────────────────
         f"  SELECT DISTINCT code FROM ("
-        f"    SELECT usercode AS code"
-        f"    FROM tbl_user_details"
-        f"    WHERE UPPER(reportsto) IN ({ph})"
-        f"    AND UPPER(reportsto) != UPPER(usercode)"
-        f"    AND (validto IS NULL OR validto >= CURRENT_DATE)"
+        f"    SELECT td.usercode AS code"
+        f"    FROM tbl_user_details td"
+        f"    JOIN tbl_user tu ON UPPER(tu.code) = UPPER(td.usercode)"
+        f"    WHERE UPPER(td.reportsto) IN ({ph})"
+        f"    AND UPPER(td.reportsto) != UPPER(td.usercode)"
+        f"    AND (td.validto IS NULL OR td.validto >= CURRENT_DATE)"
+        f"    AND tu.isactive = true"
         f"    UNION"
         f"    SELECT code"
         f"    FROM dim_user"
@@ -112,11 +116,13 @@ def _get_all_subordinates(manager_codes: list) -> list:
         # ── Recursive term: expand via both sources ──────────────────────
         f"  SELECT DISTINCT _nxt.code FROM subs"
         f"  JOIN LATERAL ("
-        f"    SELECT usercode AS code"
-        f"    FROM tbl_user_details"
-        f"    WHERE UPPER(reportsto) = UPPER(subs.code)"
-        f"    AND UPPER(reportsto) != UPPER(usercode)"
-        f"    AND (validto IS NULL OR validto >= CURRENT_DATE)"
+        f"    SELECT td2.usercode AS code"
+        f"    FROM tbl_user_details td2"
+        f"    JOIN tbl_user tu2 ON UPPER(tu2.code) = UPPER(td2.usercode)"
+        f"    WHERE UPPER(td2.reportsto) = UPPER(subs.code)"
+        f"    AND UPPER(td2.reportsto) != UPPER(td2.usercode)"
+        f"    AND (td2.validto IS NULL OR td2.validto >= CURRENT_DATE)"
+        f"    AND tu2.isactive = true"
         f"    UNION"
         f"    SELECT code"
         f"    FROM dim_user"

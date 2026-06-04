@@ -422,10 +422,8 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
   const isHidden = (key) => {
     if (lockedIdx < 0) return false; // GCD — sees all filters
 
-    // Sales org: show for everyone EXCEPT salesman (user_code locked)
-    // HOS, ASM, NSM, Supervisor, DP all manage multiple orgs via tbl_user_details
-    // Backend filters orgs to only those the user manages (via interceptor)
-    if (key === 'sales_org') return lockedKey === 'user_code';
+    // Sales org: always show — backend restricts options to what the user manages
+    if (key === 'sales_org') return false;
 
     // NSM login (depot locked): hide HOS and ASM — NSM is a separate branch from ASM
     if (lockedKey === 'depot' && key === 'asm') return true;
