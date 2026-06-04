@@ -307,41 +307,64 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
     );
   }, [filters.brand, filters.category, filters.sales_org]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── HOS depend on: sales_org ───
+  // ─── HOS: top-down (sales_org) + bottom-up (asm/depot/supervisor/user_code) ───
   useEffect(() => {
     if (!show('hos')) return;
     abortAndFetch('hos',
-      () => fetchFilters.hos({ sales_org: filters.sales_org }),
+      () => fetchFilters.hos({
+        sales_org:  filters.sales_org  || undefined,
+        asm:        filters.asm        || undefined,
+        depot:      filters.depot      || undefined,
+        supervisor: filters.supervisor || undefined,
+        user_code:  filters.user_code  || undefined,
+      }),
       setHosList, setLoadingHos
     );
-  }, [filters.sales_org]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filters.sales_org, filters.asm, filters.depot, filters.supervisor, filters.user_code]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── ASMs depend on: sales_org + hos ───
+  // ─── ASMs: top-down (sales_org/hos) + bottom-up (supervisor/user_code) ───
   useEffect(() => {
     if (!show('asm')) return;
     abortAndFetch('asm',
-      () => fetchFilters.asms({ sales_org: filters.sales_org, hos: filters.hos }),
+      () => fetchFilters.asms({
+        sales_org:  filters.sales_org  || undefined,
+        hos:        filters.hos        || undefined,
+        supervisor: filters.supervisor || undefined,
+        user_code:  filters.user_code  || undefined,
+      }),
       setAsms, setLoadingAsms
     );
-  }, [filters.sales_org, filters.hos]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filters.sales_org, filters.hos, filters.supervisor, filters.user_code]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Depots (NSM) depend on: sales_org + hos + asm ───
+  // ─── Depots (NSM): top-down (sales_org/hos/asm) + bottom-up (supervisor/user_code) ───
   useEffect(() => {
     if (!show('depot')) return;
     abortAndFetch('depot',
-      () => fetchFilters.depots({ sales_org: filters.sales_org, hos: filters.hos, asm: filters.asm }),
+      () => fetchFilters.depots({
+        sales_org:  filters.sales_org  || undefined,
+        hos:        filters.hos        || undefined,
+        asm:        filters.asm        || undefined,
+        supervisor: filters.supervisor || undefined,
+        user_code:  filters.user_code  || undefined,
+      }),
       setDepots, setLoadingDepots
     );
-  }, [filters.sales_org, filters.hos, filters.asm]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filters.sales_org, filters.hos, filters.asm, filters.supervisor, filters.user_code]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Supervisors depend on: sales_org + hos + asm + depot(NSM) ───
+  // ─── Supervisors: top-down (sales_org/hos/asm/depot) + bottom-up (user_code) ───
   useEffect(() => {
     if (!show('supervisor')) return;
     abortAndFetch('supervisor',
-      () => fetchFilters.supervisors({ sales_org: filters.sales_org, hos: filters.hos, asm: filters.asm, depot: filters.depot }),
+      () => fetchFilters.supervisors({
+        sales_org:  filters.sales_org  || undefined,
+        hos:        filters.hos        || undefined,
+        asm:        filters.asm        || undefined,
+        depot:      filters.depot      || undefined,
+        user_code:  filters.user_code  || undefined,
+      }),
       setSupervisors, setLoadingSupervisors
     );
-  }, [filters.sales_org, filters.hos, filters.asm, filters.depot]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filters.sales_org, filters.hos, filters.asm, filters.depot, filters.user_code]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Users depend on: sales_org + hos + asm + supervisor + depot ───
   useEffect(() => {

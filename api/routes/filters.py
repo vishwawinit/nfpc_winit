@@ -96,6 +96,28 @@ def _users_by_roles_and_subs(roles, sub_codes=None, org_codes=None, extra_condit
     )
 
 
+def _get_managers_of(user_codes, roles):
+    """Reverse lookup: find direct managers at given roles for the given user codes.
+    Walks up one level via tbl_user_details.reportsto — active users only."""
+    if not user_codes:
+        return []
+    ph = ','.join(['%s'] * len(user_codes))
+    role_ph = ','.join(['%s'] * len(roles))
+    active = _active_detail_cond()
+    return query(
+        f"SELECT DISTINCT u.code, u.username AS name"
+        f" FROM tbl_user_details d"
+        f" JOIN tbl_user u ON UPPER(u.code) = UPPER(d.reportsto)"
+        f" JOIN tbl_user_role r ON UPPER(r.usercode) = UPPER(u.code)"
+        f" WHERE UPPER(d.usercode) IN ({ph})"
+        f" AND r.rolecode IN ({role_ph})"
+        f" AND u.isactive = true"
+        f" AND {active}"
+        f" ORDER BY u.username",
+        [c.upper() for c in user_codes] + list(roles)
+    )
+
+
 def _resolve_manager_subs(hos=None, asm=None, supervisor=None):
     """
     Resolve hierarchy filters to a list of subordinate user codes.
@@ -139,22 +161,25 @@ def get_sales_orgs(
 
     user_codes = None
 
-    if hos:
-        # HOS is registered in ALL orgs in tbl_user_details — use subordinates' orgs instead
-        hos_codes = _split(hos, upper=True)
-        sub_codes = _get_all_subordinates(hos_codes)
-        user_codes = sub_codes if sub_codes else hos_codes
+    # Most-specific filter wins — bottom-up: user_code > supervisor > depot > asm > hos
+    # This ensures that selecting a lower-level filter narrows the org options correctly
+    # even when a higher-level filter is locked (e.g. HOS locked but supervisor selected)
+    if user_code:
+        user_codes = _split(user_code, upper=True)
+    elif supervisor:
+        user_codes = _split(supervisor, upper=True)
+    elif depot:
+        user_codes = _split(depot, upper=True)
     elif asm:
-        # ASM may also span multiple orgs — use subordinates' orgs for accuracy
+        # ASM may span multiple orgs — use subordinates' orgs for accuracy
         asm_codes = _split(asm, upper=True)
         sub_codes = _get_all_subordinates(asm_codes)
         user_codes = sub_codes if sub_codes else asm_codes
-    elif depot:
-        user_codes = _split(depot, upper=True)
-    elif supervisor:
-        user_codes = _split(supervisor, upper=True)
-    elif user_code:
-        user_codes = _split(user_code, upper=True)
+    elif hos:
+        # HOS is registered in ALL orgs — use subordinates' orgs instead
+        hos_codes = _split(hos, upper=True)
+        sub_codes = _get_all_subordinates(hos_codes)
+        user_codes = sub_codes if sub_codes else hos_codes
 
     if user_codes:
         ph = ','.join(['%s'] * len(user_codes))
@@ -173,8 +198,32 @@ def get_sales_orgs(
 # ── HOS ──────────────────────────────────────────────────────────────────────
 
 @router.get("/filters/hos")
-def get_hos(sales_org: str = None):
-    """HOS users. When sales_org given, only HOS who manage that org via tbl_user_details."""
+def get_hos(sales_org: str = None, asm: str = None, depot: str = None, supervisor: str = None, user_code: str = None):
+    """HOS users. Supports both directions:
+    - Top-down: sales_org filters HOS by org membership
+    - Bottom-up: asm/depot/supervisor/user_code narrows HOS to who manages them"""
+    if asm or depot or supervisor or user_code:
+        # Reverse lookup — walk up to HOS level
+        if asm or depot:
+            codes = _split(asm or depot, upper=True)
+        elif supervisor:
+            # supervisor is 2 levels below HOS: supervisor → ASM → HOS
+            sup_codes = _split(supervisor, upper=True)
+            mid = [r['code'] for r in _get_managers_of(sup_codes, ROLE_ASM + ROLE_NSM)]
+            codes = mid if mid else sup_codes
+        else:
+            # user_code is 3 levels below HOS: user → supervisor → ASM → HOS
+            lower = _split(user_code, upper=True)
+            sup = [r['code'] for r in _get_managers_of(lower, ROLE_SUPERVISOR)]
+            if sup:
+                mid = [r['code'] for r in _get_managers_of(sup, ROLE_ASM + ROLE_NSM)]
+                codes = mid if mid else sup
+            else:
+                # user may report directly to ASM (no supervisor)
+                mid = [r['code'] for r in _get_managers_of(lower, ROLE_ASM + ROLE_NSM)]
+                codes = mid if mid else lower
+        return _get_managers_of(codes, ROLE_HOS)
+
     return _users_by_roles_and_subs(
         roles=ROLE_HOS,
         org_codes=_split(sales_org) if sales_org else None,
@@ -184,8 +233,19 @@ def get_hos(sales_org: str = None):
 # ── ASM ──────────────────────────────────────────────────────────────────────
 
 @router.get("/filters/asms")
-def get_asms(sales_org: str = None, hos: str = None):
-    """ASM users, optionally filtered by HOS hierarchy and/or sales org."""
+def get_asms(sales_org: str = None, hos: str = None, supervisor: str = None, user_code: str = None):
+    """ASM users. Supports both directions:
+    - Top-down: hos filters ASMs under that HOS
+    - Bottom-up: supervisor/user_code narrows ASMs to who manages them"""
+    if supervisor or user_code:
+        # Reverse lookup — bottom-up wins regardless of locked hos context
+        lower = _split(supervisor or user_code, upper=True)
+        if user_code and not supervisor:
+            # user is 2 levels below ASM — find supervisor first
+            sup = [r['code'] for r in _get_managers_of(lower, ROLE_SUPERVISOR)]
+            lower = sup if sup else lower
+        return _get_managers_of(lower, ROLE_ASM)
+
     sub_codes = None
     if hos:
         sub_codes = _get_all_subordinates(_split(hos, upper=True))
@@ -202,10 +262,18 @@ def get_asms(sales_org: str = None, hos: str = None):
 # ── Depots ────────────────────────────────────────────────────────────────────
 
 @router.get("/filters/depots")
-def get_depots(sales_org: str = None, asm: str = None, hos: str = None):
-    """Return NSM users (real users with NSM role).
-    The depot filter is the NSM level — selecting an NSM filters all data under them.
-    When hierarchy filters given, only NSM users under that hierarchy."""
+def get_depots(sales_org: str = None, asm: str = None, hos: str = None, supervisor: str = None, user_code: str = None):
+    """Return NSM users (real users with NSM role). Supports both directions:
+    - Top-down: hos/asm filters NSMs under that hierarchy
+    - Bottom-up: supervisor/user_code narrows NSMs to who manages them"""
+    if (supervisor or user_code) and not (hos or asm):
+        # Reverse lookup — bottom-up wins regardless of locked context
+        lower = _split(supervisor or user_code, upper=True)
+        if user_code and not supervisor:
+            sup = [r['code'] for r in _get_managers_of(lower, ROLE_SUPERVISOR)]
+            lower = sup if sup else lower
+        return _get_managers_of(lower, ROLE_NSM)
+
     sub_codes = None
     if hos or asm:
         sub_codes = _resolve_manager_subs(hos=hos, asm=asm)
@@ -222,9 +290,14 @@ def get_depots(sales_org: str = None, asm: str = None, hos: str = None):
 # ── Supervisors ───────────────────────────────────────────────────────────────
 
 @router.get("/filters/supervisors")
-def get_supervisors(sales_org: str = None, asm: str = None, hos: str = None, depot: str = None):
-    """Supervisor users, optionally filtered by hierarchy (HOS/ASM/NSM) and/or sales org.
-    depot = NSM user code — only supervisors under that NSM."""
+def get_supervisors(sales_org: str = None, asm: str = None, hos: str = None, depot: str = None, user_code: str = None):
+    """Supervisor users. Supports both directions:
+    - Top-down: hos/asm/depot filters supervisors under that hierarchy
+    - Bottom-up: user_code narrows supervisors to who directly manages that user"""
+    if user_code:
+        # Reverse lookup — bottom-up wins regardless of locked hos/asm/depot context
+        return _get_managers_of(_split(user_code, upper=True), ROLE_SUPERVISOR)
+
     sub_codes = None
 
     if depot:
