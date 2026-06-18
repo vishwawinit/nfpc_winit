@@ -7,6 +7,7 @@ import { Banknote, Wallet, Phone, Target } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, Cell, PieChart, Pie, LabelList,
+  ComposedChart, Area, Line,
 } from 'recharts';
 
 const aed = (v) => v != null ? `AED ${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-';
@@ -37,7 +38,7 @@ const PAL = {
 function ChartGradients() {
   return (
     <defs>
-      {/* Day-wise */}
+      {/* Day-wise bars */}
       <linearGradient id="gDaySales" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stopColor={PAL.daySales.light} />
         <stop offset="100%" stopColor={PAL.daySales.solid} />
@@ -45,6 +46,17 @@ function ChartGradients() {
       <linearGradient id="gDayColl" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stopColor={PAL.dayCollection.light} />
         <stop offset="100%" stopColor={PAL.dayCollection.solid} />
+      </linearGradient>
+      {/* Day-wise area fills */}
+      <linearGradient id="gAreaSales" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"   stopColor={PAL.daySales.light} stopOpacity={0.45} />
+        <stop offset="60%"  stopColor={PAL.daySales.solid} stopOpacity={0.15} />
+        <stop offset="100%" stopColor={PAL.daySales.solid} stopOpacity={0.02} />
+      </linearGradient>
+      <linearGradient id="gAreaColl" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"   stopColor={PAL.dayCollection.light} stopOpacity={0.4} />
+        <stop offset="60%"  stopColor={PAL.dayCollection.solid} stopOpacity={0.12} />
+        <stop offset="100%" stopColor={PAL.dayCollection.solid} stopOpacity={0.02} />
       </linearGradient>
       {/* Route Sales */}
       <linearGradient id="gRouteTarget" x1="0" y1="0" x2="0" y2="1">
@@ -177,7 +189,7 @@ export default function Dashboard() {
     const days = {};
     salesChart.forEach(r => { days[r.date] = { ...days[r.date], date: r.date, sales: r.sales }; });
     collChart.forEach(r => { days[r.date] = { ...days[r.date], date: r.date, collection: r.collection }; });
-    return Object.values(days).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    return Object.values(days).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   }, [salesChart, collChart]);
 
   const routeSales = (data?.route_wise_sales_vs_target || []).map(r => ({
@@ -277,28 +289,50 @@ export default function Dashboard() {
       {/* ═══════════ Day-wise Sales & Collection ═══════════ */}
       {dailyMerged.length > 0 && (
         <div className="chart-container">
-          <SectionHeader title="Day-wise Sales & Collection" subtitle="Daily comparison" accent="from-indigo-600 to-teal-500">
-            <Pill label="Sales" value={aed(dailyMerged.reduce((s, r) => s + (r.sales || 0), 0))} pal={PAL.daySales} />
+          <SectionHeader title="Day-wise Sales & Collection" subtitle="Grouped bars with area trend overlay" accent="from-indigo-600 to-teal-500">
+            <Pill label="Sales"      value={aed(dailyMerged.reduce((s, r) => s + (r.sales      || 0), 0))} pal={PAL.daySales} />
             <Pill label="Collection" value={aed(dailyMerged.reduce((s, r) => s + (r.collection || 0), 0))} pal={PAL.dayCollection} />
           </SectionHeader>
-          <div className="chart-body overflow-x-auto" style={dailyMerged.length > 10 ? { overflowX: 'auto', maxWidth: '100%' } : {}}>
-            <div style={{ minWidth: dailyMerged.length > 10 ? dailyMerged.length * 70 : Math.max(600, dailyMerged.length * 56) }}>
-              <ResponsiveContainer width="100%" height={370}>
-                <BarChart data={dailyMerged} barCategoryGap="18%" barGap={3}>
+          <div className="chart-body overflow-x-auto">
+            <div style={{ minWidth: dailyMerged.length > 10 ? dailyMerged.length * 76 : Math.max(640, dailyMerged.length * 62) }}>
+              <ResponsiveContainer width="100%" height={410}>
+                <ComposedChart data={dailyMerged} barCategoryGap="20%" barGap={3}
+                  margin={{ top: 24, right: 20, left: 0, bottom: 10 }}>
                   <ChartGradients />
+
                   <CartesianGrid strokeDasharray="3 3" stroke={PAL.grid} vertical={false} />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94a3b8', angle: dailyMerged.length > 10 ? -45 : -35, textAnchor: 'end' }} height={50} axisLine={false} tickLine={false} interval={0} />
-                  <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={yAxisFmt} axisLine={false} tickLine={false} width={50} />
-                  <Tooltip content={<ChartTooltip formatter={aed} colorMap={{ Sales: PAL.daySales.solid, Collection: PAL.dayCollection.solid }} />}
-                    cursor={{ fill: 'rgba(79, 70, 229, 0.04)', radius: 4 }} />
+                  <XAxis dataKey="date"
+                    tick={{ fontSize: 10, fill: '#94a3b8', angle: dailyMerged.length > 10 ? -45 : -30, textAnchor: 'end' }}
+                    height={54} axisLine={false} tickLine={false} interval={0} />
+                  <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={yAxisFmt}
+                    axisLine={false} tickLine={false} width={54} />
+                  <Tooltip
+                    content={<ChartTooltip formatter={aed} colorMap={{ Sales: PAL.daySales.solid, Collection: PAL.dayCollection.solid }} />}
+                    cursor={{ fill: 'rgba(79,70,229,0.05)', radius: 6 }} />
                   <Legend iconType="circle" iconSize={8} wrapperStyle={legendStyle} />
-                  <Bar dataKey="sales" fill="url(#gDaySales)" name="Sales" radius={[5, 5, 0, 0]}>
-                    <LabelList dataKey="sales" position="top" formatter={yAxisFmt} style={{ fontSize: 9, fill: PAL.daySales.solid, fontWeight: 700 }} />
+
+                  {/* ── Area overlays (drawn first, behind bars) ── */}
+                  <Area dataKey="sales" name="Sales" type="monotoneX"
+                    fill="url(#gAreaSales)" stroke={PAL.daySales.solid}
+                    strokeWidth={2} strokeDasharray="0"
+                    dot={false} legendType="none"
+                    activeDot={{ r: 5, fill: PAL.daySales.solid, strokeWidth: 0 }} />
+                  <Area dataKey="collection" name="Collection" type="monotoneX"
+                    fill="url(#gAreaColl)" stroke={PAL.dayCollection.solid}
+                    strokeWidth={2} strokeDasharray="0"
+                    dot={false} legendType="none"
+                    activeDot={{ r: 5, fill: PAL.dayCollection.solid, strokeWidth: 0 }} />
+
+                  {/* ── Grouped Bars (drawn on top of area) ── */}
+                  <Bar dataKey="sales" name="Sales" fill="url(#gDaySales)" radius={[5,5,0,0]}>
+                    <LabelList dataKey="sales" position="top" formatter={yAxisFmt}
+                      style={{ fontSize: 9, fill: PAL.daySales.solid, fontWeight: 700 }} />
                   </Bar>
-                  <Bar dataKey="collection" fill="url(#gDayColl)" name="Collection" radius={[5, 5, 0, 0]}>
-                    <LabelList dataKey="collection" position="top" formatter={yAxisFmt} style={{ fontSize: 9, fill: PAL.dayCollection.solid, fontWeight: 700 }} />
+                  <Bar dataKey="collection" name="Collection" fill="url(#gDayColl)" radius={[5,5,0,0]}>
+                    <LabelList dataKey="collection" position="top" formatter={yAxisFmt}
+                      style={{ fontSize: 9, fill: PAL.dayCollection.solid, fontWeight: 700 }} />
                   </Bar>
-                </BarChart>
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
           </div>
