@@ -45,6 +45,9 @@ def _has_subordinates(code: str) -> bool:
 
 
 def _locked_filters(role: str, code: str) -> dict:
+    # Admin/system account — unrestricted access to all data
+    if code.upper() == 'ADMIN':
+        return {}
     if role == 'HOS':
         return {'hos': code}
     if role == 'NSM':
