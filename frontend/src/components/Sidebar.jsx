@@ -71,7 +71,7 @@ const ROLE_BADGE = {
   C_SALES_SUPERVISOR:  { label: 'Supervisor', color: 'bg-teal-500/20 text-teal-300' },
   FreshSup:            { label: 'Supervisor', color: 'bg-teal-500/20 text-teal-300' },
   AMBIENTSUP:          { label: 'Supervisor', color: 'bg-teal-500/20 text-teal-300' },
-  DP:                  { label: 'Dist. Point', color: 'bg-cyan-500/20 text-cyan-300' },
+  DP:                  { label: 'Demand Plnr', color: 'bg-cyan-500/20 text-cyan-300' },
   BA:                  { label: 'Brand Mgr',  color: 'bg-purple-500/20 text-purple-300' },
   C_PRESALES_VANSALES: { label: 'Salesman',   color: 'bg-emerald-500/20 text-emerald-300' },
   Vansales:            { label: 'Salesman',   color: 'bg-emerald-500/20 text-emerald-300' },
@@ -136,8 +136,8 @@ export default function Sidebar() {
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-[12px] font-semibold text-slate-200 truncate">{user?.user_name}</div>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${badge.color}`}>
+            <div className="flex items-center gap-1.5 mt-0.5 overflow-hidden">
+              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md whitespace-nowrap flex-shrink-0 ${badge.color}`}>
                 {badge.label}
               </span>
               <span className="text-[10px] text-slate-500 font-mono truncate">{user?.user_code}</span>
