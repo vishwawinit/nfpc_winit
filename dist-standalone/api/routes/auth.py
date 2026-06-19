@@ -16,7 +16,15 @@ ROLE_PRIORITY = [
 ]
 
 SALESMAN_ROLES   = {'C_PRESALES_VANSALES', 'Vansales', 'Storekeeper'}
-SUPERVISOR_ROLES = {'C_SALES_SUPERVISOR', 'FreshSup', 'AMBIENTSUP', 'DP', 'BA'}
+SUPERVISOR_ROLES = {'C_SALES_SUPERVISOR', 'FreshSup', 'AMBIENTSUP', 'BA'}
+
+# Demand Planner (DP) and all non-sales back-office roles get full unrestricted (admin-level) access
+ADMIN_ACCESS_ROLES = {
+    'DP',  # Demand Planner
+    'Accountant', 'Cashier', 'CASHIER_ACCOUNTS', 'FM', 'LM', 'SC', 'CM',
+    'KAS', 'CSH', 'VSH', 'BH', 'IT Admin', 'DC', 'DD', '005',
+    'GU005', 'DH', 'CMDM', '5GSU', 'LS',
+}
 
 
 def _pick_role(roles: list) -> str:
@@ -48,6 +56,9 @@ def _locked_filters(role: str, code: str) -> dict:
     # Admin/system account — unrestricted access to all data
     if code.upper() == 'ADMIN':
         return {}
+    # DP and back-office roles — full unrestricted access
+    if role in ADMIN_ACCESS_ROLES:
+        return {}
     if role == 'HOS':
         return {'hos': code}
     if role == 'NSM':
@@ -55,8 +66,6 @@ def _locked_filters(role: str, code: str) -> dict:
     if role == 'ASM':
         return {'asm': code}
     if role in SUPERVISOR_ROLES:
-        # If no one reports to this supervisor, lock to their own data
-        # (standalone DP/BA with no team — should still see their own visits)
         if _has_subordinates(code):
             return {'supervisor': code}
         return {'user_code': code}

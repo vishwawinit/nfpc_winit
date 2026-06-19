@@ -87,11 +87,18 @@ function ChartGradients() {
 /* ─── Tooltip ─── */
 function ChartTooltip({ active, payload, label, formatter, colorMap = {} }) {
   if (!active || !payload?.length) return null;
+  // Deduplicate by dataKey — ComposedChart sends both Area + Bar entries for the same key
+  const seen = new Set();
+  const unique = payload.filter(entry => {
+    if (seen.has(entry.dataKey)) return false;
+    seen.add(entry.dataKey);
+    return true;
+  });
   return (
     <div className="bg-white/95 backdrop-blur-xl rounded-xl border border-gray-200/50 px-4 py-3"
       style={{ boxShadow: '0 20px 48px -12px rgba(0,0,0,0.18), 0 4px 16px -4px rgba(0,0,0,0.08)' }}>
       <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2 pb-2 border-b border-gray-100">{label}</p>
-      {payload.map((entry, i) => (
+      {unique.map((entry, i) => (
         <div key={i} className="flex items-center gap-2.5 py-[3px]">
           <span className="w-3 h-3 rounded-[4px] flex-shrink-0"
             style={{ background: colorMap[entry.name] || entry.color, boxShadow: `0 0 6px ${colorMap[entry.name] || entry.color}40` }} />
@@ -182,14 +189,17 @@ export default function Dashboard() {
   const cm = data?.call_metrics || {};
   const targetPct = data?.total_target ? Math.min(100, (data.total_sales / data.total_target * 100)).toFixed(1) : 0;
 
-  const salesChart = (data?.weekly_sales || []).map(r => ({ date: fmtDate(r.date), sales: Number(r.sales || 0) }));
-  const collChart = (data?.weekly_collection || []).map(r => ({ date: fmtDate(r.date), collection: Number(r.collection || 0) }));
+  const salesChart = (data?.weekly_sales || []).map(r => ({ rawDate: r.date, date: fmtDate(r.date), sales: Number(r.sales || 0) }));
+  const collChart = (data?.weekly_collection || []).map(r => ({ rawDate: r.date, date: fmtDate(r.date), collection: Number(r.collection || 0) }));
 
   const dailyMerged = useMemo(() => {
     const days = {};
-    salesChart.forEach(r => { days[r.date] = { ...days[r.date], date: r.date, sales: r.sales }; });
-    collChart.forEach(r => { days[r.date] = { ...days[r.date], date: r.date, collection: r.collection }; });
-    return Object.values(days).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    // Key by raw ISO date so sort works correctly (fmtDate strings like "Jun 1" don't sort chronologically)
+    salesChart.forEach(r => { days[r.rawDate] = { ...days[r.rawDate], rawDate: r.rawDate, date: r.date, sales: r.sales }; });
+    collChart.forEach(r => { days[r.rawDate] = { ...days[r.rawDate], rawDate: r.rawDate, date: r.date, collection: r.collection }; });
+    return Object.values(days)
+      .sort((a, b) => (b.rawDate || '').localeCompare(a.rawDate || ''))
+      .map(({ rawDate, ...rest }) => rest);
   }, [salesChart, collChart]);
 
   const routeSales = (data?.route_wise_sales_vs_target || []).map(r => ({

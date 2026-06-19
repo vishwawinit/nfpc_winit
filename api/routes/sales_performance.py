@@ -424,7 +424,9 @@ def get_sales_performance(
         # Convert rows to plain dicts to ensure mutation works regardless of psycopg2 row type
         sku_table = [dict(row) for row in sku_table]
         for row in sku_table:
-            row['current_month_sales'] = rssi_cm_map.get(row['item_code'], 0)
+            if row['item_code'] in rssi_cm_map:
+                row['current_month_sales'] = rssi_cm_map[row['item_code']]
+            # else: RSSI has no data for this item — keep the RSIC value already in sku_table
 
     for row in sku_table:
         ly = float(row["last_month_sales"] or 0)
