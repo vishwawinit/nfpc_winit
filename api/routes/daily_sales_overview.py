@@ -475,10 +475,12 @@ def get_daily_sales_overview(
                     'mtd_wastage': round(wastage, 2),
                 })
 
-        else:
-            # --- RSIC path: channel/brand/category filter active ---
-            # RSSI cannot filter on these dimension columns so we use RSIC,
-            # mirroring how daily_sales falls back when these filters are set.
+            # RSSI returned no item rows — fall back to RSIC (mirrors daily_sales KPI fallback)
+            if not item_table:
+                _use_rsic_total = True
+
+        if _use_rsic_total:
+            # --- RSIC path: channel/brand/category filter active OR RSSI has no item data ---
             f_rsic2 = {k: v for k, v in filters.items() if k in RSIC_KEYS}
             rw2, rp2 = build_where(f_rsic2, date_col='date', prefix='r')
             f_rsic_mtd = {k: v for k, v in {
