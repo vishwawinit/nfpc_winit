@@ -154,6 +154,15 @@ def get_mtd_sales_overview(
             f"GROUP BY date ORDER BY date",
             sp_s + org_params_s
         )
+        if not daily_summary:
+            # RSSI has no data for these user codes — fall back to RSIC (matches Dashboard)
+            daily_summary = query(
+                f"SELECT r.date AS sale_date, COALESCE(SUM(r.total_sales), 0) AS total_sales "
+                f"FROM rpt_route_sales_by_item_customer r {_org_join}{brand_dim_join}"
+                f"WHERE {rsw}{channel_cond} "
+                f"GROUP BY r.date ORDER BY r.date",
+                _org_params + brand_dim_join_params + rsp + channel_params
+            )
     else:
         daily_summary = query(
             f"SELECT r.date AS sale_date, COALESCE(SUM(r.total_sales), 0) AS total_sales "

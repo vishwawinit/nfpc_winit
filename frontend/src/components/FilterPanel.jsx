@@ -224,6 +224,12 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
   const lockedFilters = user?.locked_filters || {};
   const initialFiltersRef = useRef(filters);
 
+  // Draft: local pending state — only committed to parent on Apply
+  const [draft, setDraft] = useState(() => ({ ...filters }));
+
+  // Sync draft when parent resets or injects locked filters externally
+  useEffect(() => { setDraft({ ...filters }); }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // On mount: if locked filters aren't in the page's current filter state, inject them.
   // This ensures the UI reflects what the API interceptor enforces.
   useEffect(() => {
@@ -283,13 +289,13 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
   useEffect(() => {
     if (!show('sales_org')) return;
     fetchFilters.salesOrgs({
-      hos:        filters.hos        || undefined,
-      asm:        filters.asm        || undefined,
-      depot:      filters.depot      || undefined,
-      supervisor: filters.supervisor || undefined,
-      user_code:  filters.user_code  || undefined,
+      hos:        draft.hos        || undefined,
+      asm:        draft.asm        || undefined,
+      depot:      draft.depot      || undefined,
+      supervisor: draft.supervisor || undefined,
+      user_code:  draft.user_code  || undefined,
     }).then(setSalesOrgs);
-  }, [filters.hos, filters.asm, filters.depot, filters.supervisor, filters.user_code]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [draft.hos, draft.asm, draft.depot, draft.supervisor, draft.user_code]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Static filters (no hierarchy dependency) ───
   useEffect(() => {
@@ -302,93 +308,93 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
   useEffect(() => {
     if (!show('item')) return;
     abortAndFetch('item',
-      () => fetchFilters.items({ brand: filters.brand, category: filters.category, sales_org: filters.sales_org }),
+      () => fetchFilters.items({ brand: draft.brand, category: draft.category, sales_org: draft.sales_org }),
       setItems, setLoadingItems
     );
-  }, [filters.brand, filters.category, filters.sales_org]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [draft.brand, draft.category, draft.sales_org]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── HOS: top-down (sales_org) + bottom-up (asm/depot/supervisor/user_code) ───
   useEffect(() => {
     if (!show('hos')) return;
     abortAndFetch('hos',
       () => fetchFilters.hos({
-        sales_org:  filters.sales_org  || undefined,
-        asm:        filters.asm        || undefined,
-        depot:      filters.depot      || undefined,
-        supervisor: filters.supervisor || undefined,
-        user_code:  filters.user_code  || undefined,
+        sales_org:  draft.sales_org  || undefined,
+        asm:        draft.asm        || undefined,
+        depot:      draft.depot      || undefined,
+        supervisor: draft.supervisor || undefined,
+        user_code:  draft.user_code  || undefined,
       }),
       setHosList, setLoadingHos
     );
-  }, [filters.sales_org, filters.asm, filters.depot, filters.supervisor, filters.user_code]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [draft.sales_org, draft.asm, draft.depot, draft.supervisor, draft.user_code]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── ASMs: top-down (sales_org/hos) + bottom-up (supervisor/user_code) ───
   useEffect(() => {
     if (!show('asm')) return;
     abortAndFetch('asm',
       () => fetchFilters.asms({
-        sales_org:  filters.sales_org  || undefined,
-        hos:        filters.hos        || undefined,
-        supervisor: filters.supervisor || undefined,
-        user_code:  filters.user_code  || undefined,
+        sales_org:  draft.sales_org  || undefined,
+        hos:        draft.hos        || undefined,
+        supervisor: draft.supervisor || undefined,
+        user_code:  draft.user_code  || undefined,
       }),
       setAsms, setLoadingAsms
     );
-  }, [filters.sales_org, filters.hos, filters.supervisor, filters.user_code]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [draft.sales_org, draft.hos, draft.supervisor, draft.user_code]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Depots (NSM): top-down (sales_org/hos/asm) + bottom-up (supervisor/user_code) ───
   useEffect(() => {
     if (!show('depot')) return;
     abortAndFetch('depot',
       () => fetchFilters.depots({
-        sales_org:  filters.sales_org  || undefined,
-        hos:        filters.hos        || undefined,
-        asm:        filters.asm        || undefined,
-        supervisor: filters.supervisor || undefined,
-        user_code:  filters.user_code  || undefined,
+        sales_org:  draft.sales_org  || undefined,
+        hos:        draft.hos        || undefined,
+        asm:        draft.asm        || undefined,
+        supervisor: draft.supervisor || undefined,
+        user_code:  draft.user_code  || undefined,
       }),
       setDepots, setLoadingDepots
     );
-  }, [filters.sales_org, filters.hos, filters.asm, filters.supervisor, filters.user_code]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [draft.sales_org, draft.hos, draft.asm, draft.supervisor, draft.user_code]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Supervisors: top-down (sales_org/hos/asm/depot) + bottom-up (user_code) ───
   useEffect(() => {
     if (!show('supervisor')) return;
     abortAndFetch('supervisor',
       () => fetchFilters.supervisors({
-        sales_org:  filters.sales_org  || undefined,
-        hos:        filters.hos        || undefined,
-        asm:        filters.asm        || undefined,
-        depot:      filters.depot      || undefined,
-        user_code:  filters.user_code  || undefined,
+        sales_org:  draft.sales_org  || undefined,
+        hos:        draft.hos        || undefined,
+        asm:        draft.asm        || undefined,
+        depot:      draft.depot      || undefined,
+        user_code:  draft.user_code  || undefined,
       }),
       setSupervisors, setLoadingSupervisors
     );
-  }, [filters.sales_org, filters.hos, filters.asm, filters.depot, filters.user_code]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [draft.sales_org, draft.hos, draft.asm, draft.depot, draft.user_code]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Users depend on: sales_org + hos + asm + supervisor + depot ───
   useEffect(() => {
     if (!show('user_code')) return;
     abortAndFetch('users',
       () => fetchFilters.users({
-        sales_org: filters.sales_org, hos: filters.hos, asm: filters.asm,
-        supervisor: filters.supervisor, depot: filters.depot,
+        sales_org: draft.sales_org, hos: draft.hos, asm: draft.asm,
+        supervisor: draft.supervisor, depot: draft.depot,
       }),
       setUsers, setLoadingUsers
     );
-  }, [filters.sales_org, filters.hos, filters.asm, filters.supervisor, filters.depot]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [draft.sales_org, draft.hos, draft.asm, draft.supervisor, draft.depot]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Routes depend on: all hierarchy filters ───
   useEffect(() => {
     if (!show('route')) return;
     abortAndFetch('routes',
       () => fetchFilters.routes({
-        sales_org: filters.sales_org, hos: filters.hos, asm: filters.asm,
-        depot: filters.depot, supervisor: filters.supervisor, user_code: filters.user_code,
+        sales_org: draft.sales_org, hos: draft.hos, asm: draft.asm,
+        depot: draft.depot, supervisor: draft.supervisor, user_code: draft.user_code,
       }),
       setRoutes, setLoadingRoutes
     );
-  }, [filters.sales_org, filters.hos, filters.asm, filters.depot, filters.supervisor, filters.user_code]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [draft.sales_org, draft.hos, draft.asm, draft.depot, draft.supervisor, draft.user_code]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Customers: load once from dim_customer, filter client-side by sales_org ───
   const [allCustomers, setAllCustomers] = useState([]);
@@ -404,13 +410,13 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
 
   useEffect(() => {
     if (!show('customer')) return;
-    if (filters.sales_org) {
-      const orgs = new Set(filters.sales_org.split(',').map(s => s.trim()).filter(Boolean));
+    if (draft.sales_org) {
+      const orgs = new Set(draft.sales_org.split(',').map(s => s.trim()).filter(Boolean));
       setCustomers(allCustomers.filter(c => orgs.has(c.sales_org)));
     } else {
       setCustomers(allCustomers);
     }
-  }, [filters.sales_org, allCustomers]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [draft.sales_org, allCustomers]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Hierarchy: hide filters above/beside the user's locked level ───
   // Order reflects UI display: HOS → NSM → ASM → Supervisor → Salesman
@@ -440,20 +446,35 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
 
   const set = (key, value) => {
     if (isLocked(key)) return; // cannot override locked filters
-    const newFilters = { ...filters, [key]: value || undefined };
+    const newDraft = { ...draft, [key]: value || undefined };
 
     // Clear all downstream children defined in CHILD_MAP
     const children = CHILD_MAP[key];
     if (children) {
       children.forEach(child => {
-        if (!isLocked(child)) delete newFilters[child];
+        if (!isLocked(child)) delete newDraft[child];
       });
     }
 
     // Always restore locked filters
-    Object.entries(lockedFilters).forEach(([k, v]) => { newFilters[k] = v; });
-    onChange(newFilters);
+    Object.entries(lockedFilters).forEach(([k, v]) => { newDraft[k] = v; });
+    setDraft(newDraft);
   };
+
+  // Apply commits draft to parent → triggers data fetch
+  const handleApply = () => onChange({ ...draft });
+
+  // Reset: clear draft back to initial and commit immediately
+  const handleReset = () => {
+    const initial = { ...initialFiltersRef.current };
+    setDraft(initial);
+    onChange(initial);
+  };
+
+  // Highlight Apply button when draft differs from committed filters
+  const isDirty = Object.keys({ ...draft, ...filters }).some(
+    k => String(draft[k] ?? '') !== String(filters[k] ?? '')
+  );
 
   const visibleFields = Object.keys(fieldMeta).filter(show);
   const hasDateFrom = show('date_from');
@@ -480,29 +501,29 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
     );
   };
 
-  // Local state buffers the displayed date while user browses months — no API call until confirmed
-  const [localDateFrom, setLocalDateFrom] = useState(filters.date_from || '');
-  const [localDateTo,   setLocalDateTo]   = useState(filters.date_to   || '');
+  // Local state buffers the displayed date while user browses — no commit until Apply
+  const [localDateFrom, setLocalDateFrom] = useState(draft.date_from || '');
+  const [localDateTo,   setLocalDateTo]   = useState(draft.date_to   || '');
 
-  // Sync when external reset fires
-  useEffect(() => { setLocalDateFrom(filters.date_from || ''); }, [filters.date_from]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { setLocalDateTo(filters.date_to   || ''); }, [filters.date_to]);     // eslint-disable-line react-hooks/exhaustive-deps
+  // Sync when draft resets externally
+  useEffect(() => { setLocalDateFrom(draft.date_from || ''); }, [draft.date_from]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setLocalDateTo(draft.date_to   || ''); }, [draft.date_to]);     // eslint-disable-line react-hooks/exhaustive-deps
 
   const applyDateFrom = (val) => {
     if (!val) return;
-    if (!show('date_to')) { onChange({ ...filters, date_from: val, date_to: val }); return; }
-    if (filters.date_to && val > filters.date_to) {
-      onChange({ ...filters, date_from: val, date_to: val });
+    if (!show('date_to')) { setDraft(d => ({ ...d, date_from: val, date_to: val })); return; }
+    if (draft.date_to && val > draft.date_to) {
+      setDraft(d => ({ ...d, date_from: val, date_to: val }));
       setLocalDateTo(val);
       return;
     }
-    set('date_from', val);
+    setDraft(d => ({ ...d, date_from: val }));
   };
 
   const applyDateTo = (val) => {
     if (!val) return;
-    if (show('date_from') && filters.date_from && val < filters.date_from) return;
-    set('date_to', val);
+    if (show('date_from') && draft.date_from && val < draft.date_from) return;
+    setDraft(d => ({ ...d, date_to: val }));
   };
 
   // onChange → only update what the input shows, no filter/API call
@@ -591,16 +612,31 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
               />
             </div>
           )}
-          {/* Reset Filters Button */}
-          <button
-            type="button"
-            onClick={() => onChange(initialFiltersRef.current)}
-            className="flex items-center gap-1.5 px-3 py-[7px] text-[13px] font-medium text-gray-500 bg-gray-100 hover:bg-red-50 hover:text-red-600 rounded-lg border border-gray-200/80 transition-all duration-150 self-end"
-            title="Reset all filters"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            Reset
-          </button>
+          {/* Apply + Reset Buttons */}
+          <div className="flex items-end gap-2 self-end">
+            <button
+              type="button"
+              onClick={handleApply}
+              className={`flex items-center gap-1.5 px-4 py-[7px] text-[13px] font-semibold rounded-lg border transition-all duration-150 ${
+                isDirty
+                  ? 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-600/20'
+                  : 'bg-indigo-50 text-indigo-400 border-indigo-200/60 cursor-default'
+              }`}
+              title="Apply filters"
+            >
+              <Check className="w-3.5 h-3.5" />
+              Apply
+            </button>
+            <button
+              type="button"
+              onClick={handleReset}
+              className="flex items-center gap-1.5 px-3 py-[7px] text-[13px] font-medium text-gray-500 bg-gray-100 hover:bg-red-50 hover:text-red-600 rounded-lg border border-gray-200/80 transition-all duration-150"
+              title="Reset all filters"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset
+            </button>
+          </div>
         </div>
       )}
 
@@ -618,7 +654,7 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
                 </div>
                 <MultiSelect
                   options={optionsFor(field)}
-                  value={filters[field]}
+                  value={draft[field]}
                   onChange={(val) => set(field, val)}
                   loading={loadingFor(field)}
                   onSearch={null}
@@ -633,14 +669,14 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
             <div>
               <Label field="day" />
               <select
-                value={String(filters.day || '')}
-                onChange={e => onChange({ ...filters, day: e.target.value ? Number(e.target.value) : undefined })}
+                value={String(draft.day || '')}
+                onChange={e => setDraft(d => ({ ...d, day: e.target.value ? Number(e.target.value) : undefined }))}
                 className={selectClass}
               >
                 <option value="">All (MTD)</option>
                 {Array.from({ length: (() => {
-                  const y = Number(filters.year) || new Date().getFullYear();
-                  const m = Number(filters.month) || new Date().getMonth() + 1;
+                  const y = Number(draft.year) || new Date().getFullYear();
+                  const m = Number(draft.month) || new Date().getMonth() + 1;
                   return new Date(y, m, 0).getDate();
                 })() }, (_, i) => i + 1).map(d =>
                   <option key={d} value={String(d)}>{d}</option>
@@ -652,11 +688,10 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
             <div>
               <Label field="month" />
               <select
-                value={String(filters.month || '')}
+                value={String(draft.month || '')}
                 onChange={e => {
                   const val = e.target.value ? Number(e.target.value) : undefined;
-                  const newFilters = { ...filters, month: val, day: undefined };
-                  onChange(newFilters);
+                  setDraft(d => ({ ...d, month: val, day: undefined }));
                 }}
                 className={selectClass}
               >
@@ -671,11 +706,10 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
             <div>
               <Label field="year" />
               <select
-                value={String(filters.year || '')}
+                value={String(draft.year || '')}
                 onChange={e => {
                   const val = e.target.value ? Number(e.target.value) : undefined;
-                  const newFilters = { ...filters, year: val, day: undefined };
-                  onChange(newFilters);
+                  setDraft(d => ({ ...d, year: val, day: undefined }));
                 }}
                 className={selectClass}
               >
@@ -687,11 +721,24 @@ export default function FilterPanel({ filters, onChange, showFields = [], onRese
             </div>
           )}
 
-          {onReset && !hasDateFrom && !hasDateTo && (
-            <div className="flex items-end">
+          {!hasDateFrom && !hasDateTo && (
+            <div className="flex items-end gap-2">
               <button
                 type="button"
-                onClick={() => onChange(initialFiltersRef.current)}
+                onClick={handleApply}
+                className={`flex items-center gap-1.5 px-4 py-[7px] text-[13px] font-semibold rounded-lg border transition-all duration-150 ${
+                  isDirty
+                    ? 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-600/20'
+                    : 'bg-indigo-50 text-indigo-400 border-indigo-200/60 cursor-default'
+                }`}
+                title="Apply filters"
+              >
+                <Check className="w-3.5 h-3.5" />
+                Apply
+              </button>
+              <button
+                type="button"
+                onClick={handleReset}
                 className="flex items-center gap-1.5 px-3 py-[7px] text-[13px] font-medium text-gray-500 bg-gray-100 hover:bg-red-50 hover:text-red-600 rounded-lg border border-gray-200/80 transition-all duration-150"
                 title="Reset all filters"
               >

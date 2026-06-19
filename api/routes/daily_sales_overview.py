@@ -224,18 +224,20 @@ def get_daily_sales_overview(
             )
             total_sales = float(rssi_row["total_sales"]) if rssi_row else 0
             if total_sales == 0:
-                f_it = {k: v for k, v in {
-                    'route': route, 'user_code': user_code, 'sales_org': sales_org,
+                # RSSI had no data — fall back to RSIC (same source as Dashboard)
+                f_rsic_fb = {k: v for k, v in {
+                    'route': route, 'user_code': user_code,
                     'date_from': date_from, 'date_to': date_to,
                 }.items() if v is not None}
-                itw, itp = build_where(f_it, date_col='trx_date')
-                it_row = query_one(
-                    f"SELECT COALESCE(SUM(total_sales),0) AS total_sales, "
-                    f"  COALESCE(SUM(total_returns),0) AS total_returns "
-                    f"FROM rpt_invoice_totals WHERE {itw}", itp
+                rsic_fbw, rsic_fbp = build_where(f_rsic_fb, date_col='date', prefix='r')
+                rsic_fb_org_join = _rsic_org_join.replace("{alias}", "r") if _rsic_org_join else ""
+                rsic_fb_row = query_one(
+                    f"SELECT COALESCE(SUM(r.total_sales), 0) AS total_sales "
+                    f"FROM rpt_route_sales_by_item_customer r {rsic_fb_org_join}WHERE {rsic_fbw}",
+                    _rsic_org_params + rsic_fbp
                 )
-                if it_row:
-                    total_sales = max(0.0, float(it_row["total_sales"]) - float(it_row["total_returns"]))
+                if rsic_fb_row:
+                    total_sales = float(rsic_fb_row["total_sales"])
         except Exception:
             total_sales = rsic_cash + rsic_credit
     else:
